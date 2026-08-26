@@ -1,0 +1,143 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   OPTION B: base layer.
+
+   The root font-size stays at the browser's 16px, same reasoning as option A:
+   moving it rescales every rem in the build and breaks the user's zoom
+   expectation. Density here comes from the scale, and this option chooses a
+   14px base against option A's 13px.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* the console fills the window and each pane scrolls independently, so the
+     document itself must not scroll */
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  height: 100%;
+  font-family: var(--m-font-sans);
+  font-size: var(--m-text-md);
+  line-height: var(--m-leading-normal);
+  letter-spacing: var(--m-tracking-tight);
+  color: var(--m-content-primary);
+  background: var(--m-surface-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+}
+
+#root { height: 100%; }
+
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+  font-weight: var(--m-weight-semibold);
+  line-height: var(--m-leading-tight);
+  text-wrap: balance;
+}
+
+p { text-wrap: pretty; }
+
+button, input, select, textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+button { background: none; border: none; padding: 0; cursor: pointer; }
+ul, ol { list-style: none; padding: 0; }
+
+a { color: var(--m-content-accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+svg { display: block; flex: none; }
+
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--m-radius-xs);
+}
+
+::selection {
+  background: var(--m-status-info-bg);
+  color: var(--m-status-info-fg);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--m-border-strong) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── the display serif, applied only where it belongs ─────────────────────
+   Two places: an issue title in the detail pane, and an empty-state headline.
+   Nowhere else. It is a class rather than a heading rule precisely so that
+   adding a heading somewhere cannot accidentally put a display face on a
+   label. */
+.m-display {
+  font-family: var(--m-font-serif);
+  font-weight: 400;
+  letter-spacing: var(--m-tracking-serif);
+  line-height: var(--m-leading-tight);
+}
+
+/* ── utilities ──────────────────────────────────────────────────────────── */
+
+.m-mono {
+  font-family: var(--m-font-mono);
+  font-size: var(--m-text-xs);
+  letter-spacing: var(--m-tracking-normal);
+}
+
+.m-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.m-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* the section label used across every pane: one definition, so a list header
+   and a detail header cannot drift apart */
+.m-label {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-wide);
+  text-transform: uppercase;
+  color: var(--m-content-muted);
+}
+
+.m-label__count {
+  letter-spacing: var(--m-tracking-normal);
+  text-transform: none;
+  color: var(--m-content-disabled);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,149 @@
+/* ── the menu ── */
+
+.b-fm { display: flex; flex-direction: column; }
+
+.b-fm__search {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  padding: var(--m-space-2) var(--m-space-4);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+.b-fm__search-icon { flex: none; color: var(--m-content-decorative); }
+.b-fm__input { flex: 1; }
+
+/* Mantine's `unstyled` variant strips the padding along with the border, so the
+   text sat 1px from its own focus ring and the placeholder touched the edge.
+   Measured, not guessed: the ring was drawn on the INPUT while the padding was
+   zero. */
+.b-fm__input input {
+  font-size: var(--m-text-md);
+  padding-inline: var(--m-space-3);
+  height: 2rem;
+}
+
+/* The focus ring belongs to the ROW, not to the bare text.
+ *
+ * The input is the only focusable thing in this row and it autofocuses when the
+ * menu opens, so a ring drawn tight around the glyphs is noise that also collides
+ * with the search icon beside it. Moving it to the row means the whole field
+ * lights up, which is what a field is here: icon plus input plus the rule under
+ * them. The ring itself is not removed, because a focusable element with no
+ * visible focus state is the defect this system audits for. */
+.b-fm__input input:focus-visible { outline: none; }
+
+/* And Mantine's own focus treatment goes too, or the field draws TWO plum rings:
+   its border-colour change plus the row's outline. One field, one ring. */
+.b-fm__input input,
+.b-fm__input input:focus,
+.b-fm__input input:focus-within {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
+}
+
+.b-fm__search:focus-within {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--m-radius-sm) var(--m-radius-sm) 0 0;
+}
+
+/* The back affordance doubles as the breadcrumb: inside a dimension it names
+   where you are, so the placeholder does not have to. */
+.b-fm__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-1);
+  flex: none;
+  height: 1.5rem;
+  padding-inline: var(--m-space-2) var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-hover);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-xs);
+  white-space: nowrap;
+}
+.b-fm__back:hover { color: var(--m-content-primary); background: var(--m-surface-active); }
+
+.b-fm__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 21rem;
+  overflow-y: auto;
+  padding: var(--m-space-3);
+}
+
+.b-fm__dim-row {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  width: 100%;
+  min-height: 2rem;
+  padding: var(--m-space-2) var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+  text-align: left;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out);
+}
+.b-fm__dim-row:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
+
+.b-fm__dim-icon { display: inline-flex; flex: none; color: var(--m-content-decorative); }
+.b-fm__dim-row:hover .b-fm__dim-icon { color: var(--m-content-secondary); }
+.b-fm__dim-label { flex: 1; }
+
+.b-fm__applied {
+  flex: none;
+  min-width: 14px;
+  height: 14px;
+  padding-inline: 3px;
+  border-radius: var(--m-radius-xs);
+  background: var(--m-action-primary-bg);
+  color: var(--m-action-primary-fg);
+  font-size: var(--m-text-2xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+  text-align: center;
+}
+
+.b-fm__caret { flex: none; color: var(--m-content-disabled); }
+.b-fm__dim-row:hover .b-fm__caret { color: var(--m-content-muted); }
+
+.b-fm__meta { display: inline-flex; align-items: center; gap: var(--m-space-3); }
+
+.b-fm__dim {
+  padding-inline: var(--m-space-2);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-sunken);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+}
+
+.b-fm__hint {
+  padding: var(--m-space-2) var(--m-space-3) var(--m-space-3);
+  font-size: var(--m-text-xs);
+  line-height: var(--m-leading-snug);
+  color: var(--m-content-muted);
+}
+
+.b-fm__none {
+  padding: var(--m-space-7) var(--m-space-3);
+  font-size: var(--m-text-sm);
+  color: var(--m-content-muted);
+  text-align: center;
+}
+
+/* the impact options carry the same three colours the queue uses, so the filter
+   and the row it filters agree */
+.b-fm__dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--m-radius-full);
+}
+.b-fm__dot--high { background: var(--m-impact-high); }
+.b-fm__dot--medium { background: var(--m-impact-medium); }
+.b-fm__dot--low { background: var(--m-impact-low); }

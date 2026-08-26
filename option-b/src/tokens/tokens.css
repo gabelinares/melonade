@@ -1,0 +1,295 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   GENERATED from src/tokens/tokens.ts by tools/gen-css.mjs. Do not edit.
+   Run `npm run tokens` after changing tokens.ts.
+
+   Three theme states, and all three are required:
+     :root                                  light (the complete palette)
+     @media (prefers-color-scheme: dark)    system dark, unless the user
+                                            explicitly chose light
+     [data-theme="dark"]                    an explicit choice, which must win
+                                            over the media query in both
+                                            directions
+   A colour whose only definition lives inside a media query is a colour that
+   disappears when the toggle is used.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: light;
+
+  /* ── scales: type, space, shape, depth, motion, layering, layout ── */
+  --m-font-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --m-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --m-text-2xs: 0.6875rem;
+  --m-text-xs: 0.75rem;
+  --m-text-sm: 0.8125rem;
+  --m-text-md: 0.875rem;
+  --m-text-lg: 0.9375rem;
+  --m-text-xl: 1.0625rem;
+  --m-text-2xl: 1.25rem;
+  --m-text-3xl: 1.625rem;
+  --m-text-4xl: 2rem;
+  --m-leading-tight: 1.15;
+  --m-leading-snug: 1.4;
+  --m-leading-normal: 1.5;
+  --m-leading-relaxed: 1.65;
+  --m-weight-regular: 400;
+  --m-weight-medium: 500;
+  --m-weight-semibold: 600;
+  --m-tracking-tight: -0.006em;
+  --m-tracking-normal: 0;
+  --m-tracking-wide: 0.02em;
+  --m-tracking-serif: -0.012em;
+  --m-space-0: 0;
+  --m-space-px: 1px;
+  --m-space-1: 0.125rem;
+  --m-space-2: 0.25rem;
+  --m-space-3: 0.5rem;
+  --m-space-4: 0.75rem;
+  --m-space-5: 1rem;
+  --m-space-6: 1.25rem;
+  --m-space-7: 1.5rem;
+  --m-space-8: 2rem;
+  --m-space-9: 2.5rem;
+  --m-space-10: 3.5rem;
+  --m-space-11: 4.5rem;
+  --m-radius-xs: 4px;
+  --m-radius-sm: 6px;
+  --m-radius-md: 10px;
+  --m-radius-lg: 14px;
+  --m-radius-full: 999px;
+  --m-border-width: 1px;
+  --m-border-width-strong: 1px;
+  --m-shadow-none: none;
+  --m-shadow-card: 0 1px 2px -1px rgb(var(--m-shadow-color) / 0.06);
+  --m-shadow-popover: 0 2px 6px -2px rgb(var(--m-shadow-color) / 0.08), 0 14px 34px -14px rgb(var(--m-shadow-color) / 0.20);
+  --m-shadow-modal: 0 4px 10px -4px rgb(var(--m-shadow-color) / 0.10), 0 32px 64px -24px rgb(var(--m-shadow-color) / 0.26);
+  --m-duration-instant: 100ms;
+  --m-duration-fast: 160ms;
+  --m-duration-normal: 220ms;
+  --m-duration-slow: 320ms;
+  --m-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --m-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --m-z-base: 0;
+  --m-z-sticky: 100;
+  --m-z-dropdown: 200;
+  --m-z-overlay: 300;
+  --m-z-modal: 400;
+  --m-z-toast: 500;
+  --m-z-tooltip: 600;
+  --m-rail-width: 3.5rem;
+  --m-list-width: 25rem;
+  --m-list-width-wide: 27.5rem;
+  --m-control-height-sm: 1.75rem;
+  --m-control-height-md: 2rem;
+  --m-control-height-lg: 2.25rem;
+  --m-row-height: 4.25rem;
+  --m-header-height: 3.25rem;
+
+  /* ── colour roles: light ── */
+  --m-surface-canvas: #edebed;
+  --m-surface-default: #ffffff;
+  --m-surface-sunken: #faf8fa;
+  --m-surface-raised: #ffffff;
+  --m-surface-nav: #f4f2f4;
+  --m-surface-hover: #f4f2f4;
+  --m-surface-active: #edebed;
+  --m-surface-selected: #faf1f8;
+  --m-surface-disabled: #f4f2f4;
+  --m-surface-inverse: #1a171a;
+  --m-content-primary: #1a171a;
+  --m-content-secondary: #4a464a;
+  --m-content-muted: #666265;
+  --m-content-placeholder: #747074;
+  --m-content-disabled: #a7a3a6;
+  --m-content-decorative: #837f82;
+  --m-content-inverse: #ffffff;
+  --m-content-accent: #873a82;
+  --m-content-danger: #9a2d00;
+  --m-content-warning: #725200;
+  --m-content-success: #19683e;
+  --m-border-subtle: #edebed;
+  --m-border-default: #e4e1e3;
+  --m-border-strong: #d1ced1;
+  --m-border-accent: #a34f9e;
+  --m-border-danger: #ba3900;
+  --m-action-primary-bg: #873a82;
+  --m-action-primary-bg-hover: #6a2a66;
+  --m-action-primary-bg-active: #6a2a66;
+  --m-action-primary-fg: #ffffff;
+  --m-action-secondary-bg: #ffffff;
+  --m-action-secondary-bg-hover: #faf8fa;
+  --m-action-secondary-bg-active: #edebed;
+  --m-action-secondary-fg: #282528;
+  --m-action-secondary-border: #e4e1e3;
+  --m-action-subtle-bg: transparent;
+  --m-action-subtle-bg-hover: #f4f2f4;
+  --m-action-subtle-bg-active: #edebed;
+  --m-action-subtle-fg: #4a464a;
+  --m-action-danger-bg: #9a2d00;
+  --m-action-danger-bg-hover: #7b2200;
+  --m-action-danger-fg: #ffffff;
+  --m-status-danger-bg: #fff0eb;
+  --m-status-danger-border: #ffbba6;
+  --m-status-danger-fg: #7b2200;
+  --m-status-warning-bg: #fff4e0;
+  --m-status-warning-border: #f5ce87;
+  --m-status-warning-fg: #725200;
+  --m-status-success-bg: #e8f9ed;
+  --m-status-success-border: #a7e1ba;
+  --m-status-success-fg: #0b502d;
+  --m-status-info-bg: #faf1f8;
+  --m-status-info-border: #e9c8e5;
+  --m-status-info-fg: #6a2a66;
+  --m-status-neutral-bg: #faf8fa;
+  --m-status-neutral-border: #e4e1e3;
+  --m-status-neutral-fg: #4a464a;
+  --m-impact-high: #ba3900;
+  --m-impact-medium: #b68611;
+  --m-impact-low: #a7a3a6;
+  --m-impact-track: #e4e1e3;
+  --m-brand-mark: #d64560;
+  --m-focus-ring: #a34f9e;
+  --m-focus-ring-offset: #ffffff;
+  --m-shadow-color: 28 22 27;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --m-surface-canvas: #030303;
+  --m-surface-default: #1d1b1d;
+  --m-surface-sunken: #121011;
+  --m-surface-raised: #282628;
+  --m-surface-nav: #090809;
+  --m-surface-hover: #282628;
+  --m-surface-active: #1e1b1d;
+  --m-surface-selected: #1f141e;
+  --m-surface-disabled: #121011;
+  --m-surface-inverse: #f4f2f4;
+  --m-content-primary: #f3f1f2;
+  --m-content-secondary: #bfbdbf;
+  --m-content-muted: #979497;
+  --m-content-placeholder: #979497;
+  --m-content-disabled: #666265;
+  --m-content-decorative: #837f82;
+  --m-content-inverse: #0d0a0c;
+  --m-content-accent: #d9a3d3;
+  --m-content-danger: #ffbba6;
+  --m-content-warning: #f5ce87;
+  --m-content-success: #a7e1ba;
+  --m-border-subtle: #1e1b1d;
+  --m-border-default: #282528;
+  --m-border-strong: #4a464a;
+  --m-border-accent: #a34f9e;
+  --m-border-danger: #ba3900;
+  --m-action-primary-bg: #a34f9e;
+  --m-action-primary-bg-hover: #be73b8;
+  --m-action-primary-bg-active: #873a82;
+  --m-action-primary-fg: #ffffff;
+  --m-action-secondary-bg: #282628;
+  --m-action-secondary-bg-hover: #1e1b1d;
+  --m-action-secondary-bg-active: #121011;
+  --m-action-secondary-fg: #f3f1f2;
+  --m-action-secondary-border: #282528;
+  --m-action-subtle-bg: transparent;
+  --m-action-subtle-bg-hover: #282628;
+  --m-action-subtle-bg-active: #1e1b1d;
+  --m-action-subtle-fg: #bfbdbf;
+  --m-action-danger-bg: #ba3900;
+  --m-action-danger-bg-hover: #9a2d00;
+  --m-action-danger-fg: #ffffff;
+  --m-status-danger-bg: #370c01;
+  --m-status-danger-border: #591500;
+  --m-status-danger-fg: #ffbba6;
+  --m-status-warning-bg: #281a00;
+  --m-status-warning-border: #412c00;
+  --m-status-warning-fg: #f5ce87;
+  --m-status-success-bg: #062313;
+  --m-status-success-border: #083a20;
+  --m-status-success-fg: #a7e1ba;
+  --m-status-info-bg: #1f141e;
+  --m-status-info-border: #3c243a;
+  --m-status-info-fg: #e9c8e5;
+  --m-status-neutral-bg: #282628;
+  --m-status-neutral-border: #282528;
+  --m-status-neutral-fg: #bfbdbf;
+  --m-impact-high: #d96440;
+  --m-impact-medium: #d2a652;
+  --m-impact-low: #837f82;
+  --m-impact-track: #282528;
+  --m-brand-mark: #f06a84;
+  --m-focus-ring: #be73b8;
+  --m-focus-ring-offset: #1d1b1d;
+  --m-shadow-color: 0 0 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --m-surface-canvas: #030303;
+    --m-surface-default: #1d1b1d;
+    --m-surface-sunken: #121011;
+    --m-surface-raised: #282628;
+    --m-surface-nav: #090809;
+    --m-surface-hover: #282628;
+    --m-surface-active: #1e1b1d;
+    --m-surface-selected: #1f141e;
+    --m-surface-disabled: #121011;
+    --m-surface-inverse: #f4f2f4;
+    --m-content-primary: #f3f1f2;
+    --m-content-secondary: #bfbdbf;
+    --m-content-muted: #979497;
+    --m-content-placeholder: #979497;
+    --m-content-disabled: #666265;
+    --m-content-decorative: #837f82;
+    --m-content-inverse: #0d0a0c;
+    --m-content-accent: #d9a3d3;
+    --m-content-danger: #ffbba6;
+    --m-content-warning: #f5ce87;
+    --m-content-success: #a7e1ba;
+    --m-border-subtle: #1e1b1d;
+    --m-border-default: #282528;
+    --m-border-strong: #4a464a;
+    --m-border-accent: #a34f9e;
+    --m-border-danger: #ba3900;
+    --m-action-primary-bg: #a34f9e;
+    --m-action-primary-bg-hover: #be73b8;
+    --m-action-primary-bg-active: #873a82;
+    --m-action-primary-fg: #ffffff;
+    --m-action-secondary-bg: #282628;
+    --m-action-secondary-bg-hover: #1e1b1d;
+    --m-action-secondary-bg-active: #121011;
+    --m-action-secondary-fg: #f3f1f2;
+    --m-action-secondary-border: #282528;
+    --m-action-subtle-bg: transparent;
+    --m-action-subtle-bg-hover: #282628;
+    --m-action-subtle-bg-active: #1e1b1d;
+    --m-action-subtle-fg: #bfbdbf;
+    --m-action-danger-bg: #ba3900;
+    --m-action-danger-bg-hover: #9a2d00;
+    --m-action-danger-fg: #ffffff;
+    --m-status-danger-bg: #370c01;
+    --m-status-danger-border: #591500;
+    --m-status-danger-fg: #ffbba6;
+    --m-status-warning-bg: #281a00;
+    --m-status-warning-border: #412c00;
+    --m-status-warning-fg: #f5ce87;
+    --m-status-success-bg: #062313;
+    --m-status-success-border: #083a20;
+    --m-status-success-fg: #a7e1ba;
+    --m-status-info-bg: #1f141e;
+    --m-status-info-border: #3c243a;
+    --m-status-info-fg: #e9c8e5;
+    --m-status-neutral-bg: #282628;
+    --m-status-neutral-border: #282528;
+    --m-status-neutral-fg: #bfbdbf;
+    --m-impact-high: #d96440;
+    --m-impact-medium: #d2a652;
+    --m-impact-low: #837f82;
+    --m-impact-track: #282528;
+    --m-brand-mark: #f06a84;
+    --m-focus-ring: #be73b8;
+    --m-focus-ring-offset: #1d1b1d;
+    --m-shadow-color: 0 0 0;
+  }
+}

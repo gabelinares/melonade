@@ -1,0 +1,21 @@
+/* Three panes, full height, each scrolling on its own. The document does not
+   scroll at all (see base.css), which is what makes the queue permanent. */
+.b-shell {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  overflow: hidden;
+  background: var(--m-surface-canvas);
+}
+
+/* Below 1080 there is not room for a 400px queue and a readable pane side by
+   side, so the queue narrows first and the pane keeps its measure. Below 820 the
+   queue would be unusable, so it goes and the pane takes the width. That is the
+   honest limit of a two-pane layout and it is stated rather than papered over. */
+@media (max-width: 1080px) {
+  .b-list { width: 21rem; }
+}
+
+@media (max-width: 820px) {
+  .b-list { display: none; }
+}

@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const [base, id, out, mode, h] = process.argv.slice(2);
+const b = await chromium.launch();
+const c = await b.newContext({ viewport:{width:1200,height:Number(h||1400)}, deviceScaleFactor:2 });
+const p = await c.newPage();
+await p.goto(`${base}/iframe.html?id=${id}&viewMode=${mode||'docs'}`, { waitUntil:'networkidle' });
+await p.evaluate(() => document.fonts.ready);
+await p.waitForTimeout(2200);
+await p.screenshot({ path: out });
+console.log('shot', out);
+await b.close();

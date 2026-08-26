@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const c = await b.newContext({ viewport:{width:1440,height:800}, deviceScaleFactor:3 });
+const p = await c.newPage();
+await p.goto('http://localhost:4310', { waitUntil:'networkidle' });
+await p.evaluate(()=>document.fonts.ready);
+await p.waitForTimeout(500);
+await p.getByRole('button', { name: /^Display/ }).click();
+await p.waitForTimeout(600);
+await p.locator('.m-dm').first().screenshot({ path: process.argv[2] });
+console.log('shot');
+await b.close();

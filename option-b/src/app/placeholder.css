@@ -1,0 +1,35 @@
+.b-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-5);
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: var(--m-space-11) var(--m-space-7);
+  background: var(--m-surface-default);
+  text-align: center;
+}
+
+.b-placeholder__name { font-size: var(--m-text-4xl); color: var(--m-content-primary); }
+
+.b-placeholder__note {
+  max-width: 48ch;
+  font-size: var(--m-text-md);
+  line-height: var(--m-leading-snug);
+  color: var(--m-content-muted);
+}
+
+/* Inside a pane rather than instead of one: no vertical centring against the
+   full height, because the WIP note should sit where the write-up would start
+   reading, not float in the middle of a tall column. */
+.b-placeholder.is-compact {
+  flex: none;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: var(--m-space-4);
+  padding: var(--m-space-9) 0 0;
+  text-align: left;
+}
+
+.b-placeholder.is-compact .b-placeholder__name { font-size: var(--m-text-3xl); }
+.b-placeholder.is-compact .b-placeholder__note { max-width: 46ch; }

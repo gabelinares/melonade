@@ -1,0 +1,14 @@
+<!--
+  Injected into the preview iframe only, never into the Storybook UI around it.
+
+  THE FACES. Without this, every story renders in the system fallback and the
+  Type foundations page argues for a typeface the reader cannot see. The href is
+  the same one index.html uses, so Storybook and the app render identical text.
+  This was missing until it was caught by comparing against option B's setup.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>

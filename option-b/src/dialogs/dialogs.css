@@ -1,0 +1,101 @@
+.b-dlg__lede {
+  margin-bottom: var(--m-space-6);
+  font-size: var(--m-text-md);
+  line-height: var(--m-leading-snug);
+  color: var(--m-content-secondary);
+  max-width: 60ch;
+}
+
+.b-dlg__subject { font-weight: var(--m-weight-medium); color: var(--m-content-primary); }
+
+.b-dlg__chips { display: flex; flex-wrap: wrap; gap: var(--m-space-3); margin-bottom: var(--m-space-5); }
+
+.b-dlg__reason {
+  height: 1.75rem;
+  padding-inline: var(--m-space-4);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-full);
+  background: var(--m-surface-default);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-xs);
+  transition: all var(--m-duration-fast) var(--m-ease-out);
+}
+.b-dlg__reason:hover { border-color: var(--m-border-strong); color: var(--m-content-primary); }
+.b-dlg__reason.is-on {
+  background: var(--m-action-primary-bg);
+  border-color: var(--m-action-primary-bg);
+  color: var(--m-action-primary-fg);
+}
+
+.b-dlg__section { margin: var(--m-space-6) 0 var(--m-space-4); }
+
+.b-dlg__rules { display: flex; flex-direction: column; gap: var(--m-space-3); max-height: 12rem; overflow-y: auto; }
+
+.b-dlg__rule {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  padding: var(--m-space-4);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-sunken);
+  margin-bottom: var(--m-space-3);
+}
+
+.b-dlg__rules .b-dlg__rule { margin-bottom: 0; }
+
+.b-dlg__rule.is-matched {
+  background: var(--m-status-danger-bg);
+  border-color: var(--m-status-danger-border);
+}
+
+.b-dlg__rule-icon { flex: none; color: var(--m-content-danger); }
+
+.b-dlg__rule-text {
+  flex: 1;
+  font-size: var(--m-text-sm);
+  line-height: var(--m-leading-snug);
+  color: var(--m-content-secondary);
+}
+
+.b-dlg__none {
+  padding: var(--m-space-5);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-sunken);
+  font-size: var(--m-text-sm);
+  line-height: var(--m-leading-snug);
+  color: var(--m-content-muted);
+  max-width: 60ch;
+}
+
+.b-dlg__add { display: flex; gap: var(--m-space-3); margin-top: var(--m-space-5); }
+
+.b-dlg__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--m-space-3);
+  margin-top: var(--m-space-7);
+  padding-top: var(--m-space-5);
+  border-top: 1px solid var(--m-border-subtle);
+}
+
+/* The three facts a ticket is filed against, stated before the fields rather
+   than hidden in three selects nobody would change in a prototype. */
+.b-dlg__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-space-3) var(--m-space-5);
+  margin-bottom: var(--m-space-5);
+  padding-bottom: var(--m-space-5);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+.b-dlg__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  font-size: var(--m-text-xs);
+  color: var(--m-content-secondary);
+}

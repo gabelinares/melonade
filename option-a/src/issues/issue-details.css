@@ -1,0 +1,66 @@
+/* ── THE DETAILS BAND, under the header the title opens ────────────────────
+   THREE COLUMNS. The same seven facts were a single 38rem column as the
+   write-up's fourth tab, which read as a form and cost 300px of height; across
+   three they are one glance. The columns are equal and each cell keeps the
+   label/value pair together, so a long value wraps inside its own cell instead
+   of pushing the next fact out of line. */
+.m-idet {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 var(--m-space-8);
+  padding: var(--m-space-5) var(--m-space-5) var(--m-space-6);
+  border-bottom: 1px solid var(--m-border-default);
+  background: var(--m-surface-sunken);
+}
+
+/* The hairline runs under each cell rather than across the band: with three
+   columns a full-width rule would group facts that are not related, one from
+   each column. */
+.m-idet__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--m-space-5);
+  min-width: 0;
+  min-height: 1.875rem;
+  padding-block: var(--m-space-3);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+/* The last row of the GRID, which is not the last child: with 7 facts in 3
+   columns the bottom row is items 7..9, so only the final cell of each column
+   should lose its rule. Nth-last-of-3 covers it without hard-coding the count. */
+.m-idet__row:nth-last-child(-n + 3):nth-child(3n + 1),
+.m-idet__row:nth-last-child(-n + 2):nth-child(3n + 2),
+.m-idet__row:nth-last-child(-n + 1):nth-child(3n) { border-bottom: 0; }
+
+.m-idet__row dt {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: none;
+  width: 6.5rem;
+  min-width: 0;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-primary);
+}
+.m-idet__row dt svg { flex: none; color: var(--m-content-decorative); }
+
+.m-idet__row dd {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-secondary);
+}
+
+.m-idet__origin { display: inline-flex; align-items: center; gap: var(--m-space-3); min-width: 0; }
+
+.m-idet__pairs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--m-space-3); }
+
+.m-idet__pair {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  font-size: var(--m-text-2xs);
+}
+.m-idet__pair-k { color: var(--m-content-muted); }
+.m-idet__pair-v { color: var(--m-content-secondary); }

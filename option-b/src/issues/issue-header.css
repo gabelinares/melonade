@@ -1,0 +1,96 @@
+/* ── THE PANE HEADER ───────────────────────────────────────────────────────
+   One row, across the whole width of the work pane, above everything: the flow
+   on the left and the side panels on the right both begin under it. It was
+   previously the lid on the write-up, which put it and the journey panel on two
+   different top edges. */
+.b-hdr {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  height: var(--m-header-height);
+  padding-inline: var(--m-space-4) var(--m-space-5);
+  background: var(--m-surface-default);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+/* Triage has no title on the row, so the eyebrow takes the middle and the
+   actions go to the far end. */
+.b-hdr__eyebrow {
+  margin-right: auto;
+  padding-left: var(--m-space-4);
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-wide);
+  text-transform: uppercase;
+  color: var(--m-content-muted);
+}
+
+/* The expander is the title, because that is what a reader reaches for. It is a
+   full-height target so the whole middle of the row is clickable, which matters
+   more here than anywhere: this is how you get the write-up back. */
+.b-hdr__grow {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  padding-inline: var(--m-space-3);
+  border: 0;
+  border-radius: var(--m-radius-sm);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--m-duration-fast) var(--m-ease-out);
+}
+.b-hdr__grow:hover { background: var(--m-surface-hover); }
+.b-hdr__grow:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: -2px; }
+
+.b-hdr__line { display: flex; align-items: center; gap: var(--m-space-3); min-width: 0; }
+
+/* Sans, not the display serif. A 26px serif shrunk to 15px in a control bar is
+   the fastest way to make a work tool feel costumed, and this system already
+   allows the serif in exactly two places. */
+.b-hdr__title {
+  font-size: var(--m-text-lg);
+  font-weight: var(--m-weight-medium);
+  color: var(--m-content-primary);
+  min-width: 0;
+}
+
+.b-hdr__caret { flex: none; color: var(--m-content-muted); }
+.b-hdr__grow:hover .b-hdr__caret { color: var(--m-content-secondary); }
+
+.b-hdr__actions { display: flex; align-items: center; gap: var(--m-space-3); flex: none; }
+
+/* ── the panel group ───────────────────────────────────────────────────────
+   Behind its own hairline, because everything to its left is about the ISSUE
+   and everything in here is about the PANE. One glyph today. The divider is
+   what will make the second one read as belonging to a set rather than as an
+   item appended to the issue actions. */
+.b-hdr__panels {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  flex: none;
+  margin-left: var(--m-space-3);
+  padding-left: var(--m-space-4);
+  border-left: 1px solid var(--m-border-subtle);
+}
+
+/* Filed. Not a button any more, so not shaped like one: the glyph and the key,
+   at the height of the controls beside it. */
+.b-hdr__filed {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  height: var(--m-control-height-md);
+  padding-inline: var(--m-space-3);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.b-hdr__filed svg { color: var(--m-content-decorative); }

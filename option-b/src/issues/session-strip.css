@@ -1,0 +1,233 @@
+.b-strip { flex: none; background: var(--m-surface-default); }
+
+/* ── cards density ─────────────────────────────────────────────────────────
+   A fixed band at the bottom of the work pane, not the tail of a scrolling
+   page. The whole point of the triage depth is that the session picker is
+   never below the fold: it is the next step, so it is always in view while you
+   read the write-up above it. */
+/* Every pixel this band gives back is a pixel the write-up above it gets, and
+   the write-up is the thing that has to fit on a laptop. Tuned against
+   tools/fit-all.mjs, which walks all eleven issues rather than trusting the
+   first one to be the tall one. It was not. */
+.b-strip--cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-5);
+  /* The rail sizes itself against THIS, not the viewport. The pane is what
+     narrows when the queue is open, so a viewport media query gets the case
+     wrong in both directions. */
+  container-type: inline-size;
+  /* The band is the last thing in the pane's scroll, so the space under the
+     cards is the foot of the document rather than a gap before something else.
+     Generous on purpose: it is the only air in here that is not doing a job. */
+  padding: var(--m-space-8) 0 var(--m-space-9);
+  border-top: 1px solid var(--m-border-default);
+  /* Sunken, so the cards on top of it read as objects. On the pane's own
+     surface a card with a hairline border is invisible in dark mode: the border
+     and the two grounds are within four Oklab points of each other. This is the
+     inverted-elevation rule applied one level down - the band is the chrome for
+     the choice, the cards are the content of it. */
+  background: var(--m-surface-sunken);
+}
+
+/* Label and count on the left, tools on the far right: the same header grammar
+   the queue column uses, so two lists in one app do not introduce themselves
+   two different ways. `center`, not `baseline`, because the tools are 32px
+   controls and a baseline row would hang them off the label's text. */
+.b-strip__head {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  /* FIXED, because three different things take turns in this row: the hint, the
+     loader, and the search field. The field is a 32px control and the hint is a
+     line of 12px text, so a row that sized itself to its contents grew by 14px
+     the moment anyone clicked search - and pushed every card below it down. A
+     header that moves the content when you touch the header is the loudest way
+     to say "something happened" about the least interesting event on screen. */
+  height: var(--m-control-height-lg);
+  flex: none;
+  padding-inline: var(--m-space-8);
+}
+
+.b-strip__hint { font-size: var(--m-text-xs); color: var(--m-content-muted); }
+
+.b-strip__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  margin-left: auto;
+}
+
+/* The search REPLACES the hint rather than pushing the row wider, which is why
+   the hint is dropped while it is open: the sentence explaining how to use the
+   band is not what you need while you are already using it. */
+.b-strip__search {
+  width: 15rem;
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-default);
+}
+.b-strip__search:focus-within { border-color: var(--m-border-accent); }
+.b-strip__search input { height: var(--m-control-height-md); font-size: var(--m-text-xs); }
+
+/* ── loading ───────────────────────────────────────────────────────────────
+   The skeletons and the scrim in one stacking context, so the band is exactly
+   as tall loading as loaded and the scrim covers the cards rather than the
+   header above them. */
+.b-strip__loading { position: relative; }
+
+.b-strip__scrim {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* A couple of pixels, not a curtain: the three slots stay legible through it,
+     which is the point of having drawn them. The tint is the pane's own surface
+     at a third, so the scrim reads as the band going quiet rather than as a
+     panel appearing over it. */
+  backdrop-filter: blur(2px);
+  background: color-mix(in oklab, var(--m-surface-sunken) 34%, transparent);
+}
+
+/* THREE COLUMNS, ALWAYS, whether three cards arrive or one does. It was a
+   sideways-scrolling flex row, which meant the cards shared the width between
+   however many of them there were: filtering down to one grew that card by 7rem
+   and its thumbnail with it. A grid gives every card the same column no matter
+   how many are filled, so filtering changes what is on screen and nothing about
+   the size of it.
+   No scroll, because the band is capped at three. See `shortlistSessions`. */
+.b-strip__rail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--m-space-4);
+  padding-inline: var(--m-space-8);
+}
+
+/* Below the width where three cards can still hold a legible 16:10 still, the
+   columns stop sharing the pane and take a fixed measure instead, and the rail
+   scrolls sideways. Three columns all the way down gave 140px thumbnails on a
+   small laptop, which is a picture of nothing.
+   Note what does NOT change: there are still three of them and they are still
+   all the same size as each other, so the band's height and the card's height
+   are the same on either side of this line. The thing that resizes is the
+   window, which is allowed to. */
+@container (max-width: 53rem) {
+  .b-strip__rail {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 15rem;
+    overflow-x: auto;
+    scroll-padding-inline: var(--m-space-8);
+    scrollbar-width: thin;
+  }
+}
+
+/* ── strip density ─────────────────────────────────────────────────────────
+   One 44px row. It replaces the cards in place: same slot, same ground, less
+   in it. */
+.b-strip--row {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  height: var(--m-subheader-height);
+  padding-inline: var(--m-space-4);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+/* Fixed at the left end and given room for four digits, so a strip that grows
+   from "3 of 134" to "6 of 134" does not shove every chip sideways. */
+.b-strip__position {
+  flex: none;
+  min-width: 4.5rem;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.b-strip__chips {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.b-strip__chips::-webkit-scrollbar { display: none; }
+
+/* The fade only exists on the side there is actually more on, so it is a
+   statement about the list rather than decoration on the container. */
+.b-strip__chips.has-right {
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+}
+.b-strip__chips.has-left {
+  mask-image: linear-gradient(to right, transparent, #000 2.5rem);
+}
+.b-strip__chips.has-left.has-right {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 2.5rem,
+    #000 calc(100% - 2.5rem),
+    transparent
+  );
+}
+
+/* ── the controls ──────────────────────────────────────────────────────────
+   All of them at one end, in one group. The arrows used to sit one at each end
+   with the chips between them, which is a pager wrapped around a list you can
+   already click; a pager belongs beside the other controls, not around the
+   content. */
+.b-strip__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  flex: none;
+}
+
+/* The pair, behind its own hairline: showing more and playing through are
+   things you do to the LIST, and the arrows move within it. Same divider the
+   pane header uses to separate the issue's actions from the pane's. */
+.b-strip__pager {
+  display: flex;
+  align-items: center;
+  margin-left: var(--m-space-2);
+  padding-left: var(--m-space-3);
+  border-left: 1px solid var(--m-border-subtle);
+}
+
+.b-schip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  /* Wide enough for a variation headline at 12px, which is the whole point of
+     the label. Past that it truncates and the title attribute carries the rest;
+     the rail scrolls sideways rather than letting the chips shrink each other
+     into uselessness. */
+  max-width: 18rem;
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-4);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-full);
+  background: var(--m-surface-default);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-xs);
+  cursor: pointer;
+  transition: border-color var(--m-duration-fast) var(--m-ease-out),
+    background-color var(--m-duration-fast) var(--m-ease-out);
+}
+.b-schip:hover { border-color: var(--m-border-strong); }
+.b-schip:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: 2px; }
+
+.b-schip.is-on {
+  border-color: var(--m-border-accent);
+  background: var(--m-surface-selected);
+  color: var(--m-content-primary);
+}
+
+.b-schip__dur { flex: none; font-size: var(--m-text-2xs); color: var(--m-content-muted); }
+.b-schip.is-on .b-schip__dur { color: var(--m-content-accent); }

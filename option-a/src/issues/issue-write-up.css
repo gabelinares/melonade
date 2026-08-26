@@ -1,0 +1,127 @@
+/* ── THE ARTICLE ───────────────────────────────────────────────────────────
+   One column, at pane width, with room on all four sides. Graphite's own
+   spacing scale, which is a step tighter than option B's at every stop - that
+   density is most of what the two options are arguing about. */
+.m-wu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-7);
+  padding: var(--m-space-8) var(--m-space-8) var(--m-space-9);
+}
+
+.m-wu__head { display: flex; flex-direction: column; gap: var(--m-space-6); }
+
+/* 18px semibold, sans. Graphite has no display serif to resist: the whole
+   system is one grotesk at seven sizes, and the title's job is to be one clear
+   step above the 14px body under it. */
+.m-wu__title {
+  font-size: var(--m-text-xl);
+  font-weight: var(--m-weight-semibold);
+  line-height: var(--m-leading-snug);
+  letter-spacing: var(--m-tracking-tight);
+  color: var(--m-content-primary);
+  text-wrap: balance;
+  max-width: 42rem;
+}
+
+/* ── the fact row ──────────────────────────────────────────────────────────
+   One band across the pane, five labelled pairs on one line. Each value drawn
+   by the component this system already owns for it, so the write-up and the
+   table row it was opened from report the same fact the same way. */
+.m-wu__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-space-6) var(--m-space-9);
+}
+
+.m-wu__fact { display: flex; flex-direction: column; gap: var(--m-space-3); min-width: 0; }
+
+.m-wu__fact dt {
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-wide);
+  text-transform: uppercase;
+  color: var(--m-content-muted);
+}
+
+.m-wu__fact dd {
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.m-wu__origin { display: flex; align-items: center; gap: var(--m-space-3); min-width: 0; }
+
+.m-wu__tags { display: flex; flex-wrap: wrap; gap: var(--m-space-3); }
+
+/* ── the tabs ──────────────────────────────────────────────────────────────
+   antd's, at small size, because every other control on this page is antd's
+   and this option exists to answer what the product looks like built on the
+   library we already ship. */
+.m-wu__tabs .ant-tabs-nav { margin-bottom: var(--m-space-6); }
+
+.m-wu__prose {
+  max-width: 44rem;
+  font-size: var(--m-text-md);
+  line-height: var(--m-leading-normal);
+  color: var(--m-content-secondary);
+}
+
+/* ── the details tab ───────────────────────────────────────────────────────
+   Name on the left with its glyph, value on the right, a hairline between rows.
+   A definition list rather than a table: there is one column of values, and a
+   table would draw rules for a second column that does not exist. */
+.m-wu__details { display: flex; flex-direction: column; max-width: 38rem; }
+
+.m-wu__detail {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-6);
+  min-height: 2.25rem;
+  padding-block: var(--m-space-3);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+.m-wu__detail:last-child { border-bottom: 0; }
+
+.m-wu__detail dt {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: none;
+  width: 10rem;
+  min-width: 0;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-primary);
+}
+.m-wu__detail dt svg { flex: none; color: var(--m-content-decorative); }
+
+.m-wu__detail dd {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+}
+
+/* One chip per pair, key and value in the same outline split by a hairline.
+   Two separate chips would read as two facts; `key: value` as prose. */
+.m-wu__pairs { display: flex; flex-wrap: wrap; gap: var(--m-space-3); }
+
+.m-wu__pair {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-xs);
+  font-size: var(--m-text-2xs);
+  overflow: hidden;
+}
+.m-wu__pair-k {
+  padding: 1px var(--m-space-4);
+  border-right: 1px solid var(--m-border-default);
+  background: var(--m-surface-sunken);
+  color: var(--m-content-muted);
+}
+.m-wu__pair-v { padding: 1px var(--m-space-4); color: var(--m-content-secondary); }
+
+/* The peek keeps a tighter rhythm: it is a fixed fraction of the pane laid over
+   a running replay, so every line of air it takes comes off the video. */
+.m-wu--peek { padding: var(--m-space-5) var(--m-space-8) var(--m-space-6); gap: var(--m-space-5); }

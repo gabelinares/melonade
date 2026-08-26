@@ -1,0 +1,24 @@
+.b-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  min-width: 0;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  white-space: nowrap;
+}
+
+/* The label fades in and out under the turning mark rather than sitting flat,
+   so a loader that resolves in 400ms does not read as a flicker of text. The
+   MARK is the thing that says "working"; this is the caption. */
+.b-loader > span { animation: b-loader-breathe 1.6s var(--m-ease-in-out) infinite; }
+
+@keyframes b-loader-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .b-loader > span { animation: none; opacity: 1; }
+}

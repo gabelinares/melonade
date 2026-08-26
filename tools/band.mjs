@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const c = await b.newContext({ viewport:{width:1300,height:120}, deviceScaleFactor:3, colorScheme:'dark' });
+const p = await c.newPage();
+await p.goto('http://localhost:4320', { waitUntil:'networkidle' });
+await p.evaluate(() => document.fonts.ready);
+await p.waitForTimeout(500);
+await p.screenshot({ path: process.argv[2], clip: { x: 56, y: 0, width: 1000, height: 60 } });
+console.log('shot');
+await b.close();

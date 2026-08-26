@@ -1,0 +1,54 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import { DurationLadder, EasingCompare, HoverPressDemo } from './TokenViews.tsx';
+
+<Meta title="Foundations/Motion" />
+
+# Motion
+
+Four durations and two easings, and the numbers are small on purpose. This is a work tool: the
+animation's job is to explain that something moved, then get out of the way. Nothing bounces, nothing
+is elastic, and nothing waits for the reader.
+
+## On the two things that actually animate
+
+The product has almost no motion in it, and that is a decision rather than an omission. A triage
+console is read, not toured. So the durations below are shown first on the two places motion genuinely
+exists: a row taking its hover surface, and a control answering a press. Hover the row, then press and
+hold the button.
+
+<HoverPressDemo />
+
+## Durations
+
+Hover the box. All four tokens run the same distance at the same moment, which is the only way the
+60ms between `duration-fast` and `duration-normal` is perceptible at all. Read them as a scale of
+distance rather than of importance: `duration-instant` is a colour change on a row, `duration-fast` is
+a chevron rotating or a control pressing, `duration-normal` is a popover arriving, and `duration-slow`
+is reserved for something crossing the screen, which in this layout is a drawer and nothing else.
+
+<DurationLadder />
+
+## Easings
+
+Press the button. Both run at `duration-slow` so the curves have room to differ.
+
+`ease-out` here is an ease-out quint, which has a longer tail than the usual quart: it leaves
+immediately and settles slowly, and that tail is what makes a pane change feel unhurried rather than
+snappy. It is right for anything the reader started, because the interface should feel like it
+responded before the animation finished. `ease-in-out` is symmetrical and is for something moving from
+one place to another under its own steam rather than in reply to a click.
+
+<EasingCompare />
+
+## The reduced-motion contract
+
+`prefers-reduced-motion: reduce` is honoured once, globally, in the base layer: every animation and
+transition collapses to 0.01ms, iteration counts drop to 1, and smooth scrolling is turned off.
+
+Two consequences worth stating. A component must never be the thing that declares its own
+reduced-motion handling, because a global rule that components can opt out of is not a contract. And
+no state may be communicated by motion alone: every transition here is a change of colour, position or
+size that is equally readable in its final frame, so a reader with motion turned off loses the
+transition and nothing else. The selected row is the test case, and it passes because selection is a
+surface and a weight, not a slide.

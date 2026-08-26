@@ -1,0 +1,12 @@
+node_modules/
+dist/
+storybook-static/
+*.log
+.DS_Store
+
+# Vercel's local project linkage: machine-specific, and it carries project and
+# org ids that do not belong in a shared history.
+.vercel/
+
+# Local tool cache.
+.impeccable/

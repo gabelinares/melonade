@@ -1,0 +1,14 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport:{width:1440,height:900}, deviceScaleFactor:2, colorScheme:'dark' });
+const p = await ctx.newPage();
+await p.goto('http://localhost:4399', { waitUntil:'networkidle' });
+await p.waitForTimeout(1500);
+await p.locator('.b-scard').first().click();
+await p.waitForTimeout(800);
+await p.locator('.b-tl__jump').click();
+await p.waitForTimeout(1200);
+await p.locator('[aria-label="Pause (Space)"]').click();
+await p.waitForTimeout(300);
+await p.screenshot({ path: process.argv[2] });
+await b.close(); console.log('ok');

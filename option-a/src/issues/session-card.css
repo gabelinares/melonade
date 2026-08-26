@@ -1,0 +1,125 @@
+/* ── ONE SESSION, at picking density ───────────────────────────────────────
+   It leads with the frame, because a picker for recordings without a still is
+   a list of filenames. And not frame zero: every session of one issue looks
+   identical at 0:00, so the thumbnail is the FAILURE MOMENT, which is the only
+   thing that makes three cards look different from each other.
+   Graphite's card: 1px hairline, 4px radius, no shadow. */
+.m-scard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-3);
+  min-width: 0;
+  padding: var(--m-space-4);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-md);
+  background: var(--m-surface-default);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--m-duration-instant) var(--m-ease-out),
+    background-color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-scard:hover { border-color: var(--m-border-strong); background: var(--m-surface-sunken); }
+.m-scard:focus-visible { outline: 2px solid var(--m-border-accent); outline-offset: 2px; }
+.m-scard.is-active { border-color: var(--m-border-accent); background: var(--m-surface-selected); }
+
+.m-scard__shot { position: relative; display: block; width: 100%; margin-bottom: var(--m-space-4); }
+/* 16:10, the same ratio the player letterboxes to, so the thumbnail is a scale
+   model of what opens rather than a differently-shaped picture of it. THE
+   ASPECT RATIO IS LOAD-BEARING, not styling: `.m-frame` sets no height of its
+   own and every child in it is absolutely positioned, so without a ratio here
+   the frame resolves to zero height and the card renders its duration pill and
+   moment label on top of the variation line. It is also what gives
+   `container-type: size` the definite height its cqh units need. */
+.m-scard__frame { width: 100%; aspect-ratio: 16 / 10; }
+
+/* Duration where a video puts it. */
+.m-scard__dur {
+  position: absolute;
+  right: var(--m-space-3);
+  bottom: var(--m-space-3);
+  padding: 1px var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-inverse);
+  color: var(--m-content-inverse);
+  font-size: var(--m-text-2xs);
+}
+
+/* What this still IS, so the frame is evidence rather than decoration. */
+.m-scard__moment {
+  position: absolute;
+  left: var(--m-space-3);
+  top: var(--m-space-3);
+  max-width: calc(100% - var(--m-space-7));
+  padding: 1px var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-inverse);
+  color: var(--m-content-inverse);
+  font-size: var(--m-text-2xs);
+}
+
+.m-scard__play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  color: var(--m-content-inverse);
+  transition: opacity var(--m-duration-fast) var(--m-ease-out);
+}
+.m-scard__play::before {
+  content: '';
+  position: absolute;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--m-radius-full);
+  background: var(--m-surface-inverse);
+}
+.m-scard__play svg { position: relative; }
+.m-scard:hover .m-scard__play { opacity: 1; }
+
+/* TWO LINES OF ROOM, ALWAYS. Clamping at two without reserving two makes a
+   card's height a function of how long its own headline is: three cards in one
+   row come out at three heights, and the band grows by a line when the real
+   cards replace skeletons that reserved only one. */
+.m-scard__variation {
+  font-size: var(--m-text-sm);
+  line-height: var(--m-leading-snug);
+  min-height: calc(var(--m-text-sm) * var(--m-leading-snug) * 2);
+  color: var(--m-content-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Explicit heights on the last two rows, so the card's total is a constant
+   rather than the sum of whatever a plan chip and a device string measure.
+   That constant is what the skeleton copies. */
+.m-scard__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  min-height: 1.25rem;
+  min-width: 0;
+  margin-top: auto;
+}
+
+.m-scard__who { font-size: var(--m-text-xs); color: var(--m-content-secondary); min-width: 0; }
+
+.m-scard__meta {
+  display: flex;
+  align-items: center;
+  min-height: 1rem;
+  min-width: 0;
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+}
+
+/* ── the card with nothing in it yet ───────────────────────────────────────
+   Same classes, same geometry, no interaction. It takes the real card's rules
+   and adds nothing of its own, which is the only way the two cannot drift. */
+.m-scard--skeleton { cursor: default; }
+.m-scard--skeleton:hover { border-color: var(--m-border-default); background: var(--m-surface-default); }
+.m-scard--skeleton .m-scard__frame { height: auto; display: block; }
+.m-scard--skeleton .m-scard__variation { display: flex; align-items: center; }

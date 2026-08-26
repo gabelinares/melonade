@@ -1,0 +1,44 @@
+.m-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  height: 1.25rem; /* 20: sits inside a 38px row without pushing it */
+  padding-inline: var(--m-space-3);
+  border: 1px solid var(--m-status-neutral-border);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-status-neutral-bg);
+  color: var(--m-status-neutral-fg);
+  font-size: var(--m-text-xs);
+  line-height: 1;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.m-chip--icon {
+  width: 1.25rem;
+  padding-inline: 0;
+  justify-content: center;
+}
+
+.m-chip--danger {
+  background: var(--m-status-danger-bg);
+  border-color: var(--m-status-danger-border);
+  color: var(--m-status-danger-fg);
+}
+.m-chip--warning {
+  background: var(--m-status-warning-bg);
+  border-color: var(--m-status-warning-border);
+  color: var(--m-status-warning-fg);
+}
+.m-chip--success {
+  background: var(--m-status-success-bg);
+  border-color: var(--m-status-success-border);
+  color: var(--m-status-success-fg);
+}
+.m-chip--info {
+  background: var(--m-status-info-bg);
+  border-color: var(--m-status-info-border);
+  color: var(--m-status-info-fg);
+}

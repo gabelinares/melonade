@@ -1,0 +1,158 @@
+.b-scard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-2);
+  /* No flex basis and no max-width: the RAIL is a three-column grid and the
+     card takes whatever column it is given. It used to be `flex: 1 1 17rem`,
+     which shared the row between however many cards were in it - so filtering
+     three sessions down to one grew that card from 17rem to 24rem and its
+     thumbnail with it. A band that resizes its contents when you filter it is
+     reporting the filter twice, and the second report is the one nobody asked
+     for. */
+  min-width: 0;
+  padding: var(--m-space-3);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-md);
+  background: var(--m-surface-default);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--m-duration-fast) var(--m-ease-out),
+    background-color var(--m-duration-fast) var(--m-ease-out);
+}
+
+.b-scard:hover { border-color: var(--m-border-strong); }
+.b-scard:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: 2px; }
+
+.b-scard.is-active {
+  border-color: var(--m-border-accent);
+  background: var(--m-surface-selected);
+}
+
+/* ── the still ─────────────────────────────────────────────────────────────
+   16:10, the same ratio the player letterboxes to, so the thumbnail is a scale
+   model of what opens rather than a differently-shaped picture of it. */
+.b-scard__shot {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin-bottom: var(--m-space-3);
+}
+
+.b-scard__frame {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-color: var(--m-border-subtle);
+}
+
+/* Bottom right, on a plate, exactly where a video puts its duration. */
+.b-scard__dur {
+  position: absolute;
+  right: var(--m-space-3);
+  bottom: var(--m-space-3);
+  padding: 1px var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  background: rgb(12 10 12 / 0.82);
+  color: #f3f1f2;
+  font-size: var(--m-text-2xs);
+  line-height: 1.5;
+}
+
+/* Top left, because it labels the frame and the frame is read top-down. */
+.b-scard__moment {
+  position: absolute;
+  left: var(--m-space-3);
+  top: var(--m-space-3);
+  max-width: calc(100% - var(--m-space-7));
+  padding: 1px var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  background: rgb(12 10 12 / 0.82);
+  color: #f3f1f2;
+  font-size: var(--m-text-2xs);
+  line-height: 1.6;
+}
+
+/* One affordance, on the frame, instead of the text link this card used to
+   carry underneath: a still with a play badge already says what a click does,
+   and the link was a second thing to read in a card about reading less. */
+.b-scard__play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--m-radius-sm);
+  background: rgb(12 10 12 / 0.32);
+  color: #fff;
+  opacity: 0;
+  transition: opacity var(--m-duration-fast) var(--m-ease-out);
+}
+.b-scard__play svg {
+  padding: var(--m-space-4);
+  border-radius: var(--m-radius-full);
+  background: var(--m-action-primary-bg);
+  box-sizing: content-box;
+}
+.b-scard:hover .b-scard__play,
+.b-scard:focus-visible .b-scard__play,
+.b-scard.is-active .b-scard__play { opacity: 1; }
+
+/* Two lines now, not three. The frame carries the weight the variation used to,
+   and three lines of prose under a thumbnail makes a card nobody scans. */
+/* TWO LINES OF ROOM, ALWAYS, whether the variation needs one or two. Clamping
+   at two without reserving two made a card's height a function of how long its
+   own headline is: three cards in one row came out at three heights, and the
+   band grew by a line the moment the real cards replaced skeletons that had
+   reserved only one. Reserved, the row is a row and the skeleton is the same
+   height as the thing it stands in for. */
+.b-scard__variation {
+  font-size: var(--m-text-md);
+  line-height: var(--m-leading-snug);
+  min-height: calc(var(--m-text-md) * var(--m-leading-snug) * 2);
+  color: var(--m-content-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Explicit heights on the last two rows, so the card's total is a constant
+   rather than the sum of whatever a plan chip and a device string happen to
+   measure. That constant is what the skeleton copies. */
+.b-scard__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  min-height: 1.25rem;
+  min-width: 0;
+  margin-top: auto;
+}
+
+.b-scard__who {
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+  min-width: 0;
+}
+
+.b-scard__meta {
+  display: flex;
+  align-items: center;
+  min-height: 1.0625rem;
+  min-width: 0;
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+}
+
+/* ── the card with nothing in it yet ───────────────────────────────────────
+   Same classes, same geometry, no interaction. The frame keeps the 16:10 box so
+   the band is exactly as tall while it loads as it is when it has loaded. */
+.b-scard--skeleton { cursor: default; }
+.b-scard--skeleton .b-scard__frame { aspect-ratio: 16 / 10; height: auto; }
+/* The skeleton's slots take their heights from the real card's rules and add
+   NOTHING of their own, which is the only way the two cannot drift. The one
+   override is the variation, which has to centre a bar inside two reserved
+   lines instead of clamping text into them. */
+.b-scard--skeleton .b-scard__variation {
+  display: flex;
+  align-items: center;
+}

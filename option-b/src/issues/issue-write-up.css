@@ -1,0 +1,213 @@
+/* ── the article ───────────────────────────────────────────────────────────
+   Three parts and only the middle one changes: a header that is always there,
+   a tab panel, and the fix pinned under it. See the note in IssueWriteUp.tsx
+   for why this replaced the two-column version.
+
+   ONE COLUMN again, at full pane width. The two-column layout existed to make
+   everything fit at once; with tabs there is no "everything at once" to fit,
+   so the width goes back to being room rather than something to fill. */
+.b-wu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-7);
+  /* No minimum height. The article is as tall as the article, and the fix strip
+     sits directly under whatever the tab panel happens to end at. The old rule
+     stretched it to the pane so the strip could be pushed to the bottom by
+     `margin-top: auto`, which spent the difference on an empty band between the
+     prose and the answer - air nobody asked for, in the one place where the
+     next thing to read is directly below. */
+  /* Room on all four sides now that nothing is stretched. When the article was
+     pane-height the air arrived for free, as the gap left over above the fix
+     strip; once every section became exactly as tall as its contents the whole
+     pane went tight, and the difference between "no dead space" and "no space"
+     is this padding. It is deliberately generous at the foot: the next thing
+     under it is a tinted band with a rule on top, and prose that runs into a
+     rule reads as prose that was cut off. */
+  padding: var(--m-space-9) var(--m-space-8);
+}
+
+.b-wu__head { display: flex; flex-direction: column; gap: var(--m-space-5); }
+
+/* SANS, not the display serif.
+   The serif was this option's type identity - a grotesk for the interface and a
+   high-contrast serif for the one thing the product sells - and on the issue
+   title it was the only serif on screen, at the top of a pane where everything
+   else is Instrument Sans. It read as a different document rather than as this
+   app's heading, which is the whole of the "make it connected to the normal
+   typography" note.
+   17px semibold sits properly in the scale: one clear step above the 14px body
+   under it and two above the 15px title on the collapsed bar it grows out of,
+   which is the same element at a smaller size rather than a different one.
+   The serif is still in the system, in the empty state. Whether it earns a
+   second placement is now an open question rather than a settled one. */
+.b-wu__title {
+  font-size: var(--m-text-xl);
+  font-weight: var(--m-weight-semibold);
+  line-height: var(--m-leading-snug);
+  letter-spacing: var(--m-tracking-tight);
+  color: var(--m-content-primary);
+  text-wrap: balance;
+  max-width: 40rem;
+}
+
+/* ── the fact row ──────────────────────────────────────────────────────────
+   One band, across the pane. It was a 2x2 grid only because the facts lived in
+   a 360px column; with the column gone they spread, and five labelled pairs on
+   one line is one band tall instead of five rows.
+   `auto` columns rather than equal fractions: a segment name needs more room
+   than a session count, and equal shares would pad the short ones out until the
+   row read as a table. */
+.b-wu__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-space-4) var(--m-space-8);
+  align-items: flex-start;
+}
+
+.b-wu__fact { display: flex; flex-direction: column; gap: var(--m-space-2); min-width: 0; }
+.b-wu__fact--tags { flex: 1 1 auto; }
+
+.b-wu__fact dt {
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-wide);
+  text-transform: uppercase;
+  color: var(--m-content-muted);
+}
+
+.b-wu__fact dd {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  min-width: 0;
+  height: 1.375rem;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-primary);
+}
+
+.b-wu__origin svg { flex: none; color: var(--m-content-decorative); }
+.b-wu__tags { display: flex; flex-wrap: wrap; gap: var(--m-space-3); }
+
+/* ── the tabs ──────────────────────────────────────────────────────────────
+   The panel gets real height whether or not its content needs it, so switching
+   tabs does not resize the pane under the reader's cursor and shunt the fix
+   strip up and down. Generous top padding: the point of the tabs is room. */
+/* FULL WIDTH, rule and text together. Gabriel's call, and the reasoning is
+   about the page rather than the paragraph: a line that uses the whole pane is
+   two lines instead of eight, and the seven lines it gives back become the
+   whitespace that keeps this pane off a scrollbar. Vertical room is the scarce
+   thing here, not horizontal.
+   It costs measure - roughly 170 characters at this width against a 65-to-75
+   ideal - and that is the trade being made deliberately, not an oversight. */
+.b-wu__tabs { display: flex; flex-direction: column; }
+/* No min-height any more. It was there to stop the pane resizing under the
+   cursor when the tab panels differed in height, back when one of them was a
+   112px track. With a paragraph on one side and two prose columns on the other
+   the difference is small, and a floor now just prints an empty box under the
+   shorter tab. The room is better spent between the panel and the banner. */
+.b-wu__tabs .mantine-Tabs-panel { padding-top: var(--m-space-6); }
+
+/* ── the tab prose ─────────────────────────────────────────────────────────
+   ONE treatment for both tabs. They are two answers to two questions and there
+   is no reason to set them differently: same size, same colour, same measure,
+   one paragraph each.
+   "Why it happens" used to be a medium-weight lead sentence followed by lighter
+   body text in two columns - three typographic voices in a tab whose neighbour
+   has one. The lead was a place to stop skimming; it was also the thing that
+   made the two tabs look like different documents.
+
+   No cap. The paragraph runs the width of the pane, same as the rule above it
+   and the fact row above that: one edge on the left, one on the right, nothing
+   ending early. */
+/* text-md is THE base size in this system, and this is body copy, so it takes
+   it. It was one step above at 15px, which is a size this app otherwise uses
+   for control labels and row titles - one notch up from everything around it,
+   which is what made the pane read heavier than the rest of the product rather
+   than as part of it. */
+.b-wu__prose {
+  font-size: var(--m-text-md);
+  /* 1.5, not the 1.65 this had at 13px. Going back up to 15px bought presence
+     and cost height, and the longest diagnosis was 13px over the pane at
+     1440x900. Tighter leading on a 68-character measure is the cheapest way to
+     buy that back, and at this measure it still reads open. */
+  line-height: var(--m-leading-normal);
+  color: var(--m-content-secondary);
+}
+
+/* The peek grows out of a bar that is already carrying the title, so it starts
+   at the tabs. */
+/* The peek keeps the tight rhythm the full article gave up. It is a fixed half
+   of the pane laid over a running replay, so every line of air it takes comes
+   straight off the video underneath; the article at triage is in a scroll where
+   the same air costs nothing. Same component, two jobs, and the spacing is the
+   part that has to differ. */
+.b-wu--peek {
+  padding-block: var(--m-space-5) var(--m-space-4);
+  gap: var(--m-space-5);
+}
+
+/* ── the details tab ───────────────────────────────────────────────────────
+   Name on the left with its glyph, value on the right, a hairline between
+   rows. A definition list rather than a table: there is one column of values,
+   and a table would be drawing rules for a second column that does not exist. */
+.b-wu__details {
+  display: flex;
+  flex-direction: column;
+  max-width: 40rem;
+}
+
+.b-wu__detail {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-5);
+  min-height: 2.75rem;
+  padding-block: var(--m-space-3);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+.b-wu__detail:last-child { border-bottom: 0; }
+
+.b-wu__detail dt {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: none;
+  width: 11rem;
+  min-width: 0;
+  font-size: var(--m-text-md);
+  color: var(--m-content-primary);
+}
+.b-wu__detail dt svg { flex: none; color: var(--m-content-muted); }
+
+.b-wu__detail dd {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--m-text-md);
+  color: var(--m-content-secondary);
+}
+
+/* ── the metadata pairs ────────────────────────────────────────────────────
+   One chip per pair with the key and the value in the same outline, split by a
+   hairline. Two separate chips would read as two facts; a `key: value` string
+   would read as prose. This is a pair, and it looks like one. */
+.b-wu__pairs { display: flex; flex-wrap: wrap; gap: var(--m-space-3); }
+
+.b-wu__pair {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-xs);
+  font-size: var(--m-text-xs);
+  overflow: hidden;
+}
+
+.b-wu__pair-k {
+  padding: 2px var(--m-space-3);
+  border-right: 1px solid var(--m-border-default);
+  background: var(--m-surface-sunken);
+  color: var(--m-content-muted);
+}
+
+.b-wu__pair-v {
+  padding: 2px var(--m-space-3);
+  color: var(--m-content-secondary);
+}

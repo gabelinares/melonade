@@ -1,0 +1,58 @@
+.m-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--m-content-max);
+  margin-inline: auto;
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-md);
+  background: var(--m-surface-default);
+  /* no shadow. A card is defined by its edge in this system. */
+}
+
+.m-page__head {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  height: 2.75rem; /* 44, fixed on purpose */
+  padding-inline: var(--m-space-5);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+.m-page__title {
+  font-size: var(--m-text-xl);
+  font-weight: var(--m-weight-semibold);
+  letter-spacing: var(--m-tracking-tight);
+}
+
+.m-page__meta {
+  font-size: var(--m-text-sm);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.m-page__info {
+  display: inline-flex;
+  color: var(--m-content-decorative);
+  cursor: help;
+  border-radius: var(--m-radius-xs);
+}
+.m-page__info:hover { color: var(--m-content-secondary); }
+
+.m-page__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  margin-left: auto;
+}
+
+.m-page__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex-wrap: wrap;
+  padding: var(--m-space-4) var(--m-space-5);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+.m-page__body { display: flex; flex-direction: column; min-width: 0; }

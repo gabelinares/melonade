@@ -1,0 +1,148 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   OPTION B: the short list of things the Mantine theme object cannot express.
+   Every rule states why it exists and every value comes from a token.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Mantine paints the body from its own --mantine-color-body. Our token layer
+   owns the surfaces (the panes are three different ones), so hand it ours
+   rather than letting two systems fight over the same pixel. */
+:root {
+  --mantine-color-body: var(--m-surface-default);
+  --mantine-color-text: var(--m-content-primary);
+  --mantine-color-dimmed: var(--m-content-muted);
+  --mantine-color-placeholder: var(--m-content-placeholder);
+  --mantine-color-default-border: var(--m-border-default);
+  --mantine-color-anchor: var(--m-content-accent);
+}
+
+/* Mantine's default input border is its gray.4, which is a step lighter than
+   our border token and reads as a different control next to our own. */
+.mantine-TextInput-input,
+.mantine-Textarea-input,
+.mantine-Select-input {
+  background: var(--m-surface-default);
+  border-color: var(--m-border-default);
+  color: var(--m-content-primary);
+}
+.mantine-TextInput-input:hover,
+.mantine-Select-input:hover { border-color: var(--m-border-strong); }
+.mantine-TextInput-input:focus,
+.mantine-Textarea-input:focus,
+.mantine-Select-input:focus { border-color: var(--m-border-accent); }
+
+/* Tooltips: Mantine's default is a dark pill in light mode and a light pill in
+   dark mode, which flips the relationship. Ours is always the inverse surface
+   so the gesture reads identically in both themes. */
+.mantine-Tooltip-tooltip {
+  background: var(--m-surface-inverse);
+  color: var(--m-content-inverse);
+  font-size: var(--m-text-xs);
+  padding: var(--m-space-2) var(--m-space-3);
+}
+
+/* The segmented control's selected thumb ships with a shadow. This system
+   separates with surface and border, not with depth. */
+.mantine-SegmentedControl-root { background: var(--m-surface-active); }
+.mantine-SegmentedControl-indicator {
+  box-shadow: none;
+  background: var(--m-surface-default);
+  border: 1px solid var(--m-border-default);
+}
+.mantine-SegmentedControl-label { color: var(--m-content-muted); }
+.mantine-SegmentedControl-label[data-active] { color: var(--m-content-primary); }
+
+/* Menus and popovers get a hairline as well as a shadow: a soft wide shadow
+   alone disappears against a white pane. */
+.mantine-Menu-dropdown,
+.mantine-Popover-dropdown,
+.mantine-Spotlight-content {
+  border: 1px solid var(--m-border-default);
+  background: var(--m-surface-raised);
+}
+
+.mantine-Menu-item[data-hovered] { background: var(--m-surface-hover); }
+
+/* Spotlight: the command palette is this option's main search affordance, so
+   it gets sized and coloured deliberately rather than left at the default. */
+.mantine-Spotlight-search {
+  border: none;
+  border-bottom: 1px solid var(--m-border-subtle);
+  background: transparent;
+  font-size: var(--m-text-lg);
+  height: 3.25rem;
+}
+.mantine-Spotlight-action[data-selected] {
+  background: var(--m-surface-selected);
+  color: var(--m-content-primary);
+}
+.mantine-Spotlight-actionsGroup { padding-block: var(--m-space-2); }
+
+/* Mantine's Modal title uses its heading scale; ours is one step down because
+   a dialog title should not out-size the page it opened from. */
+.mantine-Modal-title {
+  font-size: var(--m-text-lg);
+  font-weight: var(--m-weight-semibold);
+}
+.mantine-Modal-content { background: var(--m-surface-raised); }
+.mantine-Modal-header { background: var(--m-surface-raised); }
+
+/* ── tabs ──────────────────────────────────────────────────────────────────
+   Underline tabs, on the tokens. Mantine's default puts a 2px border under the
+   whole list and a heavier one under the active tab; that reads as two rules
+   where one will do, which is the standing complaint about the pane this
+   replaces. So the list rule is a hairline and the active mark is the accent. */
+.mantine-Tabs-list { border-bottom: 1px solid var(--m-border-subtle); gap: var(--m-space-6); }
+
+.mantine-Tabs-tab {
+  padding: var(--m-space-3) 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--m-content-muted);
+  font-size: var(--m-text-sm);
+  font-weight: var(--m-weight-medium);
+  transition: color var(--m-duration-fast) var(--m-ease-out),
+    border-color var(--m-duration-fast) var(--m-ease-out);
+}
+
+.mantine-Tabs-tab:hover { background: none; color: var(--m-content-secondary); }
+
+.mantine-Tabs-tab[data-active] {
+  border-bottom-color: var(--m-border-accent);
+  color: var(--m-content-primary);
+}
+
+.mantine-Tabs-tab:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: 2px; }
+
+/* ── Switch ────────────────────────────────────────────────────────────────
+   Mantine draws the OFF track in its own gray.4 and the thumb in pure white,
+   which in the dark theme is a #282528 track on a #282628 popover: the track
+   vanishes and all that is left is a bright dot floating in the panel, saying
+   nothing about which side it is on. A toggle whose off state is invisible is
+   a toggle you have to click to read.
+
+   The track carries the state - sunken and outlined when off, filled with the
+   accent when on - and the thumb steps down from pure white so that it reads as
+   the handle rather than as the loudest thing in the panel. */
+.mantine-Switch-track {
+  background: var(--m-surface-sunken);
+  border: 1px solid var(--m-border-strong);
+}
+.mantine-Switch-thumb {
+  background: var(--m-content-muted);
+  border-color: transparent;
+}
+
+.mantine-Switch-input:checked + .mantine-Switch-track {
+  background: var(--m-action-primary-bg);
+  border-color: var(--m-action-primary-bg);
+}
+.mantine-Switch-input:checked + .mantine-Switch-track .mantine-Switch-thumb {
+  background: var(--m-action-primary-fg);
+}
+
+.mantine-Switch-input:focus-visible + .mantine-Switch-track {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: 2px;
+}

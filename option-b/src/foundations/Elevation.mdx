@@ -1,0 +1,37 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import { ElevationCards } from './TokenViews.tsx';
+
+<Meta title="Foundations/Elevation" />
+
+# Elevation
+
+**The rule: a card gets a border, a floating layer gets a soft wide shadow, and nothing gets a heavy
+one.**
+
+There are three shadows and a `none`, and `none` is what almost everything uses. The standing note on
+the app this replaces is that its panel shadow reads as "something thick", and that is what happens
+when a shadow is used to separate a card from a page: the page and the card are on the same plane, so
+the shadow describes a depth that is not there. An edge does the job at 1px and costs the layout
+nothing.
+
+This option leans on that even harder than a card-based layout would, because it has almost no cards.
+The rail, the list column and the detail pane are surfaces at different lightness values, not objects
+sitting on a page, so depth is already carried by the colour ladder. Adding a shadow between two panes
+would be saying the same thing twice and getting it wrong the second time.
+
+A shadow is for a layer that genuinely floats, which means one that is temporary and covers content
+the reader was just looking at: a popover, a menu, the capture panel, a modal. There the shadow is not
+decoration, it is the only cue that the thing underneath is still there.
+
+The shape of those two shadows is deliberate. They are **soft and wide** rather than tight and dark:
+a small blur with high opacity reads as a hard edge and makes a 300px popover look like a slab, while
+a wide low-opacity spread reads as air between two planes. `shadow-card` exists for the one hairline
+lift and is almost invisible on purpose, so nobody reaches for `shadow-popover` to get a card to
+"pop".
+
+Both shadows compose their colour from the `shadow-color` role, which is why dark mode can flatten
+them without touching a component: on a near-black ground a shadow is invisible, so the surface
+ladder carries depth instead. That is also why the dark ladder steps as widely as it does.
+
+<ElevationCards />

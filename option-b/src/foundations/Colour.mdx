@@ -1,0 +1,141 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import { palette } from '../tokens/palette.ts';
+import { lightColors, darkColors } from '../tokens/tokens.ts';
+import { PrimitiveRamps, RoleTable, SurfaceLadder } from './TokenViews.tsx';
+
+<Meta title="Foundations/Colour" />
+
+# Colour
+
+Colour here is two layers, and keeping them apart is the entire point.
+
+A **primitive** is a value with no meaning. `n-600` is a near-grey, nothing more. There are
+{Object.keys(palette).length} of them, they are generated from an OKLCH design intent and verified
+in the sRGB gamut, and no component may reference one directly.
+
+A **role** is a decision. `content-muted` says "this text is secondary but still meant to be read",
+and it happens to resolve to `n-600` today. There are {Object.keys(lightColors).length} roles, and
+they are the only names a component is allowed to use, through `t('content-muted')`.
+
+The reason for the split is regression, not tidiness. The app this replaces had 67 hardcoded colour
+literals and no role layer, so every theme change was a search and replace, and every search and
+replace missed something. With a role layer, a theme is a set of role definitions and a component
+does not change at all.
+
+**Dark mode only ever redefines roles.** Primitives never move. Both maps are keyed identically
+({Object.keys(darkColors).length} roles each), which is what makes "the same product with the lamp
+off" a checkable claim rather than a hope. Dark is not inverted light: each dark surface is built at
+the same chroma as its light counterpart and at matched contrast steps, because inverting lightness
+alone produces a dark theme that is grey where the light theme is tinted, and the two then stop
+looking like one product.
+
+## The inversion this option makes
+
+Most product UI puts the grey on the page and the white on the card, so depth runs toward the frame.
+This one does the opposite, and it is the single decision the whole layout rests on.
+
+The **rail** is the darkest chrome. The **list column** is tinted. The **detail pane**, where the
+agent's write-up is, is the brightest surface on screen. Depth runs toward the content: the eye is
+pulled to the thing you are reading rather than to the furniture around it, and the queue you are
+choosing from is legibly the supporting cast.
+
+<SurfaceLadder />
+
+That ordering survives into dark mode. `surface-nav` is the deepest step, `surface-sunken` sits above
+it, and `surface-default` is still the lightest of the three. A dark theme that quietly flipped the
+ladder would put the brightest thing on screen behind the navigation, which is exactly the mistake
+this design was built to avoid.
+
+Two consequences worth naming. The bright pane needs almost no border to read as a plane, which is
+why this system has fewer border roles than a card-on-grey layout would need. And the canvas
+(`surface-canvas`) is only ever the hairline gap between panes, so it is the one surface a reader
+never actually looks at.
+
+## Primitives
+
+Grouped by ramp. The neutral ramp does most of the work, and it is very nearly a grey: every step
+carries a trace of the accent hue, but only a trace, at half the chroma it was first built with.
+That halving is the 08-21 correction. The first pass tinted the neutrals at the same chroma as the
+accent, and the verdict on it was fair: the room read purple, rather than reading as a grey room
+with a plum accent in it. The hue now lives in the accent, and the neutrals only carry enough of it
+to keep tinted chrome from looking dirty beside a white pane.
+
+The **accent ramp desaturates at both ends**, which is worth knowing before reading a swatch as a
+mistake. `a-50` and `a-900` are not decoration, they are large tinted planes: the selected row, the
+suggested-fix panel, the active-filter chips. Held at the chroma of `a-500` they read as a state
+rather than as a surface. So the middle of the ramp is fully plum and the ends are nearly graphite,
+and the rule that falls out of it is the one this option now follows everywhere: **the accent at
+full strength only ever appears on a small shape.**
+
+<PrimitiveRamps />
+
+## Roles
+
+Every role, with its light value, its dark value, and the primitive each resolves to. Where the
+primitive column says `none`, the role is not a colour lookup: `action-subtle-bg` is `transparent`
+by design, and `shadow-color` is a bare RGB triplet so it can be composed inside `rgb(... / alpha)`.
+
+### Surfaces
+
+The ladder in table form. Read `nav`, `sunken` and `default` together: that is the inversion, stated
+as three values rather than as a claim.
+
+<RoleTable filter="surface" />
+
+### Content
+
+<RoleTable filter="content" />
+
+### Borders
+
+Five roles, and fewer lines than a bordered layout needs, because this option separates things with
+surface changes and space first. A border is what is left when neither of those is available.
+
+<RoleTable filter="border" />
+
+### Actions
+
+Primary **is** the accent here, which is the whole point of a committed palette: the plum carries
+selection and the primary action, so a reader learns one colour and it means "this is the thing to
+act on". In dark mode it steps one shade lighter, because a mid-plum on near-black glows rather than
+reads. The brand mark is **not** part of this, and has its own role below.
+
+<RoleTable filter="action" />
+
+### Status
+
+A tinted fill, a matching hairline, and text that passes contrast on that fill. Five tones, and four
+of them are meaning-bearing. `status-info` shares the accent ramp on purpose: provenance is a fact,
+not a problem, so it should look like selection rather than like a warning.
+
+<RoleTable filter="status" />
+
+### Impact, focus, shadow
+
+Impact is three colours and a track. It reads the same three bands the current app ranks by, so the
+ranking is not silently redefined, but this option spends only a dot on it rather than a meter.
+
+<RoleTable filter="impact" />
+
+<RoleTable filter="focus" />
+
+<RoleTable filter="shadow" />
+
+### The brand, which is not an accent
+
+One role, one element: the Melonade mark in the rail. It is watermelon, taken off the live landing
+page, and it is the only watermelon thing in the app.
+
+It is separate from the accent for a reason that is not taste. Watermelon sits about 24 degrees from
+this option's danger ramp in OKLCH, so an accent at that hue would put the selected row, the
+suggested-fix panel and a red alarm in the same family, and the impact signal would stop meaning
+anything. Plum sits 68 degrees off danger, which is the whole reason this option can afford a
+committed accent at all.
+
+So the hue that means *Melonade* and the hue that means *act on this* are deliberately two different
+hues, and the split is enforced by naming rather than by discipline: `brand-mark` is not wired into
+any semantic role, and if it ever appears on a control that is a bug. A logo is identity. An accent
+is a signal. Only one of them is allowed to be everywhere.
+
+<RoleTable filter="brand" />

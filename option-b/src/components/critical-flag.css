@@ -1,0 +1,50 @@
+.b-crit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m-space-3);
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 1px solid transparent;
+  border-radius: var(--m-radius-xs);
+  color: var(--m-content-disabled);
+  position: relative;
+  transition: color var(--m-duration-fast) var(--m-ease-out),
+    background-color var(--m-duration-fast) var(--m-ease-out),
+    border-color var(--m-duration-fast) var(--m-ease-out);
+}
+
+/* 22px box, 44px target */
+.b-crit::after { content: ''; position: absolute; inset: -11px; }
+
+.b-crit--labelled {
+  width: auto;
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-3);
+  font-size: var(--m-text-xs);
+  border-color: var(--m-border-default);
+  color: var(--m-content-secondary);
+}
+.b-crit--labelled::after { inset: 0; }
+
+.b-crit:hover { color: var(--m-content-secondary); background: var(--m-surface-hover); }
+
+.b-crit--team {
+  color: var(--m-content-danger);
+  background: var(--m-status-neutral-bg);
+  border-color: var(--m-status-neutral-border);
+}
+
+.b-crit--mine {
+  color: var(--m-status-danger-fg);
+  background: var(--m-status-danger-bg);
+  border-color: var(--m-status-danger-border);
+}
+.b-crit--mine:hover { background: var(--m-status-danger-bg); border-color: var(--m-border-danger); }
+
+.b-crit--dismissed {
+  color: var(--m-content-disabled);
+  border-color: var(--m-border-subtle);
+  border-style: dashed;
+}

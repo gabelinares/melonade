@@ -1,0 +1,54 @@
+<!--
+  Injected into the preview iframe only, never into the Storybook UI around it.
+
+  1. THE FACES. The type pairing is half of this option's identity, and a serif
+     that falls back to Georgia makes the Type page argue for something the
+     reader cannot see. Same href as index.html, so Storybook and the app render
+     the same two families.
+
+  2. THE VIEWPORT RESET. base.css sets `html, body { height: 100%; overflow:
+     hidden }` because the console owns the window and each pane scrolls on its
+     own. Inside Storybook that is wrong twice over: a centered story collapses
+     to zero height, and a docs page cannot scroll at all. base.css is not
+     touched; the reset lives here, where it applies to the preview document and
+     nothing else. Fullscreen stories still get their height from their own
+     frame, which is where a full-height component's height belongs in a story.
+
+     `!important` is load-bearing rather than lazy. base.css arrives as a
+     JS-injected stylesheet, so it lands AFTER this block in document order, and
+     both rules are element selectors of equal specificity: without the flag the
+     app's rule wins on order alone and the docs pages silently stop scrolling.
+
+  3. THE DOCS RHYTHM. base.css also zeroes every margin and strips list markers,
+     which is correct for an app shell and unreadable for prose. These rules put
+     the vertical rhythm and the bullets back for the docs pages only, matched by
+     class so a story is never affected.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .sbdocs-content > * + * { margin-top: 1rem; }
+
+  .sbdocs-content h1,
+  .sbdocs-content h2,
+  .sbdocs-content h3 { margin-top: 2.25rem; }
+
+  .sbdocs-content ul,
+  .sbdocs-content ol {
+    list-style: revert;
+    padding-inline-start: 1.5rem;
+  }
+
+  .sbdocs-content li + li { margin-top: 0.25rem; }
+</style>

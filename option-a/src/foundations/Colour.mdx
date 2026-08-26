@@ -1,0 +1,98 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import { palette } from '../tokens/palette.ts';
+import { lightColors, darkColors } from '../tokens/tokens.ts';
+import { PrimitiveRamps, RoleTable } from './TokenViews.tsx';
+
+<Meta title="Foundations/Colour" />
+
+# Colour
+
+Colour here is two layers, and keeping them apart is the entire point.
+
+A **primitive** is a value with no meaning. `n-600` is a grey, nothing more. There are
+{Object.keys(palette).length} of them, they are generated from an OKLCH design intent and verified
+in the sRGB gamut, and no component may reference one directly.
+
+A **role** is a decision. `content-muted` says "this text is secondary but still meant to be read",
+and it happens to resolve to `n-600` today. There are {Object.keys(lightColors).length} roles, and
+they are the only names a component is allowed to use, through `t('content-muted')`.
+
+The reason for the split is regression, not tidiness. The app this replaces had 67 hardcoded colour
+literals and no role layer, so every theme change was a search and replace, and every search and
+replace missed something. With a role layer, a theme is a set of role definitions and a component
+does not change at all.
+
+**Dark mode only ever redefines roles.** Primitives never move. Both maps below are keyed
+identically ({Object.keys(darkColors).length} roles each), which is what makes "the same product
+with the lamp off" a checkable claim rather than a hope. Dark is not inverted light: the surface
+ladder steps 4 to 5 lightness points instead of 2.5, because a shadow does almost nothing on a dark
+ground and the ladder has to carry depth on its own. Status fills are the new low-chroma `-900`
+steps rather than the light theme's tints, because `danger-50` inverted naively lands on a
+mid-saturation red that shouts louder on black than the row title it is annotating.
+
+## Primitives
+
+Grouped by ramp. Six ramps, and five of them are there to be used sparingly: the neutral ramp does
+almost all of the work, which is what "monochrome" means in practice.
+
+<PrimitiveRamps />
+
+## Roles
+
+Every role, with its light value, its dark value, and the primitive each resolves to. Where the
+primitive column says `none`, the role is not a colour lookup: `action-subtle-bg` is `transparent`
+by design, and `shadow-color` is a bare RGB triplet so it can be composed inside `rgb(... / alpha)`.
+
+### Surfaces
+
+<RoleTable filter="surface" />
+
+### Content
+
+<RoleTable filter="content" />
+
+### Borders
+
+Three weights and no more. "Too many lines" is the standing complaint about the app this replaces,
+so a border has to earn its step up.
+
+<RoleTable filter="border" />
+
+### Actions
+
+Primary is **ink**, not the accent. That is the single biggest visual departure from the blue-button
+app, and it is why the accent stays available for state. On a dark ground an ink button would vanish,
+so primary inverts to a light surface with dark text: same idea, unmissable and uncoloured.
+
+<RoleTable filter="action" />
+
+### Status
+
+A tinted fill, a matching hairline, and text that passes contrast on that fill. Five tones, and four
+of them are meaning-bearing.
+
+<RoleTable filter="status" />
+
+### Impact, focus, shadow
+
+<RoleTable filter="impact" />
+
+<RoleTable filter="focus" />
+
+<RoleTable filter="shadow" />
+
+### The brand, which is not an accent
+
+One role, one element: the Melonade mark in the nav. It is watermelon, taken off the live landing
+page, and in Graphite it is the only chromatic thing in the entire interface.
+
+That is not a hole in the monochrome rule, it is the strongest reading of it. The argument this
+option makes is that colour should be rationed until it means something. The primary action is ink,
+the accent is one restrained teal held for state, and the logo is neither of those things: it means
+*Melonade* and nothing else, which is exactly why it earns the one saturated glyph on screen.
+
+`brand-mark` is deliberately not wired into any semantic role. If it ever appears on a control, that
+is a bug. A logo is identity. An accent is a signal.
+
+<RoleTable filter="brand" />

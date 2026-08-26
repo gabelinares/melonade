@@ -1,0 +1,94 @@
+/* One height, one radius, one badge, for every icon-only toolbar control. */
+.m-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m-space-3);
+  flex: none;
+  /* control-height-sm, matching the category strip beside it. Two neighbouring
+     controls at 26px and 30px is the misalignment this component exists to end. */
+  height: var(--m-control-height-sm);
+  min-width: var(--m-control-height-sm);
+  padding-inline: var(--m-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--m-radius-sm);
+  color: var(--m-content-secondary);
+  transition: border-color var(--m-duration-fast) var(--m-ease-out),
+    background-color var(--m-duration-fast) var(--m-ease-out),
+    color var(--m-duration-fast) var(--m-ease-out);
+}
+
+.m-iconbtn--outline {
+  border-color: var(--m-border-default);
+  background: var(--m-surface-default);
+}
+.m-iconbtn--outline:hover { border-color: var(--m-border-strong); color: var(--m-content-primary); }
+
+.m-iconbtn--ghost { background: transparent; color: var(--m-content-muted); }
+.m-iconbtn--ghost:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
+
+.m-iconbtn.is-open { background: var(--m-surface-hover); color: var(--m-content-primary); }
+.m-iconbtn.is-active { color: var(--m-content-primary); }
+
+.m-iconbtn:disabled { color: var(--m-content-disabled); cursor: default; }
+.m-iconbtn:disabled:hover { background: transparent; color: var(--m-content-disabled); }
+
+/* 26px visual, 44px target. The visual box is a toolbar decision; the target
+   floor is not negotiable. */
+.m-iconbtn { position: relative; }
+.m-iconbtn::after { content: ''; position: absolute; inset: -9px; }
+
+/* The icon box is pinned, so swapping a 15px glyph for a 16px one cannot
+   change the control's width. That 1px is how a row of identical buttons
+   stops being identical. */
+.m-iconbtn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+}
+
+.m-iconbtn__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding-inline: 3px;
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-inverse);
+  color: var(--m-content-inverse);
+  font-size: var(--m-text-2xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* A toggle that is on. Graphite says "on" the way its category strip does:
+   the surface lifts to the raised plane and the content goes to full contrast.
+   No accent fill - the accent in this system is rationed to one thing per view
+   and a panel toggle is not that thing. */
+.m-iconbtn.is-on {
+  background: var(--m-surface-selected);
+  border-color: var(--m-border-accent);
+  color: var(--m-content-accent);
+}
+.m-iconbtn--ghost.is-on:hover { background: var(--m-surface-selected); }
+
+/* The filled action, for an icon-only control that IS the point of its row.
+   Graphite's primary is near-black rather than a hue: the palette spends its
+   one colour on state, so the loudest thing on the page is ink. */
+.m-iconbtn--primary {
+  background: var(--m-action-primary-bg);
+  border-color: var(--m-action-primary-bg);
+  color: var(--m-action-primary-fg);
+}
+.m-iconbtn--primary:hover {
+  background: var(--m-action-primary-bg-hover);
+  border-color: var(--m-action-primary-bg-hover);
+  color: var(--m-action-primary-fg);
+}
+.m-iconbtn--primary:active {
+  background: var(--m-action-primary-bg-active);
+  border-color: var(--m-action-primary-bg-active);
+}

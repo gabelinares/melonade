@@ -1,0 +1,58 @@
+.m-crit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--m-radius-xs);
+  color: var(--m-content-disabled);
+  transition: color var(--m-duration-fast) var(--m-ease-out),
+    background-color var(--m-duration-fast) var(--m-ease-out),
+    border-color var(--m-duration-fast) var(--m-ease-out);
+  position: relative;
+}
+
+/* 20px box, 44px target */
+.m-crit::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+}
+
+.m-crit:hover {
+  color: var(--m-content-secondary);
+  background: var(--m-surface-hover);
+}
+
+/* a teammate's description matched: the flag is real, the fill is neutral */
+.m-crit--team {
+  color: var(--m-content-danger);
+  background: var(--m-status-neutral-bg);
+  border-color: var(--m-status-neutral-border);
+}
+.m-crit--team:hover {
+  color: var(--m-content-danger);
+  background: var(--m-status-neutral-bg);
+  border-color: var(--m-border-strong);
+}
+
+/* MY description matched: the fill goes red. This is the only difference. */
+.m-crit--mine {
+  color: var(--m-status-danger-fg);
+  background: var(--m-status-danger-bg);
+  border-color: var(--m-status-danger-border);
+}
+.m-crit--mine:hover {
+  background: var(--m-status-danger-bg);
+  border-color: var(--m-border-danger);
+}
+
+/* I dropped it for myself: still legible, clearly off */
+.m-crit--dismissed {
+  color: var(--m-content-disabled);
+  background: transparent;
+  border-color: var(--m-border-subtle);
+  border-style: dashed;
+}

@@ -1,0 +1,100 @@
+.b-player {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--m-surface-default);
+}
+
+/* ── browser chrome ────────────────────────────────────────────────────────
+   One line, and it is doing real work: the URL says which page this is and the
+   environment says whose browser it was. Both are things a reader would
+   otherwise have to go back to the session card for. */
+.b-player__chrome {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: none;
+  height: 2.25rem;
+  padding-inline: var(--m-space-4);
+  border-bottom: 1px solid var(--m-border-subtle);
+  background: var(--m-surface-sunken);
+}
+
+.b-player__lights { display: flex; gap: 5px; flex: none; }
+.b-player__lights i {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--m-radius-full);
+  background: var(--m-border-strong);
+  opacity: 0.5;
+}
+
+.b-player__url {
+  flex: 1;
+  min-width: 0;
+  max-width: 32rem;
+  padding: 2px var(--m-space-4);
+  border-radius: var(--m-radius-full);
+  background: var(--m-surface-default);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+}
+
+.b-player__env {
+  flex: none;
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+}
+
+/* ── the stage ─────────────────────────────────────────────────────────────
+   The ground the recording sits on, and nothing more. Sunken so the viewport
+   reads as a page ON something rather than as the pane's own content. */
+.b-player__stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  padding: var(--m-space-6);
+  overflow: hidden;
+  background: var(--m-surface-sunken);
+  container-type: size;
+}
+
+/* Letterbox, and this is ALL the player contributes to the frame: `min(100cqw,
+   160cqh)` is as wide as the stage allows, or as wide as a 16:10 box that fits
+   the stage's height, whichever is smaller. Container units rather than a JS
+   measurement, so it is right during the width transition instead of one frame
+   behind it. Everything the frame draws lives in replay-frame.css. */
+.b-player__viewport {
+  width: min(100cqw, 160cqh);
+  aspect-ratio: 16 / 10;
+}
+
+/* ── the caption ───────────────────────────────────────────────────────────
+   What the wireframe is for. Floated over the bottom of the stage rather than
+   given its own band, because it is a subtitle and a subtitle does not get a
+   row of chrome. */
+.b-player__caption {
+  position: absolute;
+  left: 50%;
+  bottom: var(--m-space-6);
+  translate: -50% 0;
+  max-width: min(46rem, calc(100% - var(--m-space-9)));
+  padding: var(--m-space-3) var(--m-space-5);
+  border-radius: var(--m-radius-md);
+  /* A subtitle, so it is drawn like one in both themes: a dark translucent
+     plate with light text. It used to take `surface-inverse`, which in dark
+     mode is near-white and made the caption the brightest object on a screen
+     whose whole job is the recording behind it. */
+  background: rgb(12 10 12 / 0.82);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #f3f1f2;
+  font-size: var(--m-text-sm);
+  line-height: var(--m-leading-snug);
+  text-align: center;
+  text-wrap: balance;
+}

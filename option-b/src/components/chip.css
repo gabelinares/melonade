@@ -1,0 +1,54 @@
+.b-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  height: 1.375rem; /* 22 */
+  padding-inline: var(--m-space-3);
+  border: 1px solid var(--m-status-neutral-border);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-status-neutral-bg);
+  color: var(--m-status-neutral-fg);
+  font-size: var(--m-text-xs);
+  line-height: 1;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.b-chip__label { overflow: hidden; text-overflow: ellipsis; }
+.b-chip__icon { display: inline-flex; color: currentcolor; opacity: 0.75; }
+
+/* quiet: the label and the icon, no container. Used in list-row meta lines. */
+.b-chip--quiet {
+  height: auto;
+  padding-inline: 0;
+  border: none;
+  background: none;
+  color: var(--m-content-muted);
+}
+
+.b-chip--danger {
+  background: var(--m-status-danger-bg);
+  border-color: var(--m-status-danger-border);
+  color: var(--m-status-danger-fg);
+}
+.b-chip--warning {
+  background: var(--m-status-warning-bg);
+  border-color: var(--m-status-warning-border);
+  color: var(--m-status-warning-fg);
+}
+.b-chip--success {
+  background: var(--m-status-success-bg);
+  border-color: var(--m-status-success-border);
+  color: var(--m-status-success-fg);
+}
+.b-chip--info {
+  background: var(--m-status-info-bg);
+  border-color: var(--m-status-info-border);
+  color: var(--m-status-info-fg);
+}
+
+/* a quiet chip keeps its tone in the TEXT, since it has no fill to carry it */
+.b-chip--quiet.b-chip--danger { background: none; border: none; color: var(--m-content-danger); }
+.b-chip--quiet.b-chip--warning { background: none; border: none; color: var(--m-content-warning); }
+.b-chip--quiet.b-chip--success { background: none; border: none; color: var(--m-content-success); }
+.b-chip--quiet.b-chip--info { background: none; border: none; color: var(--m-content-accent); }

@@ -1,0 +1,32 @@
+/* `full` is AS TALL AS ITS CONTENTS. It used to take whatever the pane had
+   left, which is where the dead space came from: a short write-up in a
+   pane-height box pushes the fix strip to the bottom and leaves the gap between
+   them empty. In one scrolling column there is no "left over" to take. */
+.b-ctx--full {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  background: var(--m-surface-default);
+}
+
+/* 42%, down from 50. The fix band used to hang under this and the peek had to
+   be tall enough to hold an article AND a 125px banner; with the fix inside the
+   tabs there are four short panels and nothing under them, so the same reading
+   fits in less and the replay underneath keeps the difference. Still a fixed
+   fraction rather than the content's own height: this sits over a running
+   video, and a panel that changes height when you switch tabs is the video
+   jumping. */
+.b-ctx--half {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  height: 42%;
+  min-height: 0;
+  background: var(--m-surface-default);
+  border-bottom: 1px solid var(--m-border-default);
+}
+
+/* The article inside is laid out against THIS width, not the viewport's: the
+   pane is what narrows when a side panel is open, and a viewport media query
+   gets that case wrong. */
+.b-ctx__scroll { flex: 1; min-height: 0; container-type: inline-size; }

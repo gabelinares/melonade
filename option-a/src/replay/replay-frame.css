@@ -1,0 +1,113 @@
+/* Ported from option B: the geometry of a mock browser is the same drawing in
+   both systems, so what changes here is the palette and the corner radius, not
+   the wireframe. Every value below resolves against Graphite's own tokens. */
+/* The recorded viewport. NO width, NO height, NO position: the caller owns the
+   size, because the player letterboxes this against its stage and a session
+   card gives it the card's width. See the note in ReplayFrame.tsx. */
+.m-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-default);
+  /* Its own container, so everything inside can be sized in cqh and scale from
+     a 1500px stage to a 280px thumbnail on one set of rules. This is also the
+     fix for two earlier attempts at the wireframe: percentage heights inside a
+     grid whose rows are min-content resolve to auto, so every block collapsed
+     to its border and the page rendered as four dashed lines in a void.
+     Percentages needed a definite parent height; cqh has one by construction,
+     because the caller's aspect-ratio gives it one. */
+  container-type: size;
+}
+
+.m-frame__page {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30%;
+  grid-auto-rows: min-content;
+  gap: 3.2cqh 5cqw;
+  align-content: start;
+  padding: 4.5cqh 4cqw;
+}
+
+/* Wireframe primitives, sized in container units so the diagram scales with the
+   letterbox instead of clustering at the top of a big empty box. Deliberately
+   crude: flat blocks, dashes for inputs, 3px radius. It has to be unmistakably
+   a diagram and never mistakable for a recording.
+   The heights are tuned to sum to roughly 91cqh including the gaps and the
+   padding. Under-filling looks like a page that failed to load rather than a
+   wireframe, which is what the first pass at 79 did. */
+.m-wf { display: block; border-radius: 3px; background: var(--m-surface-active); }
+.m-wf--nav { grid-column: 1 / -1; height: 8cqh; background: var(--m-border-default); }
+.m-wf--crumb { grid-column: 1 / -1; height: 2.4cqh; width: 34%; }
+.m-wf--h { height: 7cqh; width: 66%; background: var(--m-border-strong); }
+.m-wf--line { height: 2.4cqh; width: 92%; }
+.m-wf--short { width: 58%; }
+.m-wf--field { height: 8.5cqh; border: 1px dashed var(--m-border-strong); background: none; }
+.m-wf--row { display: flex; gap: 4%; height: 8.5cqh; background: none; }
+.m-wf--row > .m-wf--field { flex: 1; height: 100%; }
+.m-wf--cta { height: 9cqh; width: 40%; background: var(--m-border-strong); }
+
+.m-wf--side {
+  grid-column: 2;
+  grid-row: 3 / 10;
+  display: flex;
+  flex-direction: column;
+  gap: 3cqh;
+  padding: 4cqh 6%;
+  background: var(--m-surface-sunken);
+  border: 1px solid var(--m-border-subtle);
+}
+.m-wf--srow { height: 3cqh; background: var(--m-surface-active); }
+.m-wf--stotal { height: 5cqh; width: 70%; margin-top: auto; background: var(--m-border-strong); }
+
+/* ── the cursor ────────────────────────────────────────────────────────────
+   Transitioned, not animated on a keyframe track: it has to land wherever the
+   playhead is after a scrub, and a keyframe animation would keep walking its
+   own path regardless of where the reader dragged to. */
+.m-frame__cursor {
+  position: absolute;
+  color: var(--m-content-primary);
+  transition: left var(--m-duration-slow) var(--m-ease-out),
+    top var(--m-duration-slow) var(--m-ease-out);
+  pointer-events: none;
+}
+.m-frame__cursor svg { display: block; filter: drop-shadow(0 1px 2px rgb(var(--m-shadow-color) / 0.35)); }
+
+.m-frame__ripple {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  translate: -35% -35%;
+  border-radius: var(--m-radius-full);
+  border: 2px solid var(--m-content-accent);
+  opacity: 0;
+  scale: 0.4;
+}
+.m-frame__cursor.is-clicking .m-frame__ripple { animation: m-frame-ripple 700ms var(--m-ease-out); }
+
+@keyframes m-frame-ripple {
+  from { opacity: 0.9; scale: 0.4; }
+  to { opacity: 0; scale: 1.8; }
+}
+
+
+/* ── still ────────────────────────────────────────────────────────────────
+   A frozen frame on a card. The ripple is HELD rather than animated: eleven
+   thumbnails all pulsing at once is a screen with a nervous tic, and the ring
+   is doing informational work here anyway - it marks where the click that broke
+   this session landed. */
+.m-frame--still .m-frame__cursor { transition: none; }
+.m-frame--still .m-frame__ripple {
+  opacity: 0.55;
+  scale: 1.15;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-frame__cursor { transition: none; }
+  .m-frame__cursor.is-clicking .m-frame__ripple { animation: none; opacity: 0.9; }
+}

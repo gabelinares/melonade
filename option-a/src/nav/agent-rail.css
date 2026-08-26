@@ -1,0 +1,100 @@
+/* Ported from option B, whose rail Mehdi preferred to this option's labelled
+   nav on 2026-08-26. The geometry is that rail's, unchanged; every value below
+   resolves against Graphite's own tokens, so it retints rather than restyles. */
+.m-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  width: var(--m-rail-width);
+  height: 100%;
+  padding: var(--m-space-4) 0 var(--m-space-4);
+  background: var(--m-surface-nav);
+  border-right: 1px solid var(--m-border-subtle);
+}
+
+/* The mark sits on nothing: no plate, no fill, no border. It is the one place
+   in this shell where a chromatic thing is allowed to float, because it is the
+   logo rather than a control, and a coloured tile behind a coloured logo is two
+   accents stacked. The 2rem box is the hit target, kept at control size so the
+   mark is still a comfortable click even though the glyph is 19px. */
+.m-rail__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: var(--m-space-2);
+  border-radius: var(--m-radius-sm);
+  background: none;
+}
+
+.m-rail__mark:focus-visible {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: 2px;
+}
+
+.m-rail__group { display: flex; flex-direction: column; gap: var(--m-space-3); flex: none; }
+
+/* the group boundary: a gap and a hairline, since there is no room for a label
+   and two groups need a separator rather than a caption */
+.m-rail__rule {
+  width: 1.25rem;
+  height: 1px;
+  flex: none;
+  background: var(--m-border-default);
+  margin-block: var(--m-space-1);
+}
+
+.m-rail__agents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-3);
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  align-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-block: var(--m-space-2);
+  /* the scrollbar would eat 8px of a 56px rail, so it is hidden here and the
+     region is still keyboard and wheel scrollable */
+  scrollbar-width: none;
+}
+.m-rail__agents::-webkit-scrollbar { display: none; }
+
+.m-rail__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  padding-top: var(--m-space-4);
+  border-top: 1px solid var(--m-border-subtle);
+  width: 2.25rem;
+}
+
+/* Neutral, not accent-tinted. An account avatar is not selected, active or
+   informational, so it has no claim on the accent - and tinting it would put a
+   coloured disc at the bottom of a 56px strip with the coloured mark at the top,
+   which reads as a mismatched pair rather than a deliberate one. Neutral here
+   leaves the mark as the only chromatic thing in the rail, so it reads as the
+   logo instead of as one of a set. */
+.m-rail__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: var(--m-space-1);
+  border-radius: var(--m-radius-full);
+  border: 1px solid var(--m-status-neutral-border);
+  background: var(--m-status-neutral-bg);
+  color: var(--m-status-neutral-fg);
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: 0;
+}

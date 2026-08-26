@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport:{width:1440,height:900}, deviceScaleFactor:2, colorScheme:'dark' });
+const p = await ctx.newPage();
+const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>m.type()==='error'&&errs.push(m.text()));
+await p.goto('http://localhost:4399',{waitUntil:'networkidle'});
+await p.waitForTimeout(1300);
+await p.getByRole('button', { name: 'Create Jira task' }).click();
+await p.waitForTimeout(500);
+await p.screenshot({ path: process.argv[2] });
+await p.getByRole('button', { name: 'Create task' }).click();
+await p.waitForTimeout(500);
+console.log('receipt:', await p.locator('.b-fix__done').textContent());
+console.log(errs.length?'ERRORS '+errs.join(' | '):'clean');
+await b.close();

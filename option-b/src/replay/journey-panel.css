@@ -1,0 +1,199 @@
+/* ── the rail ──────────────────────────────────────────────────────────────
+   Narrower than the queue it replaces (25rem), because a queue holds eleven
+   competing titles and this holds one session's steps, which are short lines
+   with a lot of white to their right. Same surface and same 1px seam as every
+   other pane in the shell, on the other side. */
+.b-jrn {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  width: 20rem;
+  min-height: 0;
+  background: var(--m-surface-default);
+  border-left: 1px solid var(--m-border-default);
+}
+
+/* The panel's own label sits on the SAME line as the session strip across the
+   body, not as the pane header above both of them. Same token, so the two
+   hairlines are one hairline. */
+.b-jrn__head {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: var(--m-subheader-height);
+  padding-inline: var(--m-space-5);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+.b-jrn__scroll { flex: 1; min-height: 0; }
+
+.b-jrn__list {
+  display: flex;
+  flex-direction: column;
+  padding: var(--m-space-4) var(--m-space-5) var(--m-space-7);
+  list-style: none;
+}
+
+.b-jrn__item { display: flex; flex-direction: column; }
+
+/* ── the thread ────────────────────────────────────────────────────────────
+   One column, 1.375rem wide, carrying a 1px wire and the event node on it. The
+   wire is drawn in two pieces per step - a fixed lead above the node and a
+   stretching tail below - so a two-line label pushes the next node down and the
+   thread simply gets longer. Nothing is measured and nothing is absolute. */
+.b-jrn__thread {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+  width: 1.375rem;
+  align-self: stretch;
+}
+
+/* `strong`, not the default border, and this is the dark-mode rule rather than
+   a preference: at 1px wide there is no area for a low-contrast colour to work
+   with. --m-border-default is #282528 on a #1d1b1d surface, which is four
+   Oklab points and a thread nobody can see. The same token at 22px reads fine
+   on the ring of a node, which is exactly why this had to be measured rather
+   than eyeballed against the light theme. */
+.b-jrn__wire {
+  width: 1px;
+  flex: 1;
+  min-height: var(--m-space-3);
+  background: var(--m-border-strong);
+}
+/* Behind the playhead the thread is drawn in the accent, which is what makes
+   this column a position readout as well as a list. Ahead of it, plain. */
+.b-jrn__wire.is-past { background: var(--m-border-accent); }
+
+/* The lead is fixed so the node lands on the FIRST line of the label rather
+   than in the middle of a wrapped one. */
+.b-jrn__wire--lead { flex: none; height: 0.6875rem; }
+.b-jrn__wire--tail { min-height: var(--m-space-4); }
+
+.b-jrn__node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 1px solid var(--m-border-strong);
+  border-radius: var(--m-radius-full);
+  background: var(--m-surface-default);
+  color: var(--m-content-muted);
+  transition: border-color var(--m-duration-fast) var(--m-ease-out),
+    color var(--m-duration-fast) var(--m-ease-out);
+}
+
+/* Only the three loud kinds get colour, matching the rule the track under the
+   player already follows: an error, a rage burst and a stall are the three
+   things worth scrubbing to, and everything else is a quiet tick so those three
+   have a rhythm to stand out from. */
+.b-jrn__node--error { color: var(--m-impact-high); }
+.b-jrn__node--rage { color: var(--m-impact-medium); }
+.b-jrn__node--slow { color: var(--m-impact-medium); }
+
+/* ── the step ──────────────────────────────────────────────────────────────
+   Every row seeks, so every row is a button, full width, quiet until hovered. */
+.b-jrn__step {
+  display: flex;
+  gap: var(--m-space-3);
+  width: 100%;
+  margin-inline: calc(var(--m-space-3) * -1);
+  padding-inline: var(--m-space-3);
+  padding-block: 0 var(--m-space-1);
+  border: 0;
+  border-radius: var(--m-radius-sm);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--m-duration-fast) var(--m-ease-out);
+}
+.b-jrn__step:hover { background: var(--m-surface-hover); }
+.b-jrn__step:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: -2px; }
+
+.b-jrn__step.is-past .b-jrn__node { border-color: var(--m-border-accent); }
+
+.b-jrn__step.is-active { background: var(--m-surface-selected); }
+.b-jrn__step.is-active .b-jrn__node {
+  border-color: var(--m-border-accent);
+  box-shadow: 0 0 0 3px var(--m-surface-selected);
+}
+.b-jrn__step.is-active .b-jrn__label { color: var(--m-content-primary); font-weight: var(--m-weight-medium); }
+
+/* The failure keeps its danger ring at every state, including once the head has
+   passed it. It is the one row whose colour is about the session rather than
+   about where the playhead is. */
+.b-jrn__step.is-failure .b-jrn__node,
+.b-jrn__step.is-failure.is-past .b-jrn__node {
+  border-color: var(--m-border-danger);
+  color: var(--m-content-danger);
+}
+
+.b-jrn__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-1);
+  flex: 1;
+  min-width: 0;
+  padding-block: var(--m-space-3);
+}
+
+.b-jrn__row { display: flex; align-items: baseline; gap: var(--m-space-3); min-width: 0; }
+
+.b-jrn__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--m-text-sm);
+  line-height: var(--m-leading-snug);
+  color: var(--m-content-secondary);
+}
+
+.b-jrn__at {
+  flex: none;
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── the page heading ──────────────────────────────────────────────────────
+   Printed on the step that arrives on a new page and nowhere else. It shares
+   the thread column so the wire runs on behind it: a page change is a chapter
+   break in the session, not a break in the session. */
+.b-jrn__page {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  min-width: 0;
+}
+
+/* Air above a section break, so a page change is a beat rather than another
+   row. The thread stretches to fill it, which is the point: the pause is in
+   the reading, not in the journey. */
+.b-jrn__page .b-jrn__wire { min-height: var(--m-space-7); }
+.b-jrn__item:first-child .b-jrn__page .b-jrn__wire { min-height: var(--m-space-3); }
+
+.b-jrn__path {
+  flex: none;
+  max-width: 60%;
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+}
+
+.b-jrn__rule {
+  flex: 1;
+  min-width: var(--m-space-4);
+  height: 1px;
+  background: var(--m-border-subtle);
+}
+
+/* The first heading in the list has no journey above it to connect to. */
+.b-jrn__item:first-child .b-jrn__page .b-jrn__wire { visibility: hidden; }
+
+/* Below 1240 the pane cannot give up 20rem and stay readable, so the journey
+   goes and the track along the bottom is the way through the session. Stated
+   rather than papered over, the same way the queue's own limit is. */
+@media (max-width: 1240px) {
+  .b-jrn { display: none; }
+}

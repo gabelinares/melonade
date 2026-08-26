@@ -1,0 +1,145 @@
+.b-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--m-space-4);
+  width: 100%;
+  padding: var(--m-space-4) var(--m-space-5);
+  border-bottom: 1px solid var(--m-border-subtle);
+  text-align: left;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out);
+}
+
+/* The stretched target. Covers the row, carries the selection, and is the only
+   thing in the tab order for "open this issue". Its focus ring is drawn inset so
+   it reads as the row being focused rather than as a floating rectangle. */
+.b-row__select {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  border-radius: 0;
+}
+
+.b-row__select:focus-visible {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: -2px;
+}
+
+/* Lifted above the stretched target so it stays its own control. */
+.b-row__flag {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  flex: none;
+}
+
+.b-row:hover { background: var(--m-surface-hover); }
+.b-row:has(.b-row__select:focus-visible) { background: var(--m-surface-hover); }
+
+/* ── selection, after the neutrals went grey ────────────────────────────────
+   This used to be a wash and nothing else, and it worked only because the wash
+   was saturated: a-50 and a-900 carried enough plum to be unmistakable. Now
+   that the surfaces are grey the wash alone is too quiet, and worse, it is
+   comparatively quiet - hovering any other row lifts it to surface-hover, which
+   is LIGHTER than the selected row, so the eye goes to the wrong one.
+   So selection is now the wash plus a 2px accent rail on the leading edge. The
+   rail is the accent at full chroma, which is exactly where the recolour says
+   the hue belongs: on a small shape, never on a plane. It also survives the
+   next time someone tunes a surface, which a wash never does.
+   ─────────────────────────────────────────────────────────────────────────── */
+.b-row.is-selected {
+  background: var(--m-surface-selected);
+}
+
+.b-row.is-selected::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 2px;
+  background: var(--m-border-accent);
+  /* above the stretched target so the click surface does not paint over it */
+  z-index: 2;
+}
+
+.b-row.is-hidden { opacity: 0.55; }
+
+.b-row__gutter {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: 1.25rem; /* optically centres the dot on the first title line */
+}
+
+.b-row__body { display: flex; flex-direction: column; gap: var(--m-space-2); min-width: 0; flex: 1; }
+
+.b-row__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--m-space-3);
+}
+
+/* Two lines at reading size, then clamp. The title is the only thing on this
+   row worth real type, so it gets the room a table column would deny it. */
+.b-row__title {
+  font-size: var(--m-text-md);
+  font-weight: var(--m-weight-medium);
+  line-height: var(--m-leading-snug);
+  color: var(--m-content-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.b-row.is-selected .b-row__title { font-weight: var(--m-weight-semibold); }
+
+.b-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  min-width: 0;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+}
+
+/* A drawn separator, so the meta line has no typed punctuation to translate, and
+   drawn with ::before on the item that FOLLOWS it so a wrapped line can never end
+   on an orphaned dot. Interleaving separate separator elements is what caused
+   exactly that at narrow widths. */
+.b-row__meta-item { display: inline-flex; align-items: center; min-width: 0; }
+
+.b-row__meta-item + .b-row__meta-item::before {
+  content: '';
+  flex: none;
+  width: 2px;
+  height: 2px;
+  margin-right: var(--m-space-3);
+  border-radius: var(--m-radius-full);
+  background: var(--m-content-disabled);
+}
+
+.b-row__tags { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-row__more { margin-left: var(--m-space-2); color: var(--m-content-disabled); }
+
+.b-row__origin {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.b-row__time { flex: none; font-variant-numeric: tabular-nums; }
+
+.b-row__hidden {
+  flex: none;
+  padding-inline: var(--m-space-2);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-xs);
+  font-size: var(--m-text-2xs);
+}
+

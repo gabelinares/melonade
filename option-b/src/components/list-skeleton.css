@@ -1,0 +1,14 @@
+.b-lskel { display: flex; flex-direction: column; }
+
+.b-lskel__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--m-space-4);
+  height: var(--m-row-height);
+  padding: var(--m-space-4) var(--m-space-5);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+.b-lskel__row > .mantine-Skeleton-root:first-child { margin-top: 6px; width: 7px; flex: none; }
+
+.b-lskel__lines { display: flex; flex-direction: column; gap: var(--m-space-3); flex: 1; }

@@ -1,0 +1,51 @@
+.b-af {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--m-space-3);
+  flex: none;
+  padding: 0 var(--m-space-5) var(--m-space-4);
+}
+
+/* Two-part chip: the dimension in a quieter well, the value at full contrast.
+   One element, so a chip cannot wrap between its own halves. */
+.b-af__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  max-width: 14rem;
+  height: 1.5rem;
+  padding-inline: var(--m-space-1) var(--m-space-3);
+  border: 1px solid var(--m-status-info-border);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-status-info-bg);
+  color: var(--m-status-info-fg);
+  font-size: var(--m-text-xs);
+}
+.b-af__chip:hover { border-color: var(--m-border-accent); }
+
+.b-af__dim {
+  padding-inline: var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-default);
+  color: var(--m-content-muted);
+  line-height: 1.25rem;
+}
+
+.b-af__val { font-weight: var(--m-weight-medium); }
+
+.b-af__result {
+  margin-left: var(--m-space-2);
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.b-af__clear {
+  margin-left: auto;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.b-af__clear:hover { color: var(--m-content-primary); }

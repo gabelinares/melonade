@@ -1,0 +1,98 @@
+.b-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  width: var(--m-rail-width);
+  height: 100%;
+  padding: var(--m-space-4) 0 var(--m-space-4);
+  background: var(--m-surface-nav);
+  border-right: 1px solid var(--m-border-subtle);
+}
+
+/* The mark sits on nothing: no plate, no fill, no border. It is the one place
+   in this shell where a chromatic thing is allowed to float, because it is the
+   logo rather than a control, and a coloured tile behind a coloured logo is two
+   accents stacked. The 2rem box is the hit target, kept at control size so the
+   mark is still a comfortable click even though the glyph is 19px. */
+.b-rail__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: var(--m-space-2);
+  border-radius: var(--m-radius-sm);
+  background: none;
+}
+
+.b-rail__mark:focus-visible {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: 2px;
+}
+
+.b-rail__group { display: flex; flex-direction: column; gap: var(--m-space-3); flex: none; }
+
+/* the group boundary: a gap and a hairline, since there is no room for a label
+   and two groups need a separator rather than a caption */
+.b-rail__rule {
+  width: 1.25rem;
+  height: 1px;
+  flex: none;
+  background: var(--m-border-default);
+  margin-block: var(--m-space-1);
+}
+
+.b-rail__agents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-3);
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  align-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-block: var(--m-space-2);
+  /* the scrollbar would eat 8px of a 56px rail, so it is hidden here and the
+     region is still keyboard and wheel scrollable */
+  scrollbar-width: none;
+}
+.b-rail__agents::-webkit-scrollbar { display: none; }
+
+.b-rail__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  padding-top: var(--m-space-4);
+  border-top: 1px solid var(--m-border-subtle);
+  width: 2.25rem;
+}
+
+/* Neutral, not accent-tinted. It was on the accent chip tokens, which put a
+   plum disc at the bottom of the rail and the watermelon mark at the top - two
+   coloured circles at the two ends of a 56px strip, close enough in hue to look
+   like a mismatched pair rather than a deliberate one. An account avatar is not
+   selected, active or informational, so it has no claim on the accent; with it
+   neutral, the mark is the only chromatic thing in the rail and reads as the
+   logo instead of as one of a set. */
+.b-rail__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: var(--m-space-1);
+  border-radius: var(--m-radius-full);
+  border: 1px solid var(--m-status-neutral-border);
+  background: var(--m-status-neutral-bg);
+  color: var(--m-status-neutral-fg);
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: 0;
+}

@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const url = process.argv[2], out = process.argv[3], sel = process.argv[4];
+const theme = process.argv[5] || 'light';
+const b = await chromium.launch();
+const c = await b.newContext({ viewport:{width:1440,height:960}, deviceScaleFactor:3, colorScheme: theme });
+const p = await c.newPage();
+await p.goto(url, { waitUntil:'networkidle' });
+await p.evaluate(()=>document.fonts.ready);
+await p.waitForTimeout(300);
+const el = await p.locator(sel).first();
+await el.screenshot({ path: out });
+console.log('cropped', out);
+await b.close();

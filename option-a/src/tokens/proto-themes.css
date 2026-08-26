@@ -1,0 +1,493 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   GENERATED from tools/gen-proto-themes.mjs. Do not edit.
+   Run `npm run proto-themes` after changing the variants there.
+
+   The alternative palettes behind the prototype panel. Each one changes a
+   SINGLE parameter of the shipped OKLCH intent - the neutral hue, the neutral
+   chroma, the accent hue - and keeps every lightness step and every contrast
+   relationship exactly as shipped. That is what makes them switchable: they are
+   the same theme at a different temperature, not three themes.
+
+   The default variant is written out too, so the panel can return to it without
+   a reload.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── grey: Cool ─ the shipped ramp: neutrals pulled a hair toward the accent hue ── */
+:root[data-grey='cool'] {
+  --m-surface-canvas: #f0f3f4;
+  --m-surface-default: #ffffff;
+  --m-surface-sunken: #f6f9fa;
+  --m-surface-raised: #ffffff;
+  --m-surface-nav: #f6f9fa;
+  --m-surface-hover: #f0f3f4;
+  --m-surface-active: #e8eced;
+  --m-surface-disabled: #f0f3f4;
+  --m-surface-inverse: #161c1e;
+  --m-content-primary: #161c1e;
+  --m-content-secondary: #41494c;
+  --m-content-muted: #5c6568;
+  --m-content-placeholder: #6a7376;
+  --m-content-disabled: #9fa6a8;
+  --m-content-decorative: #798285;
+  --m-content-inverse: #ffffff;
+  --m-border-subtle: #e8eced;
+  --m-border-default: #dde2e4;
+  --m-border-strong: #c9cfd1;
+  --m-action-primary-bg: #161c1e;
+  --m-action-primary-bg-hover: #282f32;
+  --m-action-primary-bg-active: #090e10;
+  --m-action-primary-fg: #ffffff;
+  --m-action-secondary-bg: #ffffff;
+  --m-action-secondary-bg-hover: #f6f9fa;
+  --m-action-secondary-bg-active: #e8eced;
+  --m-action-secondary-fg: #282f32;
+  --m-action-secondary-border: #dde2e4;
+  --m-action-subtle-bg-hover: #f0f3f4;
+  --m-action-subtle-bg-active: #e8eced;
+  --m-action-subtle-fg: #41494c;
+  --m-action-danger-fg: #ffffff;
+  --m-status-neutral-bg: #f6f9fa;
+  --m-status-neutral-border: #dde2e4;
+  --m-status-neutral-fg: #41494c;
+  --m-impact-low: #9fa6a8;
+  --m-impact-track: #dde2e4;
+  --m-focus-ring-offset: #ffffff;
+}
+
+:root[data-grey='cool'][data-theme='dark'] {
+  --m-surface-canvas: #030506;
+  --m-surface-default: #0f1517;
+  --m-surface-sunken: #070c0e;
+  --m-surface-raised: #1a2023;
+  --m-surface-nav: #070c0e;
+  --m-surface-hover: #1a2023;
+  --m-surface-active: #232a2d;
+  --m-surface-disabled: #070c0e;
+  --m-surface-inverse: #f0f3f4;
+  --m-content-primary: #eff2f4;
+  --m-content-secondary: #b9bfc1;
+  --m-content-muted: #8f9799;
+  --m-content-placeholder: #8f9799;
+  --m-content-disabled: #5c6568;
+  --m-content-decorative: #798285;
+  --m-content-inverse: #090e10;
+  --m-border-subtle: #1e2528;
+  --m-border-default: #282f32;
+  --m-border-strong: #41494c;
+  --m-action-primary-bg: #f0f3f4;
+  --m-action-primary-bg-hover: #ffffff;
+  --m-action-primary-bg-active: #dde2e4;
+  --m-action-primary-fg: #090e10;
+  --m-action-secondary-bg: #1a2023;
+  --m-action-secondary-bg-hover: #232a2d;
+  --m-action-secondary-bg-active: #070c0e;
+  --m-action-secondary-fg: #eff2f4;
+  --m-action-secondary-border: #282f32;
+  --m-action-subtle-bg-hover: #1a2023;
+  --m-action-subtle-bg-active: #232a2d;
+  --m-action-subtle-fg: #b9bfc1;
+  --m-action-danger-fg: #ffffff;
+  --m-status-neutral-bg: #1a2023;
+  --m-status-neutral-border: #282f32;
+  --m-status-neutral-fg: #b9bfc1;
+  --m-impact-low: #798285;
+  --m-impact-track: #282f32;
+  --m-focus-ring-offset: #0f1517;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-grey='cool']:not([data-theme='light']) {
+    --m-surface-canvas: #030506;
+    --m-surface-default: #0f1517;
+    --m-surface-sunken: #070c0e;
+    --m-surface-raised: #1a2023;
+    --m-surface-nav: #070c0e;
+    --m-surface-hover: #1a2023;
+    --m-surface-active: #232a2d;
+    --m-surface-disabled: #070c0e;
+    --m-surface-inverse: #f0f3f4;
+    --m-content-primary: #eff2f4;
+    --m-content-secondary: #b9bfc1;
+    --m-content-muted: #8f9799;
+    --m-content-placeholder: #8f9799;
+    --m-content-disabled: #5c6568;
+    --m-content-decorative: #798285;
+    --m-content-inverse: #090e10;
+    --m-border-subtle: #1e2528;
+    --m-border-default: #282f32;
+    --m-border-strong: #41494c;
+    --m-action-primary-bg: #f0f3f4;
+    --m-action-primary-bg-hover: #ffffff;
+    --m-action-primary-bg-active: #dde2e4;
+    --m-action-primary-fg: #090e10;
+    --m-action-secondary-bg: #1a2023;
+    --m-action-secondary-bg-hover: #232a2d;
+    --m-action-secondary-bg-active: #070c0e;
+    --m-action-secondary-fg: #eff2f4;
+    --m-action-secondary-border: #282f32;
+    --m-action-subtle-bg-hover: #1a2023;
+    --m-action-subtle-bg-active: #232a2d;
+    --m-action-subtle-fg: #b9bfc1;
+    --m-action-danger-fg: #ffffff;
+    --m-status-neutral-bg: #1a2023;
+    --m-status-neutral-border: #282f32;
+    --m-status-neutral-fg: #b9bfc1;
+    --m-impact-low: #798285;
+    --m-impact-track: #282f32;
+    --m-focus-ring-offset: #0f1517;
+  }
+}
+
+/* ── grey: True ─ no hue at all. Every surface is a pure grey, which is the most sober of the three ── */
+:root[data-grey='true'] {
+  --m-surface-canvas: #f2f2f2;
+  --m-surface-default: #ffffff;
+  --m-surface-sunken: #f8f8f8;
+  --m-surface-raised: #ffffff;
+  --m-surface-nav: #f8f8f8;
+  --m-surface-hover: #f2f2f2;
+  --m-surface-active: #ebebeb;
+  --m-surface-disabled: #f2f2f2;
+  --m-surface-inverse: #1b1b1b;
+  --m-content-primary: #1b1b1b;
+  --m-content-secondary: #484848;
+  --m-content-muted: #636363;
+  --m-content-placeholder: #717171;
+  --m-content-disabled: #a4a4a4;
+  --m-content-decorative: #808080;
+  --m-content-inverse: #ffffff;
+  --m-border-subtle: #ebebeb;
+  --m-border-default: #e1e1e1;
+  --m-border-strong: #cecece;
+  --m-action-primary-bg: #1b1b1b;
+  --m-action-primary-bg-hover: #2e2e2e;
+  --m-action-primary-bg-active: #0d0d0d;
+  --m-action-primary-fg: #ffffff;
+  --m-action-secondary-bg: #ffffff;
+  --m-action-secondary-bg-hover: #f8f8f8;
+  --m-action-secondary-bg-active: #ebebeb;
+  --m-action-secondary-fg: #2e2e2e;
+  --m-action-secondary-border: #e1e1e1;
+  --m-action-subtle-bg-hover: #f2f2f2;
+  --m-action-subtle-bg-active: #ebebeb;
+  --m-action-subtle-fg: #484848;
+  --m-action-danger-fg: #ffffff;
+  --m-status-neutral-bg: #f8f8f8;
+  --m-status-neutral-border: #e1e1e1;
+  --m-status-neutral-fg: #484848;
+  --m-impact-low: #a4a4a4;
+  --m-impact-track: #e1e1e1;
+  --m-focus-ring-offset: #ffffff;
+}
+
+:root[data-grey='true'][data-theme='dark'] {
+  --m-surface-canvas: #040404;
+  --m-surface-default: #141414;
+  --m-surface-sunken: #0b0b0b;
+  --m-surface-raised: #1f1f1f;
+  --m-surface-nav: #0b0b0b;
+  --m-surface-hover: #1f1f1f;
+  --m-surface-active: #292929;
+  --m-surface-disabled: #0b0b0b;
+  --m-surface-inverse: #f2f2f2;
+  --m-content-primary: #f2f2f2;
+  --m-content-secondary: #bebebe;
+  --m-content-muted: #959595;
+  --m-content-placeholder: #959595;
+  --m-content-disabled: #636363;
+  --m-content-decorative: #808080;
+  --m-content-inverse: #0d0d0d;
+  --m-border-subtle: #242424;
+  --m-border-default: #2e2e2e;
+  --m-border-strong: #484848;
+  --m-action-primary-bg: #f2f2f2;
+  --m-action-primary-bg-hover: #ffffff;
+  --m-action-primary-bg-active: #e1e1e1;
+  --m-action-primary-fg: #0d0d0d;
+  --m-action-secondary-bg: #1f1f1f;
+  --m-action-secondary-bg-hover: #292929;
+  --m-action-secondary-bg-active: #0b0b0b;
+  --m-action-secondary-fg: #f2f2f2;
+  --m-action-secondary-border: #2e2e2e;
+  --m-action-subtle-bg-hover: #1f1f1f;
+  --m-action-subtle-bg-active: #292929;
+  --m-action-subtle-fg: #bebebe;
+  --m-action-danger-fg: #ffffff;
+  --m-status-neutral-bg: #1f1f1f;
+  --m-status-neutral-border: #2e2e2e;
+  --m-status-neutral-fg: #bebebe;
+  --m-impact-low: #808080;
+  --m-impact-track: #2e2e2e;
+  --m-focus-ring-offset: #141414;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-grey='true']:not([data-theme='light']) {
+    --m-surface-canvas: #040404;
+    --m-surface-default: #141414;
+    --m-surface-sunken: #0b0b0b;
+    --m-surface-raised: #1f1f1f;
+    --m-surface-nav: #0b0b0b;
+    --m-surface-hover: #1f1f1f;
+    --m-surface-active: #292929;
+    --m-surface-disabled: #0b0b0b;
+    --m-surface-inverse: #f2f2f2;
+    --m-content-primary: #f2f2f2;
+    --m-content-secondary: #bebebe;
+    --m-content-muted: #959595;
+    --m-content-placeholder: #959595;
+    --m-content-disabled: #636363;
+    --m-content-decorative: #808080;
+    --m-content-inverse: #0d0d0d;
+    --m-border-subtle: #242424;
+    --m-border-default: #2e2e2e;
+    --m-border-strong: #484848;
+    --m-action-primary-bg: #f2f2f2;
+    --m-action-primary-bg-hover: #ffffff;
+    --m-action-primary-bg-active: #e1e1e1;
+    --m-action-primary-fg: #0d0d0d;
+    --m-action-secondary-bg: #1f1f1f;
+    --m-action-secondary-bg-hover: #292929;
+    --m-action-secondary-bg-active: #0b0b0b;
+    --m-action-secondary-fg: #f2f2f2;
+    --m-action-secondary-border: #2e2e2e;
+    --m-action-subtle-bg-hover: #1f1f1f;
+    --m-action-subtle-bg-active: #292929;
+    --m-action-subtle-fg: #bebebe;
+    --m-action-danger-fg: #ffffff;
+    --m-status-neutral-bg: #1f1f1f;
+    --m-status-neutral-border: #2e2e2e;
+    --m-status-neutral-fg: #bebebe;
+    --m-impact-low: #808080;
+    --m-impact-track: #2e2e2e;
+    --m-focus-ring-offset: #141414;
+  }
+}
+
+/* ── grey: Warm ─ the same ladder rotated to a warm hue: paper rather than slate ── */
+:root[data-grey='warm'] {
+  --m-surface-canvas: #f4f2ef;
+  --m-surface-default: #ffffff;
+  --m-surface-sunken: #faf8f6;
+  --m-surface-raised: #ffffff;
+  --m-surface-nav: #faf8f6;
+  --m-surface-hover: #f4f2ef;
+  --m-surface-active: #edebe7;
+  --m-surface-disabled: #f4f2ef;
+  --m-surface-inverse: #1d1a16;
+  --m-content-primary: #1d1a16;
+  --m-content-secondary: #4c4741;
+  --m-content-muted: #67625c;
+  --m-content-placeholder: #76716a;
+  --m-content-disabled: #a8a49e;
+  --m-content-decorative: #847f79;
+  --m-content-inverse: #ffffff;
+  --m-border-subtle: #edebe7;
+  --m-border-default: #e4e1dd;
+  --m-border-strong: #d0cdc9;
+  --m-action-primary-bg: #1d1a16;
+  --m-action-primary-bg-hover: #312d28;
+  --m-action-primary-bg-active: #100d09;
+  --m-action-primary-fg: #ffffff;
+  --m-action-secondary-bg: #ffffff;
+  --m-action-secondary-bg-hover: #faf8f6;
+  --m-action-secondary-bg-active: #edebe7;
+  --m-action-secondary-fg: #312d28;
+  --m-action-secondary-border: #e4e1dd;
+  --m-action-subtle-bg-hover: #f4f2ef;
+  --m-action-subtle-bg-active: #edebe7;
+  --m-action-subtle-fg: #4c4741;
+  --m-action-danger-fg: #ffffff;
+  --m-status-neutral-bg: #faf8f6;
+  --m-status-neutral-border: #e4e1dd;
+  --m-status-neutral-fg: #4c4741;
+  --m-impact-low: #a8a49e;
+  --m-impact-track: #e4e1dd;
+  --m-focus-ring-offset: #ffffff;
+}
+
+:root[data-grey='warm'][data-theme='dark'] {
+  --m-surface-canvas: #060403;
+  --m-surface-default: #16130f;
+  --m-surface-sunken: #0d0b07;
+  --m-surface-raised: #221f1a;
+  --m-surface-nav: #0d0b07;
+  --m-surface-hover: #221f1a;
+  --m-surface-active: #2c2823;
+  --m-surface-disabled: #0d0b07;
+  --m-surface-inverse: #f4f2ef;
+  --m-content-primary: #f3f1ef;
+  --m-content-secondary: #c0bdb9;
+  --m-content-muted: #99948f;
+  --m-content-placeholder: #99948f;
+  --m-content-disabled: #67625c;
+  --m-content-decorative: #847f79;
+  --m-content-inverse: #100d09;
+  --m-border-subtle: #27231e;
+  --m-border-default: #312d28;
+  --m-border-strong: #4c4741;
+  --m-action-primary-bg: #f4f2ef;
+  --m-action-primary-bg-hover: #ffffff;
+  --m-action-primary-bg-active: #e4e1dd;
+  --m-action-primary-fg: #100d09;
+  --m-action-secondary-bg: #221f1a;
+  --m-action-secondary-bg-hover: #2c2823;
+  --m-action-secondary-bg-active: #0d0b07;
+  --m-action-secondary-fg: #f3f1ef;
+  --m-action-secondary-border: #312d28;
+  --m-action-subtle-bg-hover: #221f1a;
+  --m-action-subtle-bg-active: #2c2823;
+  --m-action-subtle-fg: #c0bdb9;
+  --m-action-danger-fg: #ffffff;
+  --m-status-neutral-bg: #221f1a;
+  --m-status-neutral-border: #312d28;
+  --m-status-neutral-fg: #c0bdb9;
+  --m-impact-low: #847f79;
+  --m-impact-track: #312d28;
+  --m-focus-ring-offset: #16130f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-grey='warm']:not([data-theme='light']) {
+    --m-surface-canvas: #060403;
+    --m-surface-default: #16130f;
+    --m-surface-sunken: #0d0b07;
+    --m-surface-raised: #221f1a;
+    --m-surface-nav: #0d0b07;
+    --m-surface-hover: #221f1a;
+    --m-surface-active: #2c2823;
+    --m-surface-disabled: #0d0b07;
+    --m-surface-inverse: #f4f2ef;
+    --m-content-primary: #f3f1ef;
+    --m-content-secondary: #c0bdb9;
+    --m-content-muted: #99948f;
+    --m-content-placeholder: #99948f;
+    --m-content-disabled: #67625c;
+    --m-content-decorative: #847f79;
+    --m-content-inverse: #100d09;
+    --m-border-subtle: #27231e;
+    --m-border-default: #312d28;
+    --m-border-strong: #4c4741;
+    --m-action-primary-bg: #f4f2ef;
+    --m-action-primary-bg-hover: #ffffff;
+    --m-action-primary-bg-active: #e4e1dd;
+    --m-action-primary-fg: #100d09;
+    --m-action-secondary-bg: #221f1a;
+    --m-action-secondary-bg-hover: #2c2823;
+    --m-action-secondary-bg-active: #0d0b07;
+    --m-action-secondary-fg: #f3f1ef;
+    --m-action-secondary-border: #312d28;
+    --m-action-subtle-bg-hover: #221f1a;
+    --m-action-subtle-bg-active: #2c2823;
+    --m-action-subtle-fg: #c0bdb9;
+    --m-action-danger-fg: #ffffff;
+    --m-status-neutral-bg: #221f1a;
+    --m-status-neutral-border: #312d28;
+    --m-status-neutral-fg: #c0bdb9;
+    --m-impact-low: #847f79;
+    --m-impact-track: #312d28;
+    --m-focus-ring-offset: #16130f;
+  }
+}
+
+/* ── accent: Teal ─ the shipped accent ── */
+:root[data-accent='teal'] {
+  --m-surface-selected: #e5f5f8;
+  --m-content-accent: #0d636f;
+  --m-border-accent: #287b88;
+  --m-status-info-bg: #e5f5f8;
+  --m-status-info-border: #acdbe3;
+  --m-status-info-fg: #094b55;
+  --m-focus-ring: #287b88;
+}
+
+:root[data-accent='teal'][data-theme='dark'] {
+  --m-surface-selected: #022227;
+  --m-content-accent: #81c0cc;
+  --m-border-accent: #287b88;
+  --m-status-info-bg: #022227;
+  --m-status-info-border: #06373e;
+  --m-status-info-fg: #acdbe3;
+  --m-focus-ring: #4f99a6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='teal']:not([data-theme='light']) {
+    --m-surface-selected: #022227;
+    --m-content-accent: #81c0cc;
+    --m-border-accent: #287b88;
+    --m-status-info-bg: #022227;
+    --m-status-info-border: #06373e;
+    --m-status-info-fg: #acdbe3;
+    --m-focus-ring: #4f99a6;
+  }
+}
+
+/* ── accent: Indigo ─ the suggestion, and quiet at these chromas. Measured AROUND the wheel rather than by subtracting, it sits 112 degrees off danger, 160 off warning and 123 off success, so a selected row can never be mistaken for an alarm - which is the constraint that rules out the whole red half of the wheel, watermelon included ── */
+:root[data-accent='indigo'] {
+  --m-surface-selected: #eef1fe;
+  --m-content-accent: #4c5482;
+  --m-border-accent: #616b9d;
+  --m-status-info-bg: #eef1fe;
+  --m-status-info-border: #c7cff3;
+  --m-status-info-fg: #393f63;
+  --m-focus-ring: #616b9d;
+}
+
+:root[data-accent='indigo'][data-theme='dark'] {
+  --m-surface-selected: #181b2f;
+  --m-content-accent: #a7b2df;
+  --m-border-accent: #616b9d;
+  --m-status-info-bg: #181b2f;
+  --m-status-info-border: #292e4a;
+  --m-status-info-fg: #c7cff3;
+  --m-focus-ring: #7e89bb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='indigo']:not([data-theme='light']) {
+    --m-surface-selected: #181b2f;
+    --m-content-accent: #a7b2df;
+    --m-border-accent: #616b9d;
+    --m-status-info-bg: #181b2f;
+    --m-status-info-border: #292e4a;
+    --m-status-info-fg: #c7cff3;
+    --m-focus-ring: #7e89bb;
+  }
+}
+
+/* ── density: Spaced ── */
+:root[data-density='spaced'] {
+  --m-space-3: 0.5rem;
+  --m-space-4: 0.625rem;
+  --m-space-5: 1rem;
+  --m-space-6: 1.25rem;
+  --m-space-7: 1.5rem;
+  --m-space-8: 2rem;
+  --m-space-9: 2.5rem;
+  --m-space-10: 3rem;
+  --m-space-11: 4rem;
+  --m-control-height-sm: 1.875rem;
+  --m-control-height-md: 2.125rem;
+  --m-control-height-lg: 2.5rem;
+  --m-row-height: 2.875rem;
+  --m-header-height: 3.25rem;
+}
+
+/* ── font: Plex ─ IBM Plex Sans, the shipped face ── */
+:root[data-font='plex'] {
+  --m-font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ── font: Inter ─ the grotesque Notion and Linear both use, and the quietest of the three ── */
+:root[data-font='inter'] {
+  --m-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ── font: Geist ─ tighter and more mechanical, with a matching mono ── */
+:root[data-font='geist'] {
+  --m-font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}

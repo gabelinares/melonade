@@ -1,0 +1,149 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   OPTION A: base layer. Reset, document defaults, and the primitives that
+   every component inherits rather than re-declares.
+
+   The root font-size is deliberately UNTOUCHED at the browser's 16px. The
+   current app sets it to 14px, which quietly rescales every rem in the
+   codebase and is why type beside a component never lined up. Compactness
+   here comes from the type scale (--m-text-sm is 13px), not from moving the
+   root out from under the user's zoom setting.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--m-font-sans);
+  font-size: var(--m-text-sm);
+  line-height: var(--m-leading-normal);
+  letter-spacing: var(--m-tracking-tight);
+  color: var(--m-content-primary);
+  /* explicit: an artifact/host surface must never show through */
+  background: var(--m-surface-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+  font-weight: var(--m-weight-semibold);
+  line-height: var(--m-leading-tight);
+  text-wrap: balance;
+}
+
+p { text-wrap: pretty; }
+
+button, input, select, textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+button { background: none; border: none; padding: 0; cursor: pointer; }
+
+ul, ol { list-style: none; padding: 0; }
+
+a { color: var(--m-content-accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+svg { display: block; flex: none; }
+
+/* ── focus: one ring, every interactive element, never removed ─────────── */
+
+:focus { outline: none; }
+
+:focus-visible {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: 1px;
+  border-radius: var(--m-radius-sm);
+}
+
+/* ── selection ────────────────────────────────────────────────────────── */
+
+::selection {
+  background: var(--m-status-info-bg);
+  color: var(--m-status-info-fg);
+}
+
+/* ── scrollbars: thinned, never restyled into something unfamiliar ─────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--m-border-strong) transparent;
+}
+
+/* ── motion: the reduced-motion contract, declared once ────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── utility primitives, used instead of one-off inline styles ─────────── */
+
+.m-mono {
+  font-family: var(--m-font-mono);
+  font-size: var(--m-text-xs);
+  letter-spacing: var(--m-tracking-normal);
+}
+
+.m-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* screen-reader-only, for the labels a sighted user gets from layout */
+.m-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* the skeleton shimmer, defined once so every loading surface matches */
+@keyframes m-shimmer {
+  from { background-position: -180% 0; }
+  to { background-position: 180% 0; }
+}
+
+.m-skeleton {
+  border-radius: var(--m-radius-sm);
+  background-image: linear-gradient(
+    90deg,
+    var(--m-surface-hover) 0%,
+    var(--m-surface-active) 45%,
+    var(--m-surface-hover) 90%
+  );
+  background-size: 220% 100%;
+  animation: m-shimmer 1.5s var(--m-ease-in-out) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-skeleton { animation: none; background: var(--m-surface-hover); }
+}

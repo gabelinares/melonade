@@ -1,0 +1,52 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import { BorderWidths, LayoutBars, RadiusBoxes, SpaceBars } from './TokenViews.tsx';
+
+<Meta title="Foundations/Space" />
+
+# Space, shape and layout
+
+## Space
+
+A 4pt base with two half steps below it, and a longer top end than a dense table needs, because this
+option buys its calm with space rather than with borders. Every bar below is drawn at its real width,
+so the gap between adjacent steps is visible rather than asserted: `space-1` through `space-4` are the
+inside of a control, `space-5` and `space-6` are the inside of a pane, and everything from `space-8`
+up is between blocks.
+
+`space-px` exists so a 1px gap in a flex column is a token rather than a literal, which is what keeps
+the divided lists in the filter popovers from drifting to 2px one at a time.
+
+<SpaceBars />
+
+## Radius
+
+Radius encodes size, not taste: the smaller the thing, the tighter the corner, so a chip inside a
+menu never looks rounder than the menu holding it. Every step here is larger than the equivalent in
+the denser option, and that is the cheapest legible difference between the two designs at a glance.
+
+<RadiusBoxes />
+
+## Border width
+
+<BorderWidths />
+
+There is no 2px rule in this system, and the second token exists to say so out loud. Emphasis comes
+from the border colour stepping up the neutral ramp, `border-subtle` to `border-default` to
+`border-strong`, never from the line getting thicker. In this option a border is also the third
+choice rather than the first: a surface change or a gap is tried before a line is drawn, which is why
+the whole detail pane header contains exactly one rule.
+
+## Layout
+
+These are not spacing. They are the four or five numbers that make this layout this layout, so they
+are tokens and they are drawn here at real width.
+
+`rail-width` is the load-bearing one. The rail is 56px at every window size and every agent count,
+which is the answer to "what happens when there are eleven agents": the eleventh costs vertical space
+that was empty anyway and no width at all, ever. `list-width` is a reading measure rather than a
+fraction of the window, because a queue you skim has an ideal column width and a percentage does not
+know that. `row-height` is what the loading skeleton matches exactly, so the column does not resize
+when data lands.
+
+<LayoutBars />

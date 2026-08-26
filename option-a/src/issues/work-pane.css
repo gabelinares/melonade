@@ -1,0 +1,73 @@
+/* ── THE WORK PANE ─────────────────────────────────────────────────────────
+   A header, and a body under it split into two columns. Option B's structure,
+   unchanged, because it is the structure that makes the side panels a set: both
+   columns begin under the same top edge, so the control that opens each panel
+   sits in the header and a second panel is a second glyph rather than a second
+   layout. */
+/* Fills the content plane. The table page is a card that grows with its rows;
+   the detail is a FRAME - a player and two panels that divide a fixed height
+   between them - so it takes the plane and hands the height downwards. */
+/* SAME MEASURE AND SAME RADIUS AS THE TABLE PAGE. This block used to claim the
+   detail's top edge lined up with the table's and it did not: with no cap and no
+   centring the card started 116px further left and ran 232px wider, and at
+   radius-lg it was a different shape as well. Going from the list to an issue
+   therefore moved the whole page under the reader - which is the "big break"
+   Gabriel reported on 08-26, and it was three numbers, not a feeling.
+   The cap belongs on both or neither: a frame that divides a fixed height still
+   divides it inside 85rem, and the player is 16:10 inside that. */
+.m-work {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  max-width: var(--m-content-max);
+  margin-inline: auto;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--m-surface-default);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-md);
+}
+
+.m-work__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The flow. Its whole "collapsing panels" behaviour is the fact that exactly
+   one child carries `flex: 1` at any moment. */
+.m-work__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── triage is one document ────────────────────────────────────────────────
+   The write-up and the sessions band are one scroll, each section exactly as
+   tall as its contents, so the space between the prose and the band belongs to
+   the prose and the space under the cards belongs to the cards. The last
+   section grows into what is left, so the foot of the page is the band rather
+   than a gap after it. */
+.m-work__scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.m-work__scroll > .m-wu { flex: none; }
+.m-work__scroll > .m-strip--cards { flex: 1; }
+
+/* The peek: a fixed 42% of the pane laid over a running replay. Fixed rather
+   than the content's own height because a panel that changes height when you
+   switch tabs is the video underneath jumping. */
+.m-work__peek {
+  flex: none;
+  height: 42%;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--m-surface-default);
+  border-bottom: 1px solid var(--m-border-default);
+}

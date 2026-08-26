@@ -1,0 +1,28 @@
+# Vercel does NOT build these apps. It serves the dist/ folder built on this
+# machine, and vercel.json's buildCommand is a deliberate no-op.
+#
+# The reason is the @shared alias. Both options import the domain layer and the
+# brand mark from ../shared, which sits ABOVE the project root, and the root
+# node_modules is shared too. A remote build from this directory cannot see
+# either. Building locally and shipping the output keeps one source of truth and
+# avoids restructuring two apps to suit a deploy.
+#
+# So: run the app's own `npm run deploy`, which builds first. Deploying without
+# building ships whatever dist/ happened to contain.
+node_modules
+src
+shared
+.storybook
+storybook-static
+index.html
+tsconfig.json
+vite.config.ts
+postcss.config.cjs
+package-lock.json
+
+# dist/ is in .gitignore, and the CLI falls back to .gitignore for anything this
+# file does not decide - which silently shipped an EMPTY deployment the first
+# time (200 on the alias, 404 on every path). The build output is the ONLY thing
+# this deploy is for, so it is re-allowed explicitly.
+!dist
+!dist/**

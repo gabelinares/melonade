@@ -1,0 +1,54 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import { Families, LineHeights, Tracking, TypeScale, Weights } from './TokenViews.tsx';
+
+<Meta title="Foundations/Type" />
+
+# Type
+
+## The root stays at 16px
+
+The root font size is deliberately the browser's untouched default. The app this replaces sets it to
+14px, which quietly rescales every `rem` in the codebase: a component that says `0.875rem` renders at
+12.25px there and 14px anywhere else, which is why type beside an Ant Design control never lined up.
+Worse, moving the root moves it out from under the reader's own zoom and accessibility settings, so a
+person who has set a larger default gets a smaller app.
+
+Compactness comes from the scale instead. `text-sm` is 13px and it is the base size, so the interface
+is dense by choice at every step rather than by a global multiplier nobody can see.
+
+## Sizes
+
+Seven steps on a fixed rem scale, ratio around 1.09 at the dense end. Product UI wants many close
+steps, not a dramatic ladder: the distance from a table cell to a page title is four steps here, and
+each one is a decision somebody can defend.
+
+<TypeScale />
+
+## Weights
+
+Three, and a fourth is how a quiet system starts shouting. Weight carries hierarchy inside a row
+where size cannot: a nav item goes from regular to medium when it becomes the current page, and the
+row height does not move.
+
+<Weights />
+
+## Line height
+
+<LineHeights />
+
+## Tracking
+
+Negative tracking at the reading sizes, because the face is set tight and dense; `tracking-wide` is
+for the uppercase micro-labels only, where the caps need the air back.
+
+<Tracking />
+
+## Families
+
+One superfamily, two cuts. IBM Plex Sans is humanist and slightly engineered, which suits a triage
+table, and IBM Plex Mono is its sibling, so ids and durations sit beside prose without a pairing
+clash. Deliberately not Inter and not Figtree: Figtree is the current app's face, and the brief is
+that this must not read as the same product.
+
+<Families />

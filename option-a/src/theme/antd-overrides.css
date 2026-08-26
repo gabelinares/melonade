@@ -1,0 +1,147 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   OPTION A: the short list of things ConfigProvider cannot express.
+
+   Every rule here states WHY it exists. An override without a reason is how a
+   theme layer turns back into a pile of literals, which is the exact failure
+   this design system was rebuilt to end. All values come from tokens.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* antd v6's multiple-Select lays its tags out with wrap, so adding a second
+   value silently grows the control's height and the whole toolbar row jumps.
+   A filter toolbar must not resize when a filter is picked. */
+.ant-select-multiple .ant-select-selector {
+  flex-wrap: nowrap !important;
+  overflow: hidden;
+}
+.ant-select-multiple .ant-select-selection-overflow {
+  flex-wrap: nowrap;
+}
+
+/* The table head is a label row, not a heading: small, muted, medium weight,
+   and no vertical rules between cells. "Too many lines" is the standing
+   complaint about the current app, and column separators are the cheapest
+   ones to delete. */
+.ant-table-thead > tr > th {
+  font-size: var(--m-text-xs) !important;
+  font-weight: var(--m-weight-medium) !important;
+  letter-spacing: var(--m-tracking-wide);
+  text-transform: none;
+}
+.ant-table-thead > tr > th::before {
+  display: none !important;
+}
+
+/* Row rules are hairlines and the last row has none, so the table's bottom
+   edge is the card's border rather than a doubled line. */
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+.ant-table-tbody > tr:last-child > td {
+  border-bottom: none;
+}
+
+/* A clickable row needs a visible keyboard path, and antd gives rows none. */
+.ant-table-tbody > tr[tabindex]:focus-visible {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: -2px;
+}
+
+/* Sort arrows sit at full contrast by default and read as active state on
+   every column at once. They are an affordance, not a status. */
+.ant-table-column-sorter {
+  color: var(--m-content-disabled);
+}
+.ant-table-column-sorter-up.active,
+.ant-table-column-sorter-down.active {
+  color: var(--m-content-primary);
+}
+
+/* Segmented's selected thumb ships with a shadow. In a hairline system the
+   thumb reads as raised from its border and its background alone. */
+.ant-segmented-item-selected {
+  box-shadow: none !important;
+  border: 1px solid var(--m-border-default);
+}
+.ant-segmented .ant-segmented-item-label {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  min-height: 22px;
+}
+
+/* Popovers and dropdowns get a hairline in addition to their shadow, so they
+   stay legible against a white card where a soft shadow alone disappears. */
+.ant-popover-inner,
+.ant-dropdown-menu,
+.ant-select-dropdown {
+  border: 1px solid var(--m-border-default);
+}
+
+/* antd's icon-only text Button is 30px wide with a 15px glyph, which puts the
+   tap target under the 44px floor. Grow the hit area without growing the box. */
+.ant-btn.ant-btn-icon-only {
+  position: relative;
+}
+.ant-btn.ant-btn-icon-only::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
+/* Modal: no exclamation icons, and a footer that reads left-to-right the way
+   the rest of the app does. */
+.ant-modal-confirm-body > .anticon {
+  display: none;
+}
+
+/* antd lays a sortable header out as label | arrow with space-between, so on a
+   wide column the arrow floats hundreds of pixels from the word it belongs to.
+   Caught by looking at the render: the Issue column's arrow sat in the middle
+   of empty space and read as an unrelated control. */
+.ant-table-thead th.ant-table-column-has-sorters .ant-table-column-sorters {
+  justify-content: flex-start;
+  gap: var(--m-space-3);
+}
+.ant-table-thead th.ant-table-column-has-sorters .ant-table-column-title {
+  flex: 0 0 auto;
+}
+
+/* The disclosure caret is the primary gesture on a row, so it must not be
+   fainter than the sort arrows, which are secondary. */
+.ant-table-row-expand-icon-cell { vertical-align: middle; }
+
+/* Focus rings antd takes away.
+ *
+ * Found by tabbing through the page and asserting a visible indicator on each
+ * stop, not by reading the CSS. Four controls had none: the search input and the
+ * three sortable column headers. antd sets `outline: none` on them and relies on
+ * a border-colour change (inputs) or nothing at all (headers), and the theme here
+ * had already switched off antd's focus shadow on the assumption that the global
+ * `:focus-visible` rule would cover it. It does not, because antd's own rule is
+ * more specific.
+ *
+ * A border-colour change is not an adequate focus indicator on its own: it fails
+ * the 3:1 non-text contrast floor against the surrounding surface, and it is
+ * invisible to anyone who cannot see the un-focused state for comparison. */
+.ant-input:focus-visible,
+.ant-input-affix-wrapper:focus-within,
+.ant-input-outlined:focus-within {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: 1px;
+}
+
+.ant-table-thead th.ant-table-column-has-sorters:focus-visible {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--m-radius-xs);
+}
+
+/* Pagination items and the Segmented thumb are focusable too, and antd styles
+   both with a box-shadow this theme set to none. */
+.ant-pagination-item:focus-visible,
+.ant-pagination-item-link:focus-visible,
+.ant-segmented-item-input:focus-visible + .ant-segmented-item-label {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: 1px;
+  border-radius: var(--m-radius-xs);
+}

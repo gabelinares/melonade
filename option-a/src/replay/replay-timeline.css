@@ -1,0 +1,132 @@
+/* ── THE TRANSPORT ─────────────────────────────────────────────────────────
+   One bar across the foot of the player: play, clock, track, total, the jump,
+   and the speeds. Graphite's chrome grammar - a hairline above, the sunken
+   surface, 30px controls - so it reads as a toolbar of this app rather than a
+   video player dropped into one. */
+.m-tl {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: none;
+  height: var(--m-control-height-lg);
+  padding-inline: var(--m-space-4);
+  border-top: 1px solid var(--m-border-default);
+  background: var(--m-surface-sunken);
+}
+
+.m-tl__clock {
+  flex: none;
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+.m-tl__clock--total { color: var(--m-content-disabled); }
+
+/* The track is a slider for assistive tech and a div for the pointer: a native
+   range input cannot carry the markers, and the markers are the point. */
+.m-tl__track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 1.25rem;
+  cursor: pointer;
+  touch-action: none;
+}
+.m-tl__track:focus-visible { outline: 2px solid var(--m-border-accent); outline-offset: 2px; }
+
+.m-tl__rail,
+.m-tl__fill {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 3px;
+  translate: 0 -50%;
+  border-radius: var(--m-radius-full);
+}
+.m-tl__rail { right: 0; background: var(--m-border-default); }
+.m-tl__fill { background: var(--m-content-secondary); }
+
+.m-tl__head {
+  position: absolute;
+  top: 50%;
+  width: 0.625rem;
+  height: 0.625rem;
+  translate: -50% -50%;
+  border-radius: var(--m-radius-full);
+  background: var(--m-content-primary);
+  box-shadow: 0 0 0 2px var(--m-surface-sunken);
+  pointer-events: none;
+}
+
+/* Markers sit ON the rail rather than above it: a row of pins floating over a
+   track is two horizontal lines where one will do. Colour carries kind, and
+   only three kinds are allowed to be loud - an error, a rage burst and a stall
+   are the three things worth scrubbing to. */
+.m-tl__mark {
+  position: absolute;
+  top: 50%;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  translate: -50% -50%;
+  border: 0;
+  padding: 0;
+  border-radius: var(--m-radius-full);
+  background: var(--m-content-disabled);
+  cursor: pointer;
+  transition: scale var(--m-duration-fast) var(--m-ease-out);
+}
+.m-tl__mark:hover, .m-tl__mark:focus-visible { scale: 1.5; outline: none; }
+.m-tl__mark.is-past { opacity: 0.5; }
+.m-tl__mark--error { background: var(--m-content-danger); width: 0.5625rem; height: 0.5625rem; }
+.m-tl__mark--rage { background: var(--m-content-warning); width: 0.5625rem; height: 0.5625rem; }
+.m-tl__mark--slow { background: var(--m-content-warning); }
+
+/* The one labelled action in a bar of glyphs, because it is the one thing a
+   reader who arrived from an issue actually wants. */
+.m-tl__jump {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-4);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-default);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-tl__jump:hover { border-color: var(--m-border-strong); color: var(--m-content-primary); }
+.m-tl__jump svg { color: var(--m-content-accent); }
+
+/* A segmented strip, sharing the grammar the category strip uses. */
+.m-tl__speeds {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  padding: 2px;
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-active);
+}
+.m-tl__speed {
+  height: 1.25rem;
+  padding-inline: var(--m-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--m-radius-xs);
+  background: none;
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.m-tl__speed:hover { color: var(--m-content-primary); }
+.m-tl__speed.is-on {
+  background: var(--m-surface-default);
+  border-color: var(--m-border-default);
+  color: var(--m-content-primary);
+}

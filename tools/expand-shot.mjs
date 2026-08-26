@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport:{width:1440,height:900}, deviceScaleFactor:2, colorScheme:'light' });
+const p = await ctx.newPage();
+p.on('pageerror', e => console.log('PAGEERROR', e.message));
+p.on('console', m => m.type()==='error' && console.log('CONSOLE', m.text()));
+await p.goto('http://localhost:4398', { waitUntil:'networkidle' });
+await p.waitForTimeout(1600);
+await p.locator('.m-issues__caret').first().click();
+await p.waitForTimeout(700);
+await p.screenshot({ path: process.argv[2] });
+console.log('placeholder present:', await p.locator('.m-placeholder.is-compact').count());
+await b.close();

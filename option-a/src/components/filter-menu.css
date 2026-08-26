@@ -1,0 +1,131 @@
+/* ── the menu ── */
+
+.m-fm { display: flex; flex-direction: column; width: 16.5rem; }
+
+.m-fm__search {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  padding: var(--m-space-2) var(--m-space-3);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+.m-fm__search .ant-input { font-size: var(--m-text-sm); }
+
+/* One ring per field, and it belongs to the ROW. The input is the only focusable
+   thing here and it autofocuses when the menu opens, so a ring drawn tight around
+   the glyphs collides with the search affordance beside it. Both options do this
+   the same way, which is the point of them sharing a token layer. */
+.m-fm__search .ant-input:focus-visible,
+.m-fm__search .ant-input:focus { outline: none; box-shadow: none; }
+
+.m-fm__search:focus-within {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--m-radius-md) var(--m-radius-md) 0 0;
+}
+
+/* The back affordance doubles as the breadcrumb: inside a dimension it names
+   where you are, so the search placeholder does not have to. */
+.m-fm__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-1);
+  flex: none;
+  height: 1.375rem;
+  padding-inline: var(--m-space-2) var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-hover);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-xs);
+  white-space: nowrap;
+}
+.m-fm__back:hover { color: var(--m-content-primary); background: var(--m-surface-active); }
+
+.m-fm__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 19rem;
+  overflow-y: auto;
+  padding: var(--m-space-2);
+}
+
+/* ── a dimension row in the root list ── */
+
+.m-fm__dim-row {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  width: 100%;
+  min-height: 1.75rem;
+  padding: var(--m-space-2) var(--m-space-4);
+  border-radius: var(--m-radius-sm);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+  text-align: left;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-fm__dim-row:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
+
+.m-fm__dim-icon { display: inline-flex; flex: none; color: var(--m-content-decorative); }
+.m-fm__dim-row:hover .m-fm__dim-icon { color: var(--m-content-secondary); }
+.m-fm__dim-label { flex: 1; }
+
+/* how many of this dimension's options are applied */
+.m-fm__applied {
+  flex: none;
+  min-width: 15px;
+  height: 15px;
+  padding-inline: 3px;
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-inverse);
+  color: var(--m-content-inverse);
+  font-size: var(--m-text-2xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 15px;
+  text-align: center;
+}
+
+.m-fm__caret { flex: none; color: var(--m-content-disabled); }
+.m-fm__dim-row:hover .m-fm__caret { color: var(--m-content-muted); }
+
+/* ── search results carry their dimension, since the tree is flattened ── */
+
+.m-fm__meta { display: inline-flex; align-items: center; gap: var(--m-space-3); }
+
+.m-fm__dim {
+  padding-inline: var(--m-space-2);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-sunken);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+  letter-spacing: var(--m-tracking-normal);
+}
+
+.m-fm__hint {
+  padding: var(--m-space-2) var(--m-space-4) var(--m-space-3);
+  font-size: var(--m-text-xs);
+  line-height: var(--m-leading-snug);
+  color: var(--m-content-muted);
+}
+
+.m-fm__none {
+  padding: var(--m-space-6) var(--m-space-4);
+  font-size: var(--m-text-sm);
+  color: var(--m-content-muted);
+  text-align: center;
+}
+
+/* the impact options carry the same three colours the list uses, so the filter
+   and the row it filters agree */
+.m-fm__dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--m-radius-full);
+}
+.m-fm__dot--high { background: var(--m-impact-high); }
+.m-fm__dot--medium { background: var(--m-impact-medium); }
+.m-fm__dot--low { background: var(--m-impact-low); }

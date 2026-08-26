@@ -1,0 +1,14 @@
+{
+  "name": "melonade-app-workspace",
+  "private": true,
+  "type": "module",
+  "description": "Two candidate designs for the Issues page. option-a (Graphite, Ant Design) and option-b (Atrium, Mantine) are independent apps; this root holds only the shared data layer and the tooling.",
+  "scripts": {
+    "tokens": "node tools/gen-palette.mjs && node tools/gen-css.mjs option-a && node tools/gen-css.mjs option-b && node tools/gen-proto-themes.mjs",
+    "shots": "node tools/shoot.mjs",
+    "proto-themes": "node tools/gen-proto-themes.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.1"
+  }
+}

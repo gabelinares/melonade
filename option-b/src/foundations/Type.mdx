@@ -1,0 +1,91 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import {
+  Families,
+  LineHeights,
+  SerifPlacement,
+  SerifVsSans,
+  Tracking,
+  TypeScale,
+  Weights,
+} from './TokenViews.tsx';
+
+<Meta title="Foundations/Type" />
+
+# Type
+
+## The root stays at 16px
+
+The root font size is deliberately the browser's untouched default. The app this replaces sets it to
+14px, which quietly rescales every `rem` in the codebase: a component that says `0.875rem` renders at
+12.25px there and 14px anywhere else, which is why type beside a framework control never lined up.
+Worse, moving the root moves it out from under the reader's own zoom and accessibility settings, so a
+person who has set a larger default gets a smaller app.
+
+Density comes from the scale instead, and this option chooses a 14px base where the denser option
+chooses 13px. That is the trade being made here in one number: fewer rows on screen, and a queue you
+can read at a glance rather than scan.
+
+## Sizes
+
+Nine steps, ratio around 1.14. The bottom five are the interface, the top two are the serif, and the
+two in the middle exist so a pane heading does not have to borrow a display size.
+
+<TypeScale />
+
+## Weights
+
+Three, and a fourth is how a quiet system starts shouting. Weight carries hierarchy inside a row
+where size cannot: a list row goes from regular to medium when it becomes the selected issue, and the
+row height does not move.
+
+<Weights />
+
+## Line height
+
+Looser than a dense table would use. The detail pane is prose that people actually read, so
+`leading-relaxed` is a real working value here rather than a token kept for completeness.
+
+<LineHeights />
+
+## Tracking
+
+Negative tracking at the reading sizes, because the sans is slightly condensed. `tracking-wide` is
+for the uppercase micro-labels only, where the caps need the air back, and `tracking-serif` exists
+because a high-contrast serif at 26px sets loose and needs pulling in.
+
+<Tracking />
+
+## Families
+
+<Families />
+
+## The serif
+
+The pairing is on a **contrast axis**, not on similarity. Instrument Sans is a slightly condensed
+grotesk; Instrument Serif is a high-contrast display serif. Two grotesks that are almost the same is
+the pairing mistake nobody can see, and sans against serif is a decision anyone can.
+
+<SerifVsSans />
+
+### It is display only, and that is enforced by a class
+
+`.m-display` is the only way the serif enters the app. It is a class rather than a heading rule
+precisely so that adding a heading somewhere cannot accidentally put a display face on a label.
+
+It appears in exactly **two** places:
+
+- the **issue title** at the top of the detail pane, at `text-3xl`
+- the **empty-state headline**, at `text-4xl`
+
+It never touches a label, a button, a control, a chip, a table cell or a piece of metadata. The
+reason is not taste, it is what a display face does at small sizes in interface chrome: the contrast
+that makes it good at 32px makes it thin and slow to read at 13px, and a work tool set in a display
+serif reads as costumed rather than serious. The left column below is every legitimate use in the
+product. The right column is the failure this rule exists to prevent, and it is worth looking at,
+because it is what "just use the nice font for the section headers too" actually looks like.
+
+<SerifPlacement />
+
+The italic is loaded and unused. That is deliberate: one voice for the write-up title, and no second
+emphasis mechanism competing with weight.

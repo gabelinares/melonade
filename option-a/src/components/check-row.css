@@ -1,0 +1,75 @@
+.m-checkrow {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  width: 100%;
+  min-height: 1.75rem;
+  padding: var(--m-space-2) var(--m-space-4);
+  border-radius: var(--m-radius-sm);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+  text-align: left;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out);
+}
+
+.m-checkrow:hover { background: var(--m-surface-hover); }
+.m-checkrow--on { color: var(--m-content-primary); }
+
+/* The checkbox slot is always RESERVED and usually EMPTY.
+ *
+ * Reserved, so the label never shifts sideways when the cursor arrives. Empty,
+ * because a column of nine unchecked boxes is as loud as the one box that
+ * matters, and it turns a menu into a form. The border and fill arrive on hover,
+ * on keyboard focus, or when the option is actually selected. */
+.m-checkrow__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid transparent;
+  border-radius: var(--m-radius-xs);
+  background: transparent;
+  color: var(--m-content-inverse);
+  transition: border-color var(--m-duration-instant) var(--m-ease-out),
+    background-color var(--m-duration-instant) var(--m-ease-out);
+}
+
+.m-checkrow:hover .m-checkrow__box,
+.m-checkrow:focus-visible .m-checkrow__box {
+  border-color: var(--m-border-strong);
+  background: var(--m-surface-default);
+}
+
+.m-checkrow--on .m-checkrow__box,
+.m-checkrow--on:hover .m-checkrow__box {
+  background: var(--m-action-primary-bg);
+  border-color: var(--m-action-primary-bg);
+  color: var(--m-action-primary-fg);
+}
+
+/* a single-select row reads as a radio */
+.m-checkrow--single .m-checkrow__box { border-radius: var(--m-radius-full); }
+
+.m-checkrow__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--m-content-decorative);
+}
+.m-checkrow--on .m-checkrow__icon { color: var(--m-content-secondary); }
+
+.m-checkrow__label { flex: 1; }
+
+.m-checkrow__meta {
+  flex: none;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* An option that matches nothing right now is still shown, because a menu that
+   changes shape as you use it is worse than one with a zero in it. It is just
+   quieter. */
+.m-checkrow--empty { color: var(--m-content-disabled); }
+.m-checkrow--empty .m-checkrow__meta { color: var(--m-content-disabled); }

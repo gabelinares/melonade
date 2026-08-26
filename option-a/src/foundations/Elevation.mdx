@@ -1,0 +1,26 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import { ElevationCards } from './TokenViews.tsx';
+
+<Meta title="Foundations/Elevation" />
+
+# Elevation
+
+**The rule: a card gets a border, never a shadow. Only a floating layer gets one.**
+
+There are two shadows and a `none`, and `none` is the one almost everything uses. The standing note
+on the app this replaces is that its panel shadow reads as "something thick", and that is what
+happens when a shadow is used to separate a card from a page: the page and the card are on the same
+plane, so the shadow is describing a depth that is not there. An edge does the job at 1px and costs
+the layout nothing.
+
+A shadow is for a layer that genuinely floats, which means one that is temporary and covers content
+the reader was just looking at: a popover, a dropdown, a tooltip, a modal. There the shadow is not
+decoration, it is the only cue that the thing underneath is still there.
+
+Both shadows compose their colour from the `shadow-color` role, which is why dark mode can drop them
+to zero without touching a component: on a near-black ground a shadow is invisible, so the surface
+ladder carries depth instead. That is also why the ladder steps wider in dark than it needs to in
+light.
+
+<ElevationCards />

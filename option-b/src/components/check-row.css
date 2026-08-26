@@ -1,0 +1,64 @@
+.b-checkrow {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  width: 100%;
+  min-height: 2rem;
+  padding: var(--m-space-2) var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+  text-align: left;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out);
+}
+
+.b-checkrow:hover { background: var(--m-surface-hover); }
+.b-checkrow.is-on { color: var(--m-content-primary); }
+
+/* The checkbox slot is always RESERVED and usually EMPTY.
+ *
+ * Reserved, so the label never shifts sideways when the cursor arrives. Empty,
+ * because a column of nine unchecked boxes is as loud as the one box that
+ * matters, and it turns a menu into a form. The border and fill arrive on hover,
+ * on keyboard focus, or when the option is actually selected. */
+.b-checkrow__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border: 1px solid transparent;
+  border-radius: var(--m-radius-xs);
+  background: transparent;
+  transition: border-color var(--m-duration-instant) var(--m-ease-out),
+    background-color var(--m-duration-instant) var(--m-ease-out);
+}
+
+.b-checkrow:hover .b-checkrow__box,
+.b-checkrow:focus-visible .b-checkrow__box {
+  border-color: var(--m-border-strong);
+  background: var(--m-surface-default);
+}
+
+.b-checkrow.is-on .b-checkrow__box,
+.b-checkrow.is-on:hover .b-checkrow__box {
+  background: var(--m-action-primary-bg);
+  border-color: var(--m-action-primary-bg);
+  color: var(--m-action-primary-fg);
+}
+
+/* a single-select row reads as a radio */
+.b-checkrow.is-single .b-checkrow__box { border-radius: var(--m-radius-full); }
+
+.b-checkrow__icon { display: inline-flex; flex: none; color: var(--m-content-decorative); }
+.b-checkrow.is-on .b-checkrow__icon { color: var(--m-content-accent); }
+
+.b-checkrow__label { flex: 1; }
+
+.b-checkrow__meta {
+  flex: none;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}

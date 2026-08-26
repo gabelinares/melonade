@@ -1,0 +1,36 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import { BorderWidths, RadiusBoxes, SpaceBars } from './TokenViews.tsx';
+
+<Meta title="Foundations/Space" />
+
+# Space and shape
+
+## Space
+
+A 4pt base with two half steps below it, because a dense interface needs 2px and 6px more than it
+needs 64px. Every bar below is drawn at its real width, so the gap between adjacent steps is visible
+rather than asserted: `space-1` through `space-4` are the inside of a control, `space-5` and
+`space-6` are the inside of a card, and everything above `space-8` is between blocks.
+
+`space-px` exists so a 1px gap in a flex column is a token rather than a literal, which is what keeps
+the divided lists in the filter popovers from drifting to 2px one at a time.
+
+<SpaceBars />
+
+## Radius
+
+Radius encodes size, not taste: the smaller the thing, the tighter the corner, so a chip inside a
+card never looks rounder than the card holding it.
+
+<RadiusBoxes />
+
+## Border width
+
+<BorderWidths />
+
+There is no 2px rule in this system, and the second token exists to say so out loud. `lineWidthBold`
+is handed to Ant Design as 1 for the same reason: its default is a 2px focus and active edge, and a
+hairline system has to override that once, centrally, rather than per component. Emphasis comes from
+the border colour stepping up the neutral ramp, `border-subtle` to `border-default` to
+`border-strong`, never from the line getting thicker.

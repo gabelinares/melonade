@@ -1,0 +1,142 @@
+.b-tl {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: none;
+  height: var(--m-header-height);
+  padding-inline: var(--m-space-5);
+  border-top: 1px solid var(--m-border-subtle);
+  background: var(--m-surface-sunken);
+}
+
+.b-tl__clock {
+  flex: none;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-secondary);
+  font-variant-numeric: tabular-nums;
+  /* fixed so the track does not shuffle sideways once a minute */
+  min-width: 3.25rem;
+}
+.b-tl__clock--total { color: var(--m-content-muted); text-align: right; }
+
+/* ── the track ─────────────────────────────────────────────────────────────
+   36px tall and mostly empty. The visible rail is 4px, and the rest is hit
+   area: a 4px pointer target is a target you miss, and this is the control the
+   whole screen exists to operate. */
+.b-tl__track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 2.25rem;
+  cursor: pointer;
+  touch-action: none;
+}
+.b-tl__track:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: 2px; border-radius: var(--m-radius-xs); }
+
+.b-tl__rail,
+.b-tl__fill {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 4px;
+  translate: 0 -50%;
+  border-radius: var(--m-radius-full);
+  pointer-events: none;
+}
+.b-tl__rail { right: 0; background: var(--m-impact-track); }
+.b-tl__fill { background: var(--m-action-primary-bg); }
+
+.b-tl__head {
+  position: absolute;
+  top: 50%;
+  width: 0.75rem;
+  height: 0.75rem;
+  translate: -50% -50%;
+  border-radius: var(--m-radius-full);
+  background: var(--m-action-primary-bg);
+  box-shadow: 0 0 0 3px var(--m-surface-sunken);
+  pointer-events: none;
+}
+
+/* ── markers ───────────────────────────────────────────────────────────────
+   Sat ON the rail rather than above it. A row of pins floating over a track is
+   two horizontal lines where one will do, and this system already answers "too
+   many lines" everywhere else.
+   Colour carries kind, and only three kinds are allowed to be loud: an error,
+   a rage burst and a stall are the three things worth scrubbing to. Everything
+   else the person did is a quiet tick, present so the loud ones have a rhythm
+   to stand out from. */
+.b-tl__mark {
+  position: absolute;
+  top: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  translate: -50% -50%;
+  border: 0;
+  padding: 0;
+  border-radius: var(--m-radius-full);
+  background: var(--m-content-decorative);
+  cursor: pointer;
+  transition: scale var(--m-duration-fast) var(--m-ease-out);
+}
+.b-tl__mark:hover,
+.b-tl__mark:focus-visible { scale: 1.5; outline: none; }
+.b-tl__mark.is-past { opacity: 0.55; }
+
+.b-tl__mark--error { background: var(--m-impact-high); width: 0.625rem; height: 0.625rem; }
+.b-tl__mark--rage { background: var(--m-impact-medium); width: 0.625rem; height: 0.625rem; }
+.b-tl__mark--slow { background: var(--m-impact-medium); }
+
+/* ── jump to the failure ───────────────────────────────────────────────────
+   The one labelled action in a bar of glyphs, because it is the one thing a
+   reader who arrived here from an issue actually wants and a glyph would hide
+   it among the transport controls. */
+.b-tl__jump {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  flex: none;
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-4);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-full);
+  background: var(--m-surface-default);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--m-duration-fast) var(--m-ease-out),
+    color var(--m-duration-fast) var(--m-ease-out);
+}
+.b-tl__jump:hover { border-color: var(--m-border-accent); color: var(--m-content-primary); }
+.b-tl__jump svg { color: var(--m-content-accent); }
+
+/* ── speed ─────────────────────────────────────────────────────────────────
+   A segmented strip, sharing the toggle grammar the category tabs use, so this
+   is a third instance of an existing control rather than a fourth invention. */
+.b-tl__speeds {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-1);
+  flex: none;
+  padding: 2px;
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-active);
+}
+
+.b-tl__speed {
+  height: 1.375rem;
+  padding-inline: var(--m-space-3);
+  border: 0;
+  border-radius: var(--m-radius-xs);
+  background: none;
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.b-tl__speed.is-on { background: var(--m-surface-default); color: var(--m-content-primary); }
+
+@media (max-width: 1180px) {
+  .b-tl__jump { display: none; }
+}

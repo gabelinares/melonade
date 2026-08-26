@@ -1,0 +1,48 @@
+.b-mark {
+  display: block;
+  flex: none;
+  color: var(--m-brand-mark);
+}
+
+/* The animated property LIST comes from the shared geometry file via a custom
+   property, so "which properties the turn touches" is stated once and cannot
+   drift from the values themselves. Duration and easing come from this app's
+   motion scale rather than the landing page's 440ms, so the mark moves at the
+   same speed as every other transition in the shell. */
+.b-mark__s {
+  transition-property: var(--b-mark-props);
+  transition-duration: var(--m-duration-slow);
+  transition-timing-function: var(--m-ease-out);
+}
+
+/* Three triggers, one state.
+   `is-turned` is the play-once-on-mount. The other two are hover and keyboard
+   focus on the element HOLDING the mark, so the mark itself never has to be
+   interactive - a logo is not a control.
+   That holder opts in with `data-mark-host`, and the attribute is the contract:
+   an unqualified `:hover >` would fire whenever the pointer is anywhere in the
+   mark's ancestor chain, and hard-coding `button` would leave the mark inert in
+   option A, where the brand row is a plain div. One attribute covers both. */
+.b-mark.is-turned .b-mark__s--a,
+[data-mark-host]:hover > .b-mark .b-mark__s--a,
+[data-mark-host]:focus-visible > .b-mark .b-mark__s--a {
+  x: var(--b-mark-ax);
+  y: var(--b-mark-ay);
+  width: var(--b-mark-as);
+  height: var(--b-mark-as);
+  rx: var(--b-mark-ar);
+}
+
+.b-mark.is-turned .b-mark__s--b,
+[data-mark-host]:hover > .b-mark .b-mark__s--b,
+[data-mark-host]:focus-visible > .b-mark .b-mark__s--b {
+  x: var(--b-mark-bx);
+  y: var(--b-mark-by);
+  width: var(--b-mark-bs);
+  height: var(--b-mark-bs);
+  rx: var(--b-mark-br);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .b-mark__s { transition: none; }
+}

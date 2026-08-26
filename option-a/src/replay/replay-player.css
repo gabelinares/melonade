@@ -1,0 +1,101 @@
+/* ── THE PLAYER ────────────────────────────────────────────────────────────
+   Chrome, stage, transport. It takes the height the write-up gave up, which is
+   the whole mechanism of the flow: `flex: 1` on exactly one row at a time. */
+.m-player {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--m-surface-canvas);
+}
+
+/* A browser bar, at Graphite's density: a hairline, the sunken plane, and the
+   URL in the mono face the rest of this system uses for machine text. */
+.m-player__chrome {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-5);
+  flex: none;
+  height: var(--m-control-height-lg);
+  padding-inline: var(--m-space-5);
+  border-bottom: 1px solid var(--m-border-default);
+  background: var(--m-surface-sunken);
+}
+
+.m-player__lights { display: flex; gap: 4px; flex: none; }
+.m-player__lights i {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--m-radius-full);
+  background: var(--m-border-strong);
+}
+
+.m-player__url {
+  flex: 1;
+  min-width: 0;
+  max-width: 30rem;
+  padding: 1px var(--m-space-5);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-default);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+}
+
+.m-player__env {
+  flex: none;
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-disabled);
+  white-space: nowrap;
+}
+
+/* Letterboxed: a 16:10 viewport centred in whatever room the pane has, which is
+   how a recording of a wider screen sits inside a narrower pane. It also gives
+   the cursor a stable coordinate space. */
+.m-player__stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  padding: var(--m-space-6);
+  /* A size container, so the frame inside can be told to letterbox against the
+     stage's own height. See the note below - this is the half of the fix that is
+     not on the frame itself. */
+  container-type: size;
+}
+
+/* LETTERBOX, NEVER STRETCH.
+   This was `height: 100%` with `max-width: 100%`, which looks like it says "fit"
+   and does not: `aspect-ratio` yields to BOTH constraints, so as soon as the
+   stage was narrower than 1.6x its height the frame kept full height, clamped
+   its width and rendered a squashed browser - 1.32 instead of 1.60. It was
+   latent all along and only showed up once the detail card was capped to the
+   same 85rem measure as the table page and the plane got narrower.
+   The fix is to bind ONE axis: width is the smaller of the stage's width and the
+   width a full-height 16:10 box would need (160cqh = 1.6 x the stage's height),
+   and height is derived from it. At the height-bound limit that resolves to
+   exactly 100cqh, so the frame touches top and bottom and no further. */
+.m-player__viewport {
+  width: min(100%, 160cqh);
+  height: auto;
+  aspect-ratio: 16 / 10;
+  background: var(--m-surface-default);
+}
+
+/* The caption is the point of the wireframe: it says what the person is doing
+   at this instant, in the words of the write-up upstairs. */
+.m-player__caption {
+  position: absolute;
+  left: 50%;
+  bottom: var(--m-space-5);
+  translate: -50% 0;
+  max-width: 80%;
+  padding: var(--m-space-3) var(--m-space-5);
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-inverse);
+  color: var(--m-content-inverse);
+  font-size: var(--m-text-xs);
+  text-align: center;
+}

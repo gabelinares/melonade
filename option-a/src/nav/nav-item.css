@@ -1,0 +1,63 @@
+.m-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  width: 100%;
+  height: 1.875rem; /* 30 */
+  padding-inline: var(--m-space-4);
+  border-radius: var(--m-radius-sm);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+  text-align: left;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+
+.m-nav-item:hover {
+  background: var(--m-surface-hover);
+  color: var(--m-content-primary);
+}
+
+/* The active row is a filled surface plus a weight change. No coloured bar and
+   no accent fill: the page title already says where you are, and an accent
+   here would compete with the one accent the content plane is allowed. */
+.m-nav-item.is-active {
+  background: var(--m-surface-active);
+  color: var(--m-content-primary);
+  font-weight: var(--m-weight-medium);
+}
+
+.m-nav-item.is-collapsed {
+  justify-content: center;
+  padding-inline: 0;
+  position: relative;
+}
+
+.m-nav-item__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--m-content-decorative);
+}
+.m-nav-item:hover .m-nav-item__icon,
+.m-nav-item.is-active .m-nav-item__icon { color: var(--m-content-secondary); }
+
+.m-nav-item__label { flex: 1; }
+
+.m-nav-item__count {
+  flex: none;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+.m-nav-item.is-active .m-nav-item__count { color: var(--m-content-secondary); }
+
+/* collapsed: the count becomes a presence dot, since a number would not fit */
+.m-nav-item__dot {
+  position: absolute;
+  top: 5px;
+  right: 9px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--m-radius-full);
+  background: var(--m-content-muted);
+}

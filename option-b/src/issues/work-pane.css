@@ -1,0 +1,78 @@
+/* A header, and a body under it. The header spans both columns, which is what
+   makes the right-hand column a region under the pane's own chrome rather than
+   a second thing starting at the top of the window. */
+.b-work {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--m-surface-default);
+}
+
+/* Two columns: the flow, and whichever side panel is open beside it. */
+.b-work__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The flow. Its whole "collapsing panels" behaviour is the fact that exactly
+   one child carries `flex: 1`. See the note in WorkPane.tsx. */
+.b-work__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The one scroll at triage. Everything inside it is as tall as its own
+   contents; nothing in here has a height of its own any more. */
+.b-work__scroll { flex: 1; min-height: 0; }
+
+/* ── the pane with the queue put away ──────────────────────────────────────
+   The extra 400px is room, not something to fill. An article that simply
+   expands into whatever the window gives it ends up at a 140-character measure,
+   which is unreadable for exactly the reason a newspaper column is narrow, and
+   the session cards end up as three enormous stills of a wireframe.
+
+   So the width goes to MARGIN. The full-bleed bands - the suggested fix, the
+   sunken sessions band - still run edge to edge, because they are the pane's
+   own furniture; what is capped and centred is the reading matter inside them.
+   Nothing about the layout changes, only how much of the pane it uses. */
+/* Capped by PADDING, not by width, for all four. Two reasons, and the second
+   one cost a render to find:
+
+   1  The bands' backgrounds have to stay full bleed. The suggested fix and the
+      sunken sessions band are the pane's own furniture, not cards floating in
+      it, so it is the reading matter inside them that moves, never the band.
+   2  `max-width` plus `margin-inline: auto` on a flex child CANCELS the stretch
+      and leaves the box shrink-to-fit. The article did not notice, because a
+      paragraph's max-content is wider than the cap; the session rail did, and
+      came out at 846px of a 1184px allowance with its three cards huddled in
+      the middle of the pane.
+
+   `max` keeps the normal padding whenever the pane is narrower than the cap, so
+   this can never produce a negative inset. */
+.b-work.is-wide .b-wu,
+.b-work.is-wide .b-strip__head,
+.b-work.is-wide .b-strip__rail {
+  padding-inline: max(var(--m-space-8), calc((100% - 74rem) / 2 + var(--m-space-8)));
+}
+
+/* THE LAST SECTION OWNS WHAT IS LEFT. Mantine's viewport wraps the content in a
+   div of its own; making that a full-height column and letting the sessions
+   band grow into it means the space under the cards reads as the foot of the
+   band rather than as a gap between the band and the bottom of the window.
+   Every other section stays exactly as tall as its contents. */
+.b-work__scroll .mantine-ScrollArea-viewport > * {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.b-work__scroll .b-strip--cards { flex: 1; }

@@ -1,0 +1,205 @@
+.b-list {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  width: var(--m-list-width);
+  height: 100%;
+  min-height: 0;
+  background: var(--m-surface-sunken);
+  border-right: 1px solid var(--m-border-subtle);
+}
+
+@media (min-width: 1600px) {
+  .b-list { width: var(--m-list-width-wide); }
+}
+
+/* ── head ── */
+
+/* The queue head and the reading pane's head are ONE band, so their controls sit
+   on the same line across the divider. The title row is therefore the same fixed
+   --m-header-height as the work pane header, and the capture pill sits below it with
+   its own padding rather than inside a padded stack that pushed the buttons
+   14px off the arrows opposite. */
+.b-list__head { display: flex; flex-direction: column; flex: none; }
+
+.b-list__title-row {
+  height: var(--m-header-height);
+  padding-inline: var(--m-space-5);
+  flex: none;
+}
+
+.b-list__head > .b-capture { margin: 0 var(--m-space-5) var(--m-space-4); }
+
+.b-list__title-row { display: flex; align-items: center; justify-content: space-between; gap: var(--m-space-4); }
+
+/* This rule did not exist, which is why the three icon controls sat flush
+   against each other. A group of sibling controls needs a declared rhythm. */
+.b-list__controls { display: flex; align-items: center; gap: var(--m-space-3); }
+
+/* The pill is inline-flex, but inside a column flex container it stretches to
+   the full 400px and stops reading as a pill: caught on the render, where it
+   looked like a disabled search field. */
+
+
+.b-list__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--m-space-3);
+  font-size: var(--m-text-2xl);
+  font-weight: var(--m-weight-semibold);
+  letter-spacing: var(--m-tracking-tight);
+}
+
+.b-list__count {
+  font-size: var(--m-text-md);
+  font-weight: var(--m-weight-regular);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── the category strip ─────────────────────────────────────────────────────
+   `flex: none` is load-bearing. This was a CHILD of the old filter row, where
+   `flex: 1` correctly made it take the leftover horizontal space. Promoted to a
+   top-level row of the column, that same `flex: 1` made it grow VERTICALLY and
+   push the whole queue down the pane behind a 300px hole. Same declaration, two
+   axes, and the difference is only which container it lands in. */
+.b-list__cats {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-1);
+  flex: none;
+  min-width: 0;
+  padding: 0 var(--m-space-5) var(--m-space-4);
+}
+
+.b-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-xs);
+  white-space: nowrap;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+
+.b-cat:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
+
+.b-cat.is-on {
+  background: var(--m-surface-default);
+  border: 1px solid var(--m-border-default);
+  color: var(--m-content-primary);
+  font-weight: var(--m-weight-medium);
+}
+
+.b-cat__n { color: var(--m-content-disabled); font-variant-numeric: tabular-nums; }
+
+.b-narrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  flex: none;
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-3);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-default);
+  color: var(--m-content-muted);
+  transition: border-color var(--m-duration-fast) var(--m-ease-out),
+    color var(--m-duration-fast) var(--m-ease-out);
+}
+.b-narrow:hover { border-color: var(--m-border-strong); color: var(--m-content-primary); }
+.b-narrow.is-on { color: var(--m-content-primary); }
+
+.b-narrow__n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding-inline: 3px;
+  border-radius: var(--m-radius-xs);
+  background: var(--m-surface-inverse);
+  color: var(--m-content-inverse);
+  font-size: var(--m-text-2xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.b-narrow__label { padding: var(--m-space-4) var(--m-space-3) var(--m-space-2); }
+.b-narrow__label:first-child { padding-top: var(--m-space-2); }
+.b-narrow__scroll { display: flex; flex-direction: column; gap: 1px; max-height: 10rem; overflow-y: auto; }
+
+/* ── active filters ── */
+
+.b-list__active {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-space-2);
+  flex: none;
+  padding: 0 var(--m-space-5) var(--m-space-4);
+}
+
+.b-active {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  max-width: 12rem;
+  height: 1.375rem;
+  padding-inline: var(--m-space-3);
+  border: 1px solid var(--m-status-info-border);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-status-info-bg);
+  color: var(--m-status-info-fg);
+  font-size: var(--m-text-xs);
+}
+.b-active:hover { border-color: var(--m-border-accent); }
+
+.b-list__clear {
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.b-list__clear:hover { color: var(--m-content-primary); }
+
+/* ── the queue ── */
+
+.b-list__scroll { flex: 1; min-height: 0; border-top: 1px solid var(--m-border-subtle); }
+
+/* Sticky band headers: while you scroll, the band you are inside stays named.
+   That is the whole reason the list is grouped rather than sorted. */
+.b-list__group {
+  position: sticky;
+  top: 0;
+  z-index: var(--m-z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  padding: var(--m-space-3) var(--m-space-5);
+  background: var(--m-surface-sunken);
+  border-bottom: 1px solid var(--m-border-subtle);
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-wide);
+  text-transform: uppercase;
+  color: var(--m-content-muted);
+}
+
+.b-list__group-n {
+  letter-spacing: var(--m-tracking-normal);
+  text-transform: none;
+  color: var(--m-content-disabled);
+  font-variant-numeric: tabular-nums;
+}
+
+.b-list__end {
+  padding: var(--m-space-5);
+  font-size: var(--m-text-xs);
+  color: var(--m-content-disabled);
+  text-align: center;
+}

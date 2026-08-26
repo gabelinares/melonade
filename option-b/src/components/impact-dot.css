@@ -1,0 +1,13 @@
+.b-dot-wrap { display: inline-flex; align-items: center; gap: var(--m-space-3); }
+
+.b-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--m-radius-full);
+  flex: none;
+}
+
+.b-dot__label {
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+}

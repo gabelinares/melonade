@@ -1,0 +1,67 @@
+.b-rail-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.25rem;  /* 36 visual */
+  height: 2.25rem;
+  border-radius: var(--m-radius-sm);
+  color: var(--m-content-muted);
+  transition: background-color var(--m-duration-fast) var(--m-ease-out),
+    color var(--m-duration-fast) var(--m-ease-out);
+}
+
+/* 36px visual, 44px target */
+.b-rail-item::after { content: ''; position: absolute; inset: -4px; }
+
+.b-rail-item:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
+
+/* The active slot is the one place the accent tints a surface in the chrome.
+   No side stripe: a coloured bar down the edge of a list item is decoration
+   pretending to be structure, and the filled tile already says it. */
+.b-rail-item.is-active {
+  background: var(--m-status-info-bg);
+  box-shadow: inset 0 0 0 1px var(--m-status-info-border);
+  color: var(--m-content-accent);
+}
+
+.b-rail-item.is-ghost {
+  color: var(--m-content-disabled);
+  border: 1px dashed var(--m-border-default);
+}
+.b-rail-item.is-ghost:hover { color: var(--m-content-secondary); border-color: var(--m-border-strong); }
+
+/* The count is information, not an alarm.
+ *
+ * The first pass gave it a filled pill: near-black for inactive agents, plum for
+ * the active one. Rendered, three of those on a 56px rail were the loudest thing
+ * in the product, they overlapped the glyphs they annotated, and having two
+ * fills meant the badge changed meaning when the row became current. A quiet
+ * outlined pill, tucked to the bottom corner so it clears the icon, says the
+ * same number without competing with the page. */
+.b-rail-item__badge {
+  position: absolute;
+  bottom: -3px;
+  right: -5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding-inline: 3px;
+  border-radius: var(--m-radius-xs);
+  border: 1px solid var(--m-border-default);
+  background: var(--m-surface-default);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* On the current agent the badge picks up the accent as TEXT, not as a fill:
+   the tile behind the icon already says which one is current. */
+.b-rail-item.is-active .b-rail-item__badge {
+  border-color: var(--m-status-info-border);
+  color: var(--m-content-accent);
+}
