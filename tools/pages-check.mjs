@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport:{width:1680,height:1000}, colorScheme:'light' })).newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message));
-await p.goto('http://localhost:4310/', { waitUntil:'networkidle' });
+await p.goto(process.argv[2] || 'http://localhost:4310/', { waitUntil:'networkidle' });
 await p.evaluate(() => document.fonts.ready);
 await p.waitForTimeout(400);
 
