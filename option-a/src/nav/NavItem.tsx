@@ -29,6 +29,11 @@ export interface NavItemProps {
  * which agent has work without opening it, and a growing list of agents stays
  * useful rather than merely long.
  *
+ * The COUNTS ARE A COLUMN, not a thing that trails the label: fixed width,
+ * right-aligned, tabular figures, with the caret's slot reserved on every row.
+ * Numbers that do not share an edge cannot be compared at a glance, which is
+ * the only reason to put them in a menu.
+ *
  * And the CARET IS ITS OWN CONTROL. Clicking the row goes to the agent;
  * clicking the caret opens its sections without going anywhere. A disclosure
  * that also navigates makes it impossible to look at what is inside something
@@ -61,7 +66,7 @@ export function NavItem({
       <span className="m-nav-item__label m-truncate">{label}</span>
       {badge && <span className="m-nav-item__badge">{badge}</span>}
       {count > 0 && <span className="m-nav-item__count">{count}</span>}
-      {expandable && (
+      {expandable ? (
         <span
           role="button"
           tabIndex={-1}
@@ -75,6 +80,11 @@ export function NavItem({
         >
           <ChevronRight size={13} aria-hidden="true" />
         </span>
+      ) : (
+        /* The caret's slot is held open on every row, expandable or not. One
+           agent having sections is not a reason for the other ten counts to sit
+           in a different column from its own. */
+        <span className="m-nav-item__caret is-empty" aria-hidden="true" />
       )}
     </button>
   );

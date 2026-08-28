@@ -14,6 +14,7 @@ import {
 } from '@shared/issues-logic.ts';
 import { IconButton } from './IconButton.tsx';
 import './display-menu.css';
+import { noNativeTooltip } from './selectOptions.ts';
 
 export interface DisplayMenuProps {
   display: Display;
@@ -68,7 +69,7 @@ export function DisplayMenu({
             className="m-dm__select"
             value={display.group}
             onChange={(v) => onSet('group', v)}
-            options={GROUP_CHOICES}
+            options={noNativeTooltip(GROUP_CHOICES)}
           />
         </label>
 
@@ -93,7 +94,7 @@ export function DisplayMenu({
               className="m-dm__select"
               value={display.sort}
               onChange={(v) => onSet('sort', v)}
-              options={SORT_CHOICES}
+              options={noNativeTooltip(SORT_CHOICES)}
             />
           </span>
         </label>
@@ -106,7 +107,7 @@ export function DisplayMenu({
             className="m-dm__select"
             value={display.hidden}
             onChange={(v) => onSet('hidden', v)}
-            options={HIDDEN_CHOICES}
+            options={noNativeTooltip(HIDDEN_CHOICES)}
           />
         </label>
       </div>

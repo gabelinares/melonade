@@ -18,6 +18,7 @@ import { PageToolbar } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { RunResultChip } from '../components/RunResultChip.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { sortable } from '../components/SortIcon.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import './runs-panel.css';
 
@@ -73,7 +74,7 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
       title: 'Result',
       key: 'result',
       width: 116,
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('result'),
       showSorterTooltip: false,
       render: (_: unknown, run) => <RunResultChip status={run.status} />,
@@ -81,7 +82,7 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
     {
       title: 'Test',
       key: 'test',
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('test'),
       showSorterTooltip: false,
       render: (_: unknown, run) => (
@@ -121,7 +122,7 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
       title: 'Environment',
       key: 'env',
       width: 140,
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('env'),
       showSorterTooltip: false,
       /* The environment on the row, the viewport and region on the hover and in
@@ -142,7 +143,7 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
       title: 'Duration',
       key: 'duration',
       width: 100,
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('duration'),
       showSorterTooltip: false,
       render: (_: unknown, run) =>
@@ -156,7 +157,7 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
       title: 'When',
       key: 'when',
       width: 104,
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('when'),
       showSorterTooltip: false,
       render: (_: unknown, run) => <RelativeTime minutesAgo={minutesSince(run.date)} />,

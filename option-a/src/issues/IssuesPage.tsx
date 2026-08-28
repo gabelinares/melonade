@@ -323,12 +323,18 @@ export function IssuesPage({ model }: IssuesPageProps) {
       }
       toolbar={
         <>
-          {/* A toggle strip, not antd's Segmented.
-              Segmented is single-select by construction, and category is now a
-              normal multi-select dimension like every other one: it was the only
-              radio in a menu of checkboxes, and it meant you could not ask for
-              errors or slowness. "All" is not a fourth option, it is the empty
-              selection. */}
+          {/* THE TABS OF THIS LIST, not a filter over it. Category is exclusive:
+              picking one releases the others, and "All" is the empty selection
+              rather than a fourth option. It was multi-select for a while, on
+              the argument that it should compose like impact and tags - but the
+              other dimensions narrow one list, and this one answers "which list
+              am I reading". Same reasoning as the Tests strip, and the filter
+              menu draws Category as radios so the two cannot disagree.
+
+              It is `FilterStrip` and not antd's Segmented because the strip
+              draws pressed state and reports clicks, and the page owns the
+              arithmetic; a lookalike beside the real one is how two neighbouring
+              controls drift by a pixel and then by four. */}
           <FilterStrip
             label="Filter by category"
             items={[
@@ -344,7 +350,11 @@ export function IssuesPage({ model }: IssuesPageProps) {
               }),
             ]}
             selected={filters.cats.length === 0 ? ['all'] : filters.cats}
-            onSelect={(key) => (key === 'all' ? model.setFilter('cats', []) : model.toggleValue('cats', key as CategoryName))}
+            onSelect={(key) =>
+              key === 'all'
+                ? model.setFilter('cats', [])
+                : model.setFilter('cats', filters.cats[0] === key ? [] : [key as CategoryName])
+            }
           />
           {/* Three controls, not five, and each answers a different question:
               what gets COLLECTED, what is shown of it, and how that is drawn.

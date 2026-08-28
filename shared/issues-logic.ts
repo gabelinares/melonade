@@ -69,10 +69,14 @@ export type DataState = 'ready' | 'loading' | 'empty';
  * instead of narrowing it, and it belongs with sort and grouping. */
 export interface Filters {
   q: string;
-  /* A LIST, not a single value. Category was the one single-select dimension,
-     which made it a radio in a menu of checkboxes and meant you could not ask for
-     "errors or slowness". There is no reason it should behave differently from
-     impact or tags: an empty list means no constraint, exactly like the rest. */
+  /* Still a list in the shape - an empty one means "All" - but EXCLUSIVE in
+     behaviour: category is the tab of this list, not a dimension of it.
+     It went multi-select for a while on the argument that it should compose
+     like impact and tags. It should not. The other dimensions narrow one list;
+     category answers "which list am I reading", the way the Tests strip does,
+     and "Errors or Slowness" is a question nobody asks standing in front of a
+     queue. Keeping the list shape means the chips row, the counts and
+     `activeFilterCount` need no special case for it. */
   cats: CategoryName[];
   impact: ImpactLevel[];
   tags: string[];
@@ -473,6 +477,10 @@ export function filterDimensions(state: IssuesState): FilterDimension[] {
     {
       key: 'cats',
       label: 'Category',
+      /* Radios, not checkboxes: the toolbar strip above the list is the same
+         choice, and a menu that let you tick two of these would put the strip
+         in a state it cannot draw. */
+      single: true,
       options: (['Errors', 'UI/UX', 'Slowness'] as CategoryName[]).map((c) => ({
         value: c,
         label: c,
@@ -543,7 +551,11 @@ export function toggleFilterValue(f: Filters, key: FilterKey, value: string): Fi
       origins: f.origins.includes(v) ? f.origins.filter((x) => x !== v) : [...f.origins, v],
     };
   }
+  /* Category REPLACES rather than accumulates, and clicking the one that is on
+     turns it off - "All" is reachable by unticking, so the tab you are on is
+     never a filter you cannot remove. */
   const list = f[key] as string[];
+  if (key === 'cats') return { ...f, cats: (list.includes(value) ? [] : [value]) as CategoryName[] };
   const next = list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
   return { ...f, [key]: next };
 }

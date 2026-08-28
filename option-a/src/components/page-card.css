@@ -68,6 +68,35 @@
   margin-left: auto;
 }
 
+/* ── THE SECTION STRIP ───────────────────────────────────────────────────────
+   Text tabs with an ink bar, inset to the title's own left edge, on a hairline
+   that runs the full width of the plane. It is deliberately NOT the shape of
+   the toolbar under it: a pill on a sunken track directly above another pill on
+   a sunken track reads as one more filter over the same list, and what these
+   actually do is replace the list. They are antd `Tabs` - the same control the
+   issue write-up uses a level down - so the app has one tab treatment, not two
+   lookalikes. */
+/* The header above it is UNCHANGED - same padding, same height as a page with
+   no sections at all. A tabbed page and a plain one put their titles in the
+   same place, which is the invariant `agents-check` measures. */
+.m-page__tabs {
+  flex: none;
+  padding: 0 var(--m-space-7);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+/* antd draws its own rule under the nav, inset with it. Ours is full-bleed, so
+   the strip's hairline lines up with the toolbar's and the plane has one set of
+   horizontal rules rather than two lengths of them. */
+.m-page__tabs .ant-tabs-nav { margin: 0; }
+.m-page__tabs .ant-tabs-nav::before { display: none; }
+/* No panes: the tab strip navigates, and the page renders the section. */
+.m-page__tabs .ant-tabs-content-holder { display: none; }
+
+/* The strip's hairline IS the toolbar's top edge. Two adjacent 1px borders read
+   as one 2px one, which is the only place in this app a rule doubles. */
+.m-page--tabbed .m-page__toolbar { border-top: 0; }
+
 .m-page__toolbar {
   display: flex;
   align-items: center;

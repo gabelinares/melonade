@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, Dropdown, Input, Segmented } from 'antd';
+import { Button, Dropdown, Input, Segmented, Tabs } from 'antd';
 import { BookOpen, MoreHorizontal, Settings2 } from 'lucide-react';
 import { ISSUES } from '@shared/issues-data.ts';
 import { CountSuffix } from './CountSuffix.tsx';
@@ -148,6 +148,41 @@ export const WithToolbar: Story = {
       description: {
         story:
           'The second row, which exists so filters and tabs never have to fight the title for the 44px header. Everything in here narrows what the body shows and nothing in here changes state elsewhere, which is the line that decides whether a control belongs in the toolbar or in the header.',
+      },
+    },
+  },
+};
+
+export const WithSections: Story = {
+  args: {
+    title: 'Tests',
+    subtitle: 'End-to-end tests the agent writes and maintains from your real user journeys.',
+    tabs: (
+      <Tabs
+        defaultActiveKey="list"
+        items={[
+          { key: 'list', label: 'List' },
+          { key: 'runs', label: 'Runs' },
+          { key: 'environments', label: 'Environments' },
+        ]}
+      />
+    ),
+    toolbar: (
+      <Segmented
+        defaultValue="All"
+        options={[
+          { value: 'All', label: <span>All<CountSuffix n={31} /></span> },
+          { value: 'Drafts', label: <span>Drafts<CountSuffix n={5} /></span> },
+          { value: 'Active', label: <span>Active<CountSuffix n={18} /></span> },
+        ]}
+      />
+    ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A page with several bodies under one name. The TITLE DOES NOT CHANGE when the strip does — that is the whole reason this slot exists, because a header that renames itself to “Runs” is indistinguishable from a page you left Tests for. The strip and the toolbar under it are deliberately different controls: text tabs on a hairline REPLACE the body, pills on a sunken track NARROW it, and two strips of pills stacked ten pixels apart would read as one filter twice.',
       },
     },
   },

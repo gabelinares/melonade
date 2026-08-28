@@ -14,6 +14,7 @@ import {
 } from '../tokens/proto-themes.ts';
 import type { DataState } from '@shared/issues-logic.ts';
 import './prototype-panel.css';
+import { noNativeTooltip } from '../components/selectOptions.ts';
 
 export interface PrototypePanelProps {
   agentCount: number;
@@ -162,7 +163,7 @@ export function PrototypePanel({
               className="m-proto__select"
               value={tok.font}
               onChange={(v) => tok.setFont(v as FontKey)}
-              options={Object.entries(FONTS).map(([value, f]) => ({ value, label: f.label, font: f }))}
+              options={noNativeTooltip(Object.entries(FONTS).map(([value, f]) => ({ value, label: f.label, font: f })))}
               optionRender={(opt) => <Specimen font={(opt.data as { font: ProtoFont }).font} />}
               /* The closed control stays a name: the specimen is for choosing,
                  and once chosen the page itself is the specimen. */

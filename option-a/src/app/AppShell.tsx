@@ -36,8 +36,10 @@ export function AppShell() {
     [message],
   );
   const audits = useAudits(onAuditFinished);
-  /* One string, and a section is `agent/section`. The menu owns navigation
-     outright now, so there is no page-level tab state to keep in step with it. */
+  /* One string, and a section is `agent/section`. Both the menu's nested rows
+     and a page's own tab strip write to THIS - a page never keeps a second copy
+     of where it is, which is the only reason two controls can show the same
+     thing without drifting apart. */
   const [active, setActive] = useState('issues');
   const [agentCount, setAgentCount] = useState(SHIPPED_AGENT_COUNT);
 
@@ -52,6 +54,7 @@ export function AppShell() {
             model={tests}
             runs={runs}
             section={active === 'tests/runs' ? 'runs' : active === 'tests/environments' ? 'environments' : 'list'}
+            onSection={(s) => setActive(s === 'list' ? 'tests' : `tests/${s}`)}
             dataState={model.dataState}
           />
         ) : active === 'audits' ? (

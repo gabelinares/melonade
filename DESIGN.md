@@ -1873,15 +1873,26 @@ different scopes are two different documents - so the scope is part of the
 identity rather than a column. Three rows can afford the height; thirty-one
 cannot, which is why Tests keeps everything on one line.
 
-What differs is what the toolbar's left half MEANS, and that difference is the
-one thing worth reading twice. On Issues the strip is a set of independent
-category toggles - category is a dimension like any other, and "All" is the empty
-selection. On Tests and Audits it is exclusive, because a test has exactly one
-status and an audit is either running or ready: these are five views of one list,
-not five constraints that compose. **Same control, different arithmetic**, which
-is why `FilterStrip` draws pressed state and reports clicks and nothing else. The
-alternative - a lookalike beside the real one - is how two neighbouring controls
-drift by a pixel and then by four.
+The toolbar's left half is the same control on all three pages and it now means
+the same thing on all three: **the strip is exclusive**. Five views of one list,
+not five constraints that compose. A test has exactly one status, an audit is
+either running or ready, and - since 08-28 - an issue is read in one category at
+a time.
+
+*Issues was the exception until 08-28*, on the argument that category is a
+dimension like impact or tags and should compose with them. Gabriel: make it
+tabs, not filters you can aggregate. He is right, and the line is worth keeping:
+**the other dimensions narrow one list; category chooses which list you are
+reading.** "Errors or Slowness" is not a question anybody asks standing in front
+of a queue. The filter menu draws Category as radios to match (`single: true`),
+so the menu and the strip cannot end up in states each other cannot show, and
+`toggleFilterValue` owns the replace-rather-than-accumulate rule so no component
+has to know it. `cats` stays a LIST in `Filters` - empty means All - so the chips
+row, the counts and `activeFilterCount` need no special case.
+
+`FilterStrip` still draws pressed state and reports clicks and nothing else,
+because the arithmetic is the page's. The alternative - a lookalike beside the
+real one - is how two neighbouring controls drift by a pixel and then by four.
 
 Three components came out of the port and back into the library: `FilterStrip`
 (the strip above, now used by all three pages), `SearchField` (the header's
@@ -1906,7 +1917,7 @@ result count can say "12 tests" instead of lying about issues.
   antd `Select`s competing for toolbar width. They are dimensions in the
   `FilterMenu` the queue already uses, which gets them counts, cross-dimension
   search and the removable chips row for free - and leaves room for the bulk
-  cluster to take the same slot.
+  cluster to take the same slot. *(Two became six on 08-28: see below.)*
 - **Audits kept nothing it did not need.** No filter menu, no display menu, no
   pagination on three rows. Three tabs and a search is not a smaller version of
   the tests toolbar; it is the whole toolbar that page needs, and adding the rest
@@ -1939,6 +1950,11 @@ The button opens the same stub the rows do, which says what is missing.
 
 ### Where the tabs sit, and why not in a band of their own
 
+*(Written 08-27, when the tabs sat beside the title. They spent a day in the
+menu instead and came back on 08-28 as their own band under the title - see
+section 14. Everything below about WHY they are tabs and not pills survived both
+moves unchanged.)*
+
 Production stacks three rows of chrome on this page: the page header, then the
 tab bar with the search in its right-hand slot, then each tab's own controls
 row. Graphite puts the tabs IN THE HEADER, beside the title, with the ink bar
@@ -1970,6 +1986,48 @@ Three consequences follow, and all three are in the harness:
 Environments has **no toolbar, no filters and no pagination** - four rows and a
 three-field form - and that absence is deliberate. A page whose sections all wear
 the same chrome regardless of what they hold has stopped reading what is in them.
+
+### Six dimensions on Tests, four of them borrowed from Runs (08-28)
+
+Gabriel: "you added nice filters to Runs but not the Tests list." He is right,
+and the imbalance was backwards. **A run is one cell of the matrix a TEST
+describes**, so every question you can ask of a run you can ask of the test that
+produced it - and the test list had two dimensions to the run log's five.
+
+Four are now the same word in both places: **Environment, Tags, Viewport,
+Region**, same glyphs, same menu. Two exist only on a test, because a run
+happened once and a test has a rhythm and a history:
+
+- **Schedule** - Daily, Weekdays, Weekly, Monthly, Custom days, Not scheduled.
+  Derived through `scheduleFreq`, which already decides what "weekly" means for
+  the column and the tooltip, so a fourth definition was not invented for the
+  filter.
+- **Last result** - Failed, Passed, Never run. Failed is first because it is
+  what you came for, and **"Never run" is an answer rather than an empty cell**:
+  seven of thirty-one have never run, which is the most useful thing this list
+  can say about them.
+
+**Every dimension can find the rows with nothing in it.** Environment gains
+"Not set" (5), Tags gains "Untagged" (5), Viewport and Region gain "Not set",
+Schedule's "Not scheduled" is 11. A blank cell is a state somebody has to fix -
+those five tests can never run at all - and a menu that only finds the rows that
+ARE configured is a menu that hides its own worst rows. The UNSET value and one
+`matchesList` rule are shared by all four list dimensions, so "no environment"
+and "no tags" cannot drift into meaning two different things.
+
+**What is still missing, and it is the honest gap: the table has no Last run
+column.** Filtering on data no row shows is how a list starts lying - you narrow
+to six and nothing on screen says why those six. The filter is worth having
+before the column exists because the status chip at least explains half of it,
+but the column is the other half of this change and it is not done. Viewport and
+Region have the same shape and it is deliberate there: Runs filters on both
+without columns too, on the 07-13 decision to keep them out of the table.
+
+**Seeded, not invented.** Viewport and region were on 5 of 31 tests, so both
+dimensions would have read "Not set: 26". 21 more tests carry a plausible matrix
+now, drafts still carry nothing (a draft carries nothing anybody has set yet,
+which is how a draft reads in the table) and two configured tests still have no
+region, so "Not set" stays visible.
 
 ### Runs is a log, and a log is not a queue
 
@@ -2130,12 +2188,17 @@ figures on hover.
 ### What this cost, and what it replaced
 
 **The page tabs lasted one day.** Tests' three sections were tabs in the page
-header on 08-27; they are menu rows now, and the tab strip is gone. Two
-navigations to the same three destinations, ten pixels apart, is one too many,
-and the menu wins because it is where you already are when you decide to go
-somewhere - and because it says what is inside Tests without opening Tests. The
-rule from that day survives unchanged: each section owns its toolbar, and the
-header follows the section.
+header on 08-27; they became menu rows here, and the tab strip went. Two
+navigations to the same three destinations, ten pixels apart, looked like one
+too many.
+
+> **Superseded the same day - see section 14.** The strip came back, and the
+> page title stopped renaming itself. What this paragraph got wrong is that the
+> menu and the strip are not two answers to one question: the menu says what is
+> inside Tests before you open it, the strip says you are still inside Tests
+> once you are reading the page, and only the second one is on screen while you
+> work. The menu KEEPS its nested rows. The rest of the paragraph stands: each
+> section owns its toolbar, and the header's actions follow the section.
 
 **One thing to flag rather than defend:** Mehdi picked the icon rail on 08-26.
 This replaces it, on Gabriel's reference and for the reason above. The labelled
@@ -2145,7 +2208,45 @@ back visually, and what the sections need.
 
 ## 14. The batch after the shell (2026-08-28, same day)
 
-Five things, all of them consequences of section 13 rather than new directions.
+Eight things, all of them consequences of section 13 rather than new directions -
+including the one that reverses part of it.
+
+### The title is "Tests", always, and the sections are a strip under it
+
+Section 13 moved Tests' three sections into the menu and let the page header
+rename itself to match: "Runs" where "Tests" had been. Gabriel, looking at it:
+the three read as three separate screens, when they are three tabs inside Tests.
+
+He is right, and the reason is worth stating precisely, because the menu was not
+wrong. **The menu can only say "Runs is inside Tests" while you are looking at
+the menu.** The moment you are reading the page - which is where you spend the
+other 99% of the time - a heading that says "Runs" over a body full of runs is a
+destination of its own, and nothing on screen still claims it belongs to Tests.
+A nested row can be highlighted in a column you are not looking at; a heading is
+the thing you actually read to find out where you are.
+
+So the heading is fixed at **Tests** in all three sections, and `PageCard` grew
+a `tabs` slot: text tabs with an ink bar, inset to the title's own left edge, on
+a hairline that is also the toolbar's top edge. Three things about it:
+
+- **The header above it is unchanged** - same padding, same 83px, same place for
+  the title as a page with no sections at all. A tabbed page and a plain one are
+  the same shell wearing one more band, and `agents-check` measures that.
+- **The strip is not the shape of the toolbar under it.** Text and an ink bar
+  against pills on a sunken track: a section REPLACES the body, a filter only
+  narrows it, and two strips of pills ten pixels apart would read as one filter
+  said twice. They are antd `Tabs`, the same control the write-up uses a level
+  down, so the app has one tab treatment rather than two lookalikes.
+- **The sentence still follows the section** and so do the header's actions.
+  The title says where you are; the line under it says what you are looking at.
+
+**The menu keeps its nested rows.** That is the duplication section 13 removed,
+and taking it back is deliberate: the two do different jobs. The menu is how you
+jump into Runs from inside Issues and how you learn Tests has three bodies
+without opening it. The strip is how you know, while reading, that you never
+left. `active` is still one string on the shell and both controls write to it,
+so there is no second copy of "where am I" to drift - the harness clicks the
+strip and asserts the menu row follows.
 
 ### One left inset, and the queue lost its caret
 
@@ -2182,6 +2283,25 @@ shell's ground - which meant the one thing an unbuilt page still has to show,
 THE SHELL, was the thing it did not show. `Placeholder` is a real `PageCard`
 now: the destination's own name in the header, its own glyph on a plate in the
 middle of the plane, and one sentence. An empty page is still a page.
+
+### Two small things in the same batch
+
+**The menu's counts are a column.** They trailed their labels, so Tests' 7 sat a
+caret's width left of Issues' 11 and the three numbers made a zigzag down the
+menu. The count now has a fixed width and is right-aligned in tabular figures,
+and **the caret's slot is reserved on every row** whether or not the agent has
+sections. Numbers that do not share an edge cannot be compared at a glance, and
+comparing them is the only reason to put counts in a menu at all.
+
+**The sort arrows are lucide's, not antd's.** antd stacks two small filled
+triangles in a column header: solid shapes with sharp corners, in an app drawn
+entirely in 1.75px rounded strokes, and at 11px the pair reads as a smudge. They
+are now the same chevron the project switcher uses - the double chevron while
+nothing is sorted, because both directions are on offer, and the ONE direction a
+sorted column is in. A column spreads `sortable` from `SortIcon.tsx` instead of
+writing `sorter: true`, so a table cannot go back to the triangles by forgetting
+the icon, and the CSS that used to tone antd's arrows down is gone rather than
+left behind as dead overrides.
 
 ### Type: five systems, and what they actually move
 

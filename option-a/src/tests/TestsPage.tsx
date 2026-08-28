@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Dropdown } from 'antd';
+import { Button, Dropdown, Tabs } from 'antd';
 import { BookOpen, MoreHorizontal, Plus, Settings2 } from 'lucide-react';
 import type { DataState } from '@shared/issues-logic.ts';
 import type { RunsController } from '../state/useRuns.ts';
@@ -14,28 +14,32 @@ import { TestsList } from './TestsList.tsx';
 
 export type TestsSection = 'list' | 'runs' | 'environments';
 
-const HEAD: Record<TestsSection, { title: string; subtitle: string }> = {
-  list: {
-    title: 'Tests',
-    subtitle: 'End-to-end tests the agent writes and maintains from your real user journeys.',
-  },
-  runs: {
-    title: 'Runs',
-    subtitle: 'Every execution of those tests, newest first.',
-  },
-  environments: {
-    title: 'Environments',
-    subtitle: 'Where the tests run, and what a new test starts from.',
-  },
+/** The strip under the title. The first section is called List, not Tests: a
+ *  child repeating its parent reads as a mistake, and the title above it is
+ *  already the subject. Same three labels as the menu's nested rows, in the
+ *  same order, from the same argument - they are one set of sections shown in
+ *  two places, not two navigations that happen to agree. */
+const TABS: { key: TestsSection; label: string }[] = [
+  { key: 'list', label: 'List' },
+  { key: 'runs', label: 'Runs' },
+  { key: 'environments', label: 'Environments' },
+];
+
+/** The title never changes. The sentence does, because it is the one line that
+ *  says what you are looking at now that the heading says where you are. */
+const SUBTITLE: Record<TestsSection, string> = {
+  list: 'End-to-end tests the agent writes and maintains from your real user journeys.',
+  runs: 'Every execution of those tests, newest first.',
+  environments: 'Where the tests run, and what a new test starts from.',
 };
 
 export interface TestsPageProps {
   model: TestsController;
   runs: RunsController;
-  /** Which of the agent's three bodies to show. THE MENU decides this, not the
-   *  page: the sections are nav rows, so the page has no tab strip of its own
-   *  and no state to keep in step with the sidebar. */
+  /** Which of the agent's three bodies to show. Owned by the shell, because the
+   *  menu can set it too - the page reads it and never keeps a second copy. */
   section: TestsSection;
+  onSection: (section: TestsSection) => void;
   dataState: DataState;
 }
 
@@ -46,28 +50,33 @@ export interface TestsPageProps {
  * The tests it maintains, the runs those tests produced, and the environments
  * they run against.
  *
- * ── 2026-08-28: the sections moved into the menu ───────────────────────────
- * They were tabs in this page's header for one day. The sidebar now expands to
- * hold them, and two navigations to the same three destinations - one in the
- * menu, one in the header, ten pixels apart - is one too many. The menu won
- * because it is where you already are when you decide to go somewhere, and
- * because it says what is inside Tests without opening Tests.
+ * ── 2026-08-28: THE TITLE IS "TESTS", ALWAYS ───────────────────────────────
+ * For one day the sections lived only in the menu and the header renamed itself
+ * to match - "Runs" where "Tests" had been. That is what a different PAGE looks
+ * like. The menu can show you that Runs is nested under Tests, but only while
+ * you are looking at the menu; the moment you are reading the page, a heading
+ * that says "Runs" and a body full of runs is a screen of its own, and the
+ * three sections stop being one agent.
  *
- * What the page keeps from that day is the rule underneath it: **each section
- * owns its own toolbar** and renders it as the first thing in its body. A shell
- * that assembled three sections' filters would be a shell that knows what a run
- * is. And the HEADER FOLLOWS THE SECTION - the title, the sentence under it and
- * the actions all belong to what you are looking at, so search targets the list
- * in front of you and "Add test" exists only where tests are.
+ * So the heading is fixed and the SECTIONS ARE A STRIP UNDER IT. The menu keeps
+ * its nested rows - they jump straight into a section from anywhere in the app,
+ * which the strip cannot do - and the strip says the thing the menu cannot:
+ * you are inside Tests, there are three of these, and this is the one you are
+ * on. The duplication is the point; it is a landmark, not a second navigation.
+ *
+ * Two rules from that day survive unchanged. **Each section owns its toolbar**
+ * and renders it as the first thing in its body - a shell that assembled three
+ * sections' filters would be a shell that knows what a run is. And **the header
+ * actions follow the section**: search targets the list in front of you, and
+ * "Add test" exists only where tests are.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function TestsPage({ model, runs, section, dataState }: TestsPageProps) {
+export function TestsPage({ model, runs, section, onSection, dataState }: TestsPageProps) {
   /* Writing a test by hand opens the panel it would be written in rather than
      seeding an empty row: a test with no steps is not a test, and a row called
      "Untitled" that cannot be finished is worse than a button that says what is
      missing. */
   const [creating, setCreating] = useState(false);
-  const head = HEAD[section];
 
   const search =
     section === 'list' ? (
@@ -78,8 +87,15 @@ export function TestsPage({ model, runs, section, dataState }: TestsPageProps) {
 
   return (
     <PageCard
-      title={head.title}
-      subtitle={head.subtitle}
+      title="Tests"
+      subtitle={SUBTITLE[section]}
+      tabs={
+        <Tabs
+          activeKey={section}
+          onChange={(key) => onSection(key as TestsSection)}
+          items={TABS.map((t) => ({ key: t.key, label: t.label }))}
+        />
+      }
       actions={
         <>
           {search}

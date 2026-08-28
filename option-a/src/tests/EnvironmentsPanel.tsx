@@ -9,6 +9,7 @@ import { EmptyState } from '../components/EmptyState.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import '../dialogs/dialogs.css';
 import './environments-panel.css';
+import { noNativeTooltip } from '../components/selectOptions.ts';
 
 export interface EnvironmentsPanelProps {
   model: TestsController;
@@ -145,7 +146,7 @@ export function EnvironmentsPanel({ model }: EnvironmentsPanelProps) {
               value={model.defaults.envName}
               placeholder="Not set"
               onChange={(envName) => model.setDefaults({ envName })}
-              options={model.environments.map((e) => ({ value: e.name, label: e.name }))}
+              options={noNativeTooltip(model.environments.map((e) => ({ value: e.name, label: e.name })))}
             />
           </label>
           <label className="m-envs__field">
@@ -154,7 +155,7 @@ export function EnvironmentsPanel({ model }: EnvironmentsPanelProps) {
               value={model.defaults.resolution}
               placeholder="Not set"
               onChange={(resolution: Resolution) => model.setDefaults({ resolution })}
-              options={RESOLUTIONS.map((r) => ({ value: r.value, label: r.label }))}
+              options={noNativeTooltip(RESOLUTIONS.map((r) => ({ value: r.value, label: r.label })))}
             />
           </label>
           <label className="m-envs__field">
@@ -163,7 +164,7 @@ export function EnvironmentsPanel({ model }: EnvironmentsPanelProps) {
               value={model.defaults.region}
               placeholder="Not set"
               onChange={(region) => model.setDefaults({ region })}
-              options={REGIONS.map((r) => ({ value: r.value, label: r.label }))}
+              options={noNativeTooltip(REGIONS.map((r) => ({ value: r.value, label: r.label })))}
             />
           </label>
         </div>

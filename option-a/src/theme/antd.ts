@@ -107,6 +107,21 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
       colorFillTertiary: c['surface-hover'],
       colorFillQuaternary: c['surface-sunken'],
 
+      /* ── the row states every popup list shares ───────────────────────────
+         Select, Dropdown, Menu, Cascader, Tree and the pickers all draw their
+         rows from these three. Setting them per component is how one gets
+         missed: `controlItemBgActiveHover` was, and antd derived it from
+         `colorPrimary` instead - which for a dark, low-chroma teal comes out of
+         the palette algorithm as a muddy mid-tone (rgb 124,163,163), painted
+         across the whole selected row. Worse, rc-select marks the selected row
+         ACTIVE the moment the popup opens, so that colour was the resting
+         state of every dropdown in the app, not an edge case on hover. */
+      controlItemBgHover: c['surface-hover'],
+      controlItemBgActive: c['surface-selected'],
+      /* Hovering the row you already picked must not announce anything: it is
+         the same state, and a second, louder tint would read as a third one. */
+      controlItemBgActiveHover: c['surface-selected'],
+
       /* ── type ── */
       fontFamily: overrides?.fonts?.sans ?? scales['font-sans'],
       fontFamilyCode: overrides?.fonts?.mono ?? scales['font-mono'],

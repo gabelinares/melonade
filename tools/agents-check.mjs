@@ -1,5 +1,5 @@
 /* The two agent pages ported from production: Tests (2026-08-27, its three
- * sections 2026-08-28) and Audits.
+ * sections 2026-08-28, their strip the same day) and Audits.
  *
  * What this is actually guarding is that they are the SAME PAGE as the issue
  * queue wearing different data - one shell, one table rhythm, one toolbar
@@ -159,24 +159,93 @@ await p.keyboard.press('Escape');
 await p.waitForTimeout(300);
 
 // ── THE TESTS AGENT'S THREE SECTIONS ───────────────────────────────────────
-// They were tabs in the page header for a day. They are menu rows now, and the
-// page has NO tab strip: two navigations to the same three places, ten pixels
-// apart, is one too many.
+// The menu carries them as nested rows AND the page carries them as a strip
+// under a title that never changes. The duplication is deliberate: the menu
+// says what is inside Tests before you open it, the strip says you are still
+// inside Tests once you are reading the page - which is the thing a heading
+// that renamed itself to "Runs" destroyed.
 const sections = await p.evaluate(() => ({
   navSections: [...document.querySelectorAll('.m-nav__sections .m-nav-item__label')].map((l) => l.textContent.trim()),
-  pageTabs: document.querySelectorAll('.m-page__tabs').length,
+  pageTabs: [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')].map((el) => el.textContent.trim()),
+  activeTab: document.querySelector('.m-page__tabs .ant-tabs-tab-active')?.textContent?.trim() ?? null,
   title: document.querySelector('.m-page__title')?.textContent?.trim() ?? null,
   sub: document.querySelector('.m-page__sub')?.textContent?.trim().slice(0, 30) ?? null,
   headBorder: getComputedStyle(document.querySelector('.m-page__head')).borderBottomWidth,
   bands: document.querySelectorAll('.m-page__toolbar').length,
+  /* The strip starts where the title starts, and the toolbar under it does not
+     draw a second hairline against the strip's own. */
+  tabsX: (() => {
+    const plane = document.querySelector('.m-page')?.getBoundingClientRect();
+    const tab = document.querySelector('.m-page__tabs .ant-tabs-tab')?.getBoundingClientRect();
+    return plane && tab ? Math.round(tab.left - plane.left) : null;
+  })(),
+  toolbarTop: getComputedStyle(document.querySelector('.m-page__toolbar')).borderTopWidth,
 }));
-t('SECTIONS: the menu holds them, not the header',
-  sections.navSections.join(',') === 'List,Runs,Environments' && sections.pageTabs === 0,
-  `${sections.navSections.join(' | ')} — ${sections.pageTabs} tab strips`);
+t('SECTIONS: the menu and the page both hold them',
+  sections.navSections.join(',') === 'List,Runs,Environments'
+    && sections.pageTabs.join(',') === 'List,Runs,Environments',
+  `menu ${sections.navSections.join(' | ')} — page ${sections.pageTabs.join(' | ')}`);
 t('SECTIONS: the header is a title and a sentence, with no rule under it',
   sections.title === 'Tests' && !!sections.sub && sections.headBorder === '0px',
   `${sections.title} / ${sections.sub}`);
+t('SECTIONS: the strip starts where the title starts', sections.tabsX === tests.titleX,
+  `tabs ${sections.tabsX} vs title ${tests.titleX}`);
+t('SECTIONS: the strip\u2019s hairline is the toolbar\u2019s top edge, drawn once',
+  sections.toolbarTop === '0px', `toolbar border-top ${sections.toolbarTop}`);
 t('SECTIONS: one toolbar band, not two', sections.bands === 1, `${sections.bands} bands`);
+
+/* ── THE TESTS FILTER MENU ──────────────────────────────────────────────────
+   Six dimensions, four of which Runs asks in exactly the same words: a run is
+   one cell of the matrix a test describes, so the two lists have to ask the
+   same questions one level apart. And every dimension can find the rows with
+   NOTHING in it - a menu that only finds the configured rows hides the five
+   tests that can never run. */
+const openTestFilters = async () => {
+  await p.locator('[aria-label="Filter tests"]').click();
+  await p.waitForTimeout(350);
+};
+await openTestFilters();
+const dims = await p.evaluate(() =>
+  [...document.querySelectorAll('.m-fm__dim-row')].map((r) => r.querySelector('.m-fm__dim-label')?.textContent.trim()));
+t('TESTS FILTERS: six dimensions, and four of them are the Runs vocabulary',
+  dims.join(',') === 'Environment,Tags,Viewport,Region,Schedule,Last result', dims.join(' | '));
+
+const optionsOf = async (label) => {
+  await p.locator('.m-fm__dim-row', { hasText: label }).click();
+  await p.waitForTimeout(250);
+  const rows = await p.evaluate(() => [...document.querySelectorAll('.m-checkrow')].map((r) => r.textContent.trim()));
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(200);
+  await openTestFilters();
+  return rows;
+};
+const envOpts = await optionsOf('Environment');
+const schedOpts = await optionsOf('Schedule');
+const resultOpts = await optionsOf('Last result');
+t('TESTS FILTERS: the empty value is an option, not a gap',
+  envOpts.at(-1) === 'Not set5' && schedOpts.at(-1) === 'Not scheduled11',
+  `${envOpts.at(-1)} / ${schedOpts.at(-1)}`);
+t('TESTS FILTERS: never-run is an answer, and failures come first',
+  resultOpts.join(',') === 'Failed6,Passed18,Never run7', resultOpts.join(' | '));
+
+/* Applying one narrows the list, names itself in a chip, and recounts the
+   status tabs - the tabs are views of the FILTERED list, not of the table. */
+await p.locator('.m-fm__dim-row', { hasText: 'Last result' }).click();
+await p.waitForTimeout(250);
+await p.locator('.m-checkrow', { hasText: 'Failed' }).click();
+await p.waitForTimeout(300);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(300);
+const failing = await p.evaluate(() => ({
+  rows: document.querySelectorAll('.ant-table-tbody tr.ant-table-row').length,
+  chips: [...document.querySelectorAll('.m-af__chip')].map((c) => c.textContent.trim()),
+  all: document.querySelector('.m-seg__item')?.textContent.trim(),
+}));
+t('TESTS FILTERS: a filter narrows the list, the chip names it and the tabs recount',
+  failing.rows === 6 && failing.chips.join('') === 'Last resultFailed' && failing.all === 'All6',
+  `${failing.rows} rows, ${failing.chips.join('|')}, ${failing.all}`);
+await p.locator('.m-af__clear, [aria-label="Clear all filters"]').first().click().catch(() => {});
+await p.waitForTimeout(300);
 
 /* A status is a word you read and a tag is a label you scan, so a type system
    that sets tags in small caps must leave statuses alone. Setting both the same
@@ -198,8 +267,14 @@ await p.locator('.m-runs__table').waitFor();
 await p.waitForTimeout(300);
 const runsHead = await p.evaluate(() => ({
   title: document.querySelector('.m-page__title')?.textContent?.trim() ?? null,
+  sub: document.querySelector('.m-page__sub')?.textContent?.trim() ?? null,
+  activeTab: document.querySelector('.m-page__tabs .ant-tabs-tab-active')?.textContent?.trim() ?? null,
 }));
-t('SECTIONS: the header follows the section', runsHead.title === 'Runs', runsHead.title);
+/* The one that started this batch: arriving on Runs from the MENU still leaves
+   the page saying Tests, with Runs marked in the strip. */
+t('SECTIONS: the title stays, the strip moves',
+  runsHead.title === 'Tests' && runsHead.activeTab === 'Runs', `${runsHead.title} / ${runsHead.activeTab}`);
+t('SECTIONS: the sentence follows the section', /Every execution/.test(runsHead.sub ?? ''), runsHead.sub);
 
 
 // RUNS: a log, defaulted to a week, and the default is visible
@@ -260,6 +335,24 @@ t('ENVIRONMENTS: deleting names the tests it would stop',
 t('ENVIRONMENTS: and counts the ones that carry on', /also comes off/.test(dlg.aside ?? ''), dlg.aside);
 await p.keyboard.press('Escape');
 await p.waitForTimeout(300);
+
+/* The strip is a control, not a label. Clicking it moves the section AND the
+   menu's nested row moves with it, because both read the one route string the
+   shell keeps - a page that held its own copy is how two controls that show the
+   same thing end up disagreeing. */
+await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'List' }).click();
+await p.locator('.m-tests__table').waitFor();
+await p.waitForTimeout(300);
+const viaStrip = await p.evaluate(() => ({
+  title: document.querySelector('.m-page__title')?.textContent?.trim() ?? null,
+  activeTab: document.querySelector('.m-page__tabs .ant-tabs-tab-active')?.textContent?.trim() ?? null,
+  navActive: document.querySelector('.m-nav__sections .m-nav-item.is-active .m-nav-item__label')?.textContent?.trim() ?? null,
+  addTest: [...document.querySelectorAll('.m-page__actions button')].some((b) => /Add test/.test(b.textContent)),
+}));
+t('SECTIONS: the strip navigates, and the menu follows it',
+  viaStrip.activeTab === 'List' && viaStrip.navActive === 'List' && viaStrip.title === 'Tests',
+  `${viaStrip.title} / strip ${viaStrip.activeTab} / menu ${viaStrip.navActive}`);
+t('SECTIONS: the header actions follow the section too', viaStrip.addTest);
 
 // ── AUDITS ─────────────────────────────────────────────────────────────────
 await navTo('Audits');

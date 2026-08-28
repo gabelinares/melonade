@@ -9,10 +9,12 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import type { DataState } from './issues-logic.ts';
+import { REGIONS, RESOLUTIONS } from './runs-data.ts';
 import {
   type DisplayStatus,
   type TestCase,
   isScheduled,
+  scheduleFreq,
   scheduleLabel,
 } from './tests-data.ts';
 
@@ -24,14 +26,43 @@ export type { DataState };
  *  strip and the issue queue's categories. */
 export type StatusTab = 'all' | DisplayStatus;
 
-export type TestFilterKey = 'envs' | 'tags';
+/* ── the six dimensions ───────────────────────────────────────────────────
+   Runs has had five of these since it was ported and the tests list had two,
+   which is backwards: a run is one cell of the matrix a TEST describes, so
+   every question you can ask of a run you can ask of the test that produced
+   it. Environment, tags, viewport and region are the four Runs already asks in
+   exactly these words; schedule and last result are the two only a test has.
+
+   Nothing here is a new field. All six read what `TestCase` already carries.
+   ───────────────────────────────────────────────────────────────────────── */
+export type TestFilterKey = 'envs' | 'tags' | 'viewports' | 'regions' | 'schedules' | 'results';
 
 export interface TestFilters {
   envs: string[];
   tags: string[];
+  viewports: string[];
+  regions: string[];
+  /** `ScheduleFreq` values, plus UNSET for "not scheduled". */
+  schedules: string[];
+  /** 'passed' | 'failed' | 'never'. */
+  results: string[];
 }
 
-export const NO_TEST_FILTERS: TestFilters = { envs: [], tags: [] };
+/** The option every dimension gets for the rows that have nothing in it: no
+ *  environment, no tags, no viewport, no region. A blank cell is a state
+ *  somebody has to fix - five tests here can never run because no environment
+ *  is set - and a filter menu that can only find the rows that ARE configured
+ *  is a menu that hides its own worst rows. */
+export const UNSET = 'unset';
+
+export const NO_TEST_FILTERS: TestFilters = {
+  envs: [],
+  tags: [],
+  viewports: [],
+  regions: [],
+  schedules: [],
+  results: [],
+};
 
 export type TestSortKey = 'title' | 'env' | 'schedule' | 'status' | 'created';
 
@@ -100,19 +131,63 @@ const matchesStatus = (tc: TestCase, tab: StatusTab, pauseOnRevision: boolean) =
   return displayStatus(tc, pauseOnRevision) === tab;
 };
 
-const matchesEnvs = (tc: TestCase, envs: string[]) =>
-  envs.length === 0 || envs.some((e) => (tc.envNames ?? []).includes(e));
+/** One rule for all four list-valued dimensions: an empty selection constrains
+ *  nothing, UNSET matches the rows with an empty list, and anything else is an
+ *  OR across the values. Written once so "no environment" and "no tags" cannot
+ *  end up meaning two different things. */
+const matchesList = (values: readonly string[] | undefined, picked: string[]) => {
+  if (picked.length === 0) return true;
+  const list = values ?? [];
+  if (list.length === 0) return picked.includes(UNSET);
+  return picked.some((v) => list.includes(v));
+};
 
-const matchesTags = (tc: TestCase, tags: string[]) =>
-  tags.length === 0 || tags.some((t) => (tc.tags ?? []).includes(t));
+const matchesEnvs = (tc: TestCase, envs: string[]) => matchesList(tc.envNames, envs);
+const matchesTags = (tc: TestCase, tags: string[]) => matchesList(tc.tags, tags);
+const matchesViewports = (tc: TestCase, picked: string[]) => matchesList(tc.resolutions, picked);
+const matchesRegions = (tc: TestCase, picked: string[]) => matchesList(tc.regions, picked);
+
+/** How often it runs, or that it does not. `scheduleFreq` is the one place that
+ *  decides what "weekly" means, so the filter, the column and the tooltip
+ *  cannot disagree. */
+export const scheduleKey = (tc: TestCase): string => scheduleFreq(tc.schedule) ?? UNSET;
+
+const matchesSchedules = (tc: TestCase, picked: string[]) =>
+  picked.length === 0 || picked.includes(scheduleKey(tc));
+
+/** What happened the last time it ran, with "never" as a real answer rather
+ *  than an empty cell: seven of these have never run at all, and that is the
+ *  most useful thing the list can tell you about them. */
+export const resultKey = (tc: TestCase): 'passed' | 'failed' | 'never' => tc.lastResult ?? 'never';
+
+const matchesResults = (tc: TestCase, picked: string[]) =>
+  picked.length === 0 || picked.includes(resultKey(tc));
+
+/** Every dimension except the one named, so an option can count what it WOULD
+ *  leave rather than what is already selected. */
+function matchesAllBut(tc: TestCase, f: TestFilters, except: TestFilterKey): boolean {
+  return (
+    (except === 'envs' || matchesEnvs(tc, f.envs)) &&
+    (except === 'tags' || matchesTags(tc, f.tags)) &&
+    (except === 'viewports' || matchesViewports(tc, f.viewports)) &&
+    (except === 'regions' || matchesRegions(tc, f.regions)) &&
+    (except === 'schedules' || matchesSchedules(tc, f.schedules)) &&
+    (except === 'results' || matchesResults(tc, f.results))
+  );
+}
 
 export function filterTests(state: TestsState): TestCase[] {
+  const f = state.filters;
   return state.tests.filter(
     (tc) =>
       matchesQuery(tc, state.query) &&
       matchesStatus(tc, state.status, state.pauseOnRevision) &&
-      matchesEnvs(tc, state.filters.envs) &&
-      matchesTags(tc, state.filters.tags),
+      matchesEnvs(tc, f.envs) &&
+      matchesTags(tc, f.tags) &&
+      matchesViewports(tc, f.viewports) &&
+      matchesRegions(tc, f.regions) &&
+      matchesSchedules(tc, f.schedules) &&
+      matchesResults(tc, f.results),
   );
 }
 
@@ -174,7 +249,11 @@ export function statusCounts(state: TestsState): StatusCount[] {
     (tc) =>
       matchesQuery(tc, state.query) &&
       matchesEnvs(tc, state.filters.envs) &&
-      matchesTags(tc, state.filters.tags),
+      matchesTags(tc, state.filters.tags) &&
+      matchesViewports(tc, state.filters.viewports) &&
+      matchesRegions(tc, state.filters.regions) &&
+      matchesSchedules(tc, state.filters.schedules) &&
+      matchesResults(tc, state.filters.results),
   );
   const of = (s: DisplayStatus) => pool.filter((tc) => displayStatus(tc, state.pauseOnRevision) === s).length;
   const review = pool.filter(needsReview).length;
@@ -190,6 +269,23 @@ export function statusCounts(state: TestsState): StatusCount[] {
 }
 
 /* ── the filter menu ──────────────────────────────────────────────────────── */
+
+/** In the order a schedule gets less frequent, not alphabetically: the menu
+ *  reads as a rhythm rather than as a word list. */
+const SCHEDULE_CHOICES = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekdays', label: 'Weekdays' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'custom', label: 'Custom days' },
+] as const;
+
+/** Failed first: it is the one you came here for. */
+const RESULT_CHOICES = [
+  { value: 'failed', label: 'Failed' },
+  { value: 'passed', label: 'Passed' },
+  { value: 'never', label: 'Never run' },
+] as const;
 
 export interface TestFilterOption {
   value: string;
@@ -208,32 +304,122 @@ export interface TestFilterDimension {
  *  dimension still applied and its own dimension released - so a count answers
  *  "is this worth clicking" rather than "what did I already click". */
 export function testFilterDimensions(state: TestsState): TestFilterDimension[] {
-  const envNames = Array.from(new Set(state.tests.flatMap((tc) => tc.envNames ?? []))).sort();
-  const tagNames = Array.from(new Set(state.tests.flatMap((tc) => tc.tags ?? []))).sort();
-
   const base = state.tests.filter(
     (tc) => matchesQuery(tc, state.query) && matchesStatus(tc, state.status, state.pauseOnRevision),
   );
+
+  /** An option's count is what it WOULD leave: the other five dimensions still
+   *  applied, its own released. So a count answers "is this worth clicking"
+   *  rather than "what did I already click". */
+  const countOf = (key: TestFilterKey, match: (tc: TestCase) => boolean) =>
+    base.filter((tc) => matchesAllBut(tc, state.filters, key) && match(tc)).length;
+
+  /** Options plus the UNSET row, and the UNSET row only when something is
+   *  actually in that state. A permanently empty option is one more thing to
+   *  read past. */
+  const withUnset = (
+    key: TestFilterKey,
+    options: TestFilterOption[],
+    label: string,
+    isUnset: (tc: TestCase) => boolean,
+  ): TestFilterOption[] => {
+    const count = countOf(key, isUnset);
+    return count > 0 ? [...options, { value: UNSET, label, count }] : options;
+  };
+
+  const envNames = Array.from(new Set(state.tests.flatMap((tc) => tc.envNames ?? []))).sort();
+  const tagNames = Array.from(new Set(state.tests.flatMap((tc) => tc.tags ?? []))).sort();
 
   return [
     {
       key: 'envs',
       label: 'Environment',
       hint: 'Where the test runs',
-      options: envNames.map((name) => ({
-        value: name,
-        label: name,
-        count: base.filter((tc) => matchesTags(tc, state.filters.tags) && (tc.envNames ?? []).includes(name)).length,
-      })),
+      options: withUnset(
+        'envs',
+        envNames.map((name) => ({
+          value: name,
+          label: name,
+          count: countOf('envs', (tc) => (tc.envNames ?? []).includes(name)),
+        })),
+        'Not set',
+        hasNoEnvironment,
+      ),
     },
     {
       key: 'tags',
       label: 'Tags',
       hint: 'What the test covers',
-      options: tagNames.map((tag) => ({
-        value: tag,
-        label: tag,
-        count: base.filter((tc) => matchesEnvs(tc, state.filters.envs) && (tc.tags ?? []).includes(tag)).length,
+      options: withUnset(
+        'tags',
+        tagNames.map((tag) => ({
+          value: tag,
+          label: tag,
+          count: countOf('tags', (tc) => (tc.tags ?? []).includes(tag)),
+        })),
+        'Untagged',
+        (tc) => (tc.tags?.length ?? 0) === 0,
+      ),
+    },
+    /* Viewport and region are the two Runs already filters on, in the same
+       words. A test declares the MATRIX and a run is one cell of it, so asking
+       "which tests cover mobile" and "which runs were mobile" has to be the
+       same question asked one level apart. */
+    {
+      key: 'viewports',
+      label: 'Viewport',
+      hint: 'The sizes it is checked at',
+      options: withUnset(
+        'viewports',
+        RESOLUTIONS.map((r) => ({
+          value: r.value,
+          label: r.label,
+          count: countOf('viewports', (tc) => (tc.resolutions ?? []).includes(r.value)),
+        })),
+        'Not set',
+        (tc) => (tc.resolutions?.length ?? 0) === 0,
+      ),
+    },
+    {
+      key: 'regions',
+      label: 'Region',
+      hint: 'Where it is run from',
+      options: withUnset(
+        'regions',
+        REGIONS.map((r) => ({
+          value: r.value,
+          label: r.label,
+          count: countOf('regions', (tc) => (tc.regions ?? []).includes(r.value)),
+        })),
+        'Not set',
+        (tc) => (tc.regions?.length ?? 0) === 0,
+      ),
+    },
+    /* The two only a test has. A run happened once; a test has a rhythm and a
+       history. */
+    {
+      key: 'schedules',
+      label: 'Schedule',
+      hint: 'How often it runs, or that it does not',
+      options: [
+        ...SCHEDULE_CHOICES.map((c) => ({
+          value: c.value,
+          label: c.label,
+          count: countOf('schedules', (tc) => scheduleKey(tc) === c.value),
+        })).filter((o) => o.count > 0),
+        /* "Not scheduled" is not the absence of an answer here, it is the
+           answer: a third of an approved suite that nothing will ever start. */
+        { value: UNSET, label: 'Not scheduled', count: countOf('schedules', (tc) => scheduleKey(tc) === UNSET) },
+      ],
+    },
+    {
+      key: 'results',
+      label: 'Last result',
+      hint: 'What happened the last time it ran',
+      options: RESULT_CHOICES.map((c) => ({
+        value: c.value,
+        label: c.label,
+        count: countOf('results', (tc) => resultKey(tc) === c.value),
       })),
     },
   ];
@@ -247,7 +433,8 @@ export function toggleTestFilter(f: TestFilters, key: TestFilterKey, value: stri
   return { ...f, [key]: on ? f[key].filter((v) => v !== value) : [...f[key], value] };
 }
 
-export const testFilterCount = (f: TestFilters): number => f.envs.length + f.tags.length;
+export const testFilterCount = (f: TestFilters): number =>
+  f.envs.length + f.tags.length + f.viewports.length + f.regions.length + f.schedules.length + f.results.length;
 
 export interface TestFilterChip {
   key: TestFilterKey;

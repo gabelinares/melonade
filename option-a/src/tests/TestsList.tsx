@@ -1,9 +1,28 @@
 import { App, Button, Dropdown, Pagination, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { Calendar, Merge, MoreHorizontal, Play, Plus, Server, ShieldAlert, Tag as TagIcon } from 'lucide-react';
+import {
+  Calendar,
+  CalendarClock,
+  CircleCheck,
+  Globe,
+  Merge,
+  MonitorSmartphone,
+  MoreHorizontal,
+  Play,
+  Plus,
+  Server,
+  ShieldAlert,
+  Tag as TagIcon,
+} from 'lucide-react';
 import type { DataState } from '@shared/issues-logic.ts';
 import { minutesSince, scheduleLabel, scheduleShort, type TestCase } from '@shared/tests-data.ts';
-import { hasNoEnvironment, isScheduled, type StatusTab, type TestSortKey } from '@shared/tests-logic.ts';
+import {
+  hasNoEnvironment,
+  isScheduled,
+  type StatusTab,
+  type TestFilterKey,
+  type TestSortKey,
+} from '@shared/tests-logic.ts';
 import type { TestsController } from '../state/useTests.ts';
 import { useTestDialogs } from '../dialogs/useTestDialogs.tsx';
 import { ActiveFilters } from '../components/ActiveFilters.tsx';
@@ -15,11 +34,22 @@ import { MoreCount } from '../components/MoreCount.tsx';
 import { PageToolbar } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { sortable } from '../components/SortIcon.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import { TestStatusChip } from '../components/TestStatusChip.tsx';
 import './tests-page.css';
 
-const FILTER_ICONS = { envs: Server, tags: TagIcon } as const;
+/* The same glyph for the same dimension as the Runs panel uses: environment,
+   tags, viewport and region are one vocabulary asked at two levels, and two
+   icons for one word would say they were two different questions. */
+const FILTER_ICONS: Partial<Record<TestFilterKey, typeof Server>> = {
+  envs: Server,
+  tags: TagIcon,
+  viewports: MonitorSmartphone,
+  regions: Globe,
+  schedules: CalendarClock,
+  results: CircleCheck,
+};
 
 /** An empty tab names ITS OWN emptiness. "No results" would be true on all six
  *  and useful on none. */
@@ -177,7 +207,7 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
     {
       title: 'Test',
       key: 'title',
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('title'),
       showSorterTooltip: false,
       render: (_: unknown, tc) => {
@@ -236,7 +266,7 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
       title: 'Environment',
       key: 'env',
       width: 148,
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('env'),
       showSorterTooltip: false,
       render: (_: unknown, tc) => {
@@ -254,7 +284,7 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
       title: 'Schedule',
       key: 'schedule',
       width: 168,
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('schedule'),
       showSorterTooltip: false,
       render: (_: unknown, tc) =>
@@ -273,7 +303,7 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
       title: 'Created',
       key: 'created',
       width: 96,
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('created'),
       showSorterTooltip: false,
       render: (_: unknown, tc) => <RelativeTime minutesAgo={minutesSince(tc.createdAt)} />,
@@ -282,7 +312,7 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
       title: 'Status',
       key: 'status',
       width: 124,
-      sorter: true,
+      ...sortable,
       sortOrder: sortOrder('status'),
       showSorterTooltip: false,
       render: (_: unknown, tc) => <TestStatusChip status={model.statusOf(tc)} />,

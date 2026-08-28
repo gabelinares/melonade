@@ -1,0 +1,12 @@
+/* An affordance, not a status: quiet until the column is actually sorted, and
+   one step less quiet while the cursor is on the header that owns it. */
+.m-sort {
+  display: inline-flex;
+  align-items: center;
+  color: var(--m-content-decorative);
+  transition: color var(--m-duration-instant) var(--m-ease-out);
+}
+
+.ant-table-thead th.ant-table-column-has-sorters:hover .m-sort { color: var(--m-content-secondary); }
+
+.m-sort.is-on { color: var(--m-content-primary); }

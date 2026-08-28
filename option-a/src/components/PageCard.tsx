@@ -13,6 +13,12 @@ export interface PageCardProps {
   lede?: ReactNode;
   /** The right-hand cluster. */
   actions?: ReactNode;
+  /** The page's own sections, as a strip under the title. A page with this
+   *  keeps ONE title while the strip changes what is under it - which is the
+   *  difference between three sections of a page and three pages. Text tabs
+   *  with an ink bar, deliberately a different shape from the pill toolbar
+   *  below, because a section replaces the body and a filter only narrows it. */
+  tabs?: ReactNode;
   /** A row under the header: the filters over the body below it. A page whose
    *  body has several sections leaves this empty and lets each section render
    *  its own `<PageToolbar>` as its first element - same row, same class, but
@@ -40,10 +46,16 @@ export interface PageCardProps {
  * And there is no hairline beneath it, because the whitespace does that job
  * better and the page below is not a second thing - it is what the title is
  * about.
+ *
+ * ── 2026-08-28, later the same day: the tabs came back ─────────────────────
+ * An agent with several sections gets a `tabs` strip under the title, and the
+ * TITLE STOPS CHANGING. Reading "Runs" where "Tests" was is indistinguishable
+ * from having left Tests, however you got there - the menu cannot say "you are
+ * still inside this" once you are looking at the page instead of at the menu.
  */
-export function PageCard({ title, subtitle, meta, lede, actions, toolbar, children }: PageCardProps) {
+export function PageCard({ title, subtitle, meta, lede, actions, tabs, toolbar, children }: PageCardProps) {
   return (
-    <section className="m-page">
+    <section className={`m-page${tabs ? ' m-page--tabbed' : ''}`}>
       <header className="m-page__head">
         <div className="m-page__lead">
           <h1 className="m-page__title">{title}</h1>
@@ -53,6 +65,7 @@ export function PageCard({ title, subtitle, meta, lede, actions, toolbar, childr
         {lede}
         {actions && <div className="m-page__actions">{actions}</div>}
       </header>
+      {tabs && <div className="m-page__tabs">{tabs}</div>}
       {toolbar && <PageToolbar>{toolbar}</PageToolbar>}
       <div className="m-page__body">{children}</div>
     </section>

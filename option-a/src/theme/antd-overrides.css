@@ -81,15 +81,10 @@
   outline-offset: -2px;
 }
 
-/* Sort arrows sit at full contrast by default and read as active state on
-   every column at once. They are an affordance, not a status. */
-.ant-table-column-sorter {
-  color: var(--m-content-disabled);
-}
-.ant-table-column-sorter-up.active,
-.ant-table-column-sorter-down.active {
-  color: var(--m-content-primary);
-}
+/* The sort arrows are no longer antd's: every sortable column spreads
+   `sortable` from SortIcon.tsx, which replaces the pair of filled triangles
+   with the same lucide chevron the rest of the app uses. Their colour rules
+   live with that component; nothing is left to override here. */
 
 /* Segmented's selected thumb ships with a shadow. In a hairline system the
    thumb reads as raised from its border and its background alone. */
