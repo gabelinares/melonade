@@ -1,0 +1,111 @@
+/* The tests table borrows the issue queue's rhythm wholesale - same row height,
+   same hairlines, same cell padding, all of which come from the antd theme -
+   so only the things this page has and that one does not live here. */
+
+.m-tests__title-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  min-width: 0;
+}
+
+.m-tests__title {
+  font-size: var(--m-text-md);
+  font-weight: var(--m-title-weight);
+  color: var(--m-content-primary);
+}
+
+.m-tests__chips {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  overflow: hidden;
+}
+
+.m-tests__env {
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+}
+
+/* A gap in the data, said in words. Italic rather than another grey, because
+   the column already has three greys in it. */
+.m-tests__unset {
+  font-size: var(--m-text-sm);
+  font-style: italic;
+  color: var(--m-content-disabled);
+}
+
+.m-tests__sched {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  min-width: 0;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+  cursor: default;
+}
+.m-tests__sched svg { flex: none; color: var(--m-content-decorative); }
+
+/* Side effects: the one row-level warning that is about the real world rather
+   than about the test, so it keeps the warning colour and nothing else does. */
+.m-tests__fx {
+  display: inline-flex;
+  flex: none;
+  color: var(--m-content-warning);
+}
+
+/* "Something here is new and nobody has read it." One dot, one meaning, and it
+   is the accent because it is the only thing on the row asking for a person. */
+.m-tests__dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--m-radius-full);
+  background: var(--m-content-accent);
+}
+
+.m-tests__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--m-space-2);
+}
+
+/* The right-hand cluster of the toolbar: filters normally, bulk actions while
+   rows are selected. Same slot, so the toolbar never changes height. */
+.m-tests__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.m-tests__selcount {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-sm);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.m-tests__row { cursor: pointer; }
+
+.m-tests__foot {
+  display: flex;
+  /* The plane is a fixed height now, so a short list leaves space under it. The
+     footer takes that space rather than floating in the middle of it: the range
+     and the pager belong to the bottom edge of the list, not to the last row. */
+  margin-top: auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-space-4);
+  padding: var(--m-space-4) var(--m-space-5);
+  border-top: 1px solid var(--m-border-subtle);
+}
+
+.m-tests__range {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}

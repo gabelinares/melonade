@@ -1829,8 +1829,9 @@ still serves the old WIP note.
 
 ## 11. Known limits
 
-- Sessions, Tests, Audits, Preferences and Support are labelled placeholders in
-  both options. Deliberate: the brief is one page.
+- Sessions, Preferences and Support are labelled placeholders in both options,
+  and Tests and Audits still are in option B. Deliberate: the brief was one page,
+  and B is the argument for a layout rather than a second application.
 - Option B has no design below 820px. Under that width the queue is hidden and the
   reading pane takes the whole window, single column, at a correct reading measure.
   That is the honest limit of a two-pane layout rather than a responsive design: a
@@ -1839,3 +1840,396 @@ still serves the old WIP note.
   the controls the "licence to cut" instruction covers, and neither option has a
   place where it earns its width yet. Easy to add back if it is used.
 - Onboarding is untouched, per the brief, which puts it last.
+
+
+## 12. Tests and Audits, ported 2026-08-27 / 28
+
+Graphite grew two more agent pages, taken from what production runs today rather
+than designed fresh: the Tests page (`components/Client/KaiSettings` - all three
+of its tabs) and the Audits list (`components/Audits/AuditsList.tsx`). The
+instruction was to adapt them, and the constraint the whole September version is
+under is that nothing may appear here that does not exist in production - so what
+follows is a translation, and every decision below is either a token swap or a
+subtraction.
+
+**The Tests page is three sections, not one list.** The tests the agent
+maintains, the runs those tests produced, and the environments they run against.
+Where those tabs sit is the decision on that screen and it has its own section
+below.
+
+### The one structural claim: three pages, one page
+
+Both pages are `PageCard` with a toolbar, an antd `Table`, and a footer. Same
+44px header, same measure, same hairlines, same empty-state component, same
+footer grammar. A reader who has learnt the issue queue has learnt these, and the
+harness asserts it rather than trusting it: `agents-check` measures the card's
+left edge, width, header height and row height on all three pages and fails if
+any of them drift (188 / 1360 / 44 / 39 today).
+
+**One row breaks that rhythm on purpose.** An audit's row is 53px because its
+first cell is two lines: the name, and under it the scope. An audit called "July"
+means nothing without the traffic it read - two audits with the same name over
+different scopes are two different documents - so the scope is part of the
+identity rather than a column. Three rows can afford the height; thirty-one
+cannot, which is why Tests keeps everything on one line.
+
+What differs is what the toolbar's left half MEANS, and that difference is the
+one thing worth reading twice. On Issues the strip is a set of independent
+category toggles - category is a dimension like any other, and "All" is the empty
+selection. On Tests and Audits it is exclusive, because a test has exactly one
+status and an audit is either running or ready: these are five views of one list,
+not five constraints that compose. **Same control, different arithmetic**, which
+is why `FilterStrip` draws pressed state and reports clicks and nothing else. The
+alternative - a lookalike beside the real one - is how two neighbouring controls
+drift by a pixel and then by four.
+
+Three components came out of the port and back into the library: `FilterStrip`
+(the strip above, now used by all three pages), `SearchField` (the header's
+search box at one width, previously a `className` on Issues) and `StubDrawer`.
+`ActiveFilters` and `ActiveFilterChip` became generic in their filter key, the
+way `FilterMenu` and `FilterDimension` already were, and took a `noun` so the
+result count can say "12 tests" instead of lying about issues.
+
+### What the translation subtracted
+
+- **Five status colours became three.** Production tints all five states - green
+  Active, indigo Approved, blue Needs review, orange Paused, grey Draft - and on
+  a list where eighteen of thirty-one rows are Active, that means most rows carry
+  a coloured chip. Colour that is on everything reports nothing. Here the accent
+  is spent on Needs review (the one row asking for a person), warning on Paused
+  (something stopped it), success on Active, and the two idle states stay
+  neutral.
+- **The new-row tint went.** Production tints an unread draft's row AND puts a
+  dot beside its title. The dot stayed; saying it twice on one row still only
+  says it once.
+- **The two filter dropdowns became one menu.** Environment and Tags were two
+  antd `Select`s competing for toolbar width. They are dimensions in the
+  `FilterMenu` the queue already uses, which gets them counts, cross-dimension
+  search and the removable chips row for free - and leaves room for the bulk
+  cluster to take the same slot.
+- **Audits kept nothing it did not need.** No filter menu, no display menu, no
+  pagination on three rows. Three tabs and a search is not a smaller version of
+  the tests toolbar; it is the whole toolbar that page needs, and adding the rest
+  to look consistent would be adding controls that filter nothing.
+
+### What the translation kept, deliberately
+
+**The queue order.** Unsorted, the tests list is drafts first, then anything with
+a revision or a merge waiting, then the rest. A column header replaces that with
+a flat sort and a third click gives it back. This is the behaviour the production
+page is actually liked for and it is asserted in the harness.
+
+**The reject grammar.** You DISMISS a suggestion the agent made; you DELETE work
+a person did; a row never offers both. That ambiguity is what lost somebody's
+test in the production build, so the row menu is four different menus rather than
+one menu with items disabled.
+
+**The honest progress bar.** An audit's duration is unknowable, so the bar eases
+and the page never prints a percentage. A number there would be a promise the
+agent cannot keep. The harness checks the status cell is empty of text.
+
+**The share, not the pair.** "~19%" with "1,000 of 5,320 matched sessions" on
+hover, because nobody should have to work out that one is a fifth of the other.
+
+**"Add test" opens the panel rather than seeding a row.** In production the
+button creates a test and opens its drawer in creation mode, discarding it if you
+close without finishing. There is no drawer here yet, so creating would leave an
+"Untitled test" with no steps and no way to finish it - a row that reads as a bug.
+The button opens the same stub the rows do, which says what is missing.
+
+### Where the tabs sit, and why not in a band of their own
+
+Production stacks three rows of chrome on this page: the page header, then the
+tab bar with the search in its right-hand slot, then each tab's own controls
+row. Graphite puts the tabs IN THE HEADER, beside the title, with the ink bar
+overlapping the header's own hairline - two bands instead of three, and the
+saving is not the reason.
+
+The reason is that **a section is not a filter**. The toolbar under the header
+means "what is shown of the body below it", and it is a strip of pill toggles. A
+second strip directly above it, in the same shape, would read as one more filter
+over the same list - and the thing it actually does is replace the list. Text
+tabs with an underline in the header, against pills on a sunken track in the
+toolbar, are two visibly different controls doing two different jobs. They are
+antd `Tabs`, the same control the issue write-up uses one level down, so the app
+has one tab treatment rather than two lookalikes.
+
+Three consequences follow, and all three are in the harness:
+
+- **Each section owns its toolbar** and renders it as the first thing in its
+  body (`PageToolbar`, exported from `PageCard`). A shell that assembled three
+  sections' filters in one place would be a shell that knows what a run is.
+- **The header's actions follow the section.** Search targets what you are
+  looking at, "Add test" exists only where tests are, and Environments carries
+  no page-level action at all, because adding one belongs to the section that
+  lists them.
+- **The count left the header.** A count beside the title would have to read 31
+  on Tests and 81 on Runs while the title still said "Tests". Each section's
+  footer carries its own instead.
+
+Environments has **no toolbar, no filters and no pagination** - four rows and a
+three-field form - and that absence is deliberate. A page whose sections all wear
+the same chrome regardless of what they hold has stopped reading what is in them.
+
+### Runs is a log, and a log is not a queue
+
+Nothing in the runs list is waiting on a person: a run is over, or it is still
+going and cannot be stopped (pausing belongs to the TEST, where it stops further
+executions). So this is the one list in the app that arrives SORTED - newest
+first - rather than ordered by what needs attention. There is no selection and no
+bulk anything, because you cannot act on eighty finished runs, and the only
+per-row action is rerunning one that failed. An icon on every row would be noise
+on seventy of them.
+
+Three translations worth naming:
+
+- **The period is a filter, and it is visible.** Production defaults the list to
+  the last seven days and says so only inside a dropdown. Here the default
+  arrives as a removable chip in the filter bar beside everything else, because
+  a list silently showing a fraction of itself is a list that lies about how much
+  there is. "Clear all" clears it too, which is the point of it being a chip.
+- **Five dropdowns became one menu.** Environment, tags, viewport, region and
+  period were five antd `Select`s across the toolbar. They are dimensions in the
+  `FilterMenu` the queue already uses; period is the single-select one.
+- **Environment, viewport and region are one cell**, not three columns. They are
+  one fact - the machine this run happened on - and three columns of two words
+  each is how a table stops fitting.
+
+And one addition: **the failure message is in the row**, quiet, after the test
+name. Scrolling a log for red and then opening each one to find out why is the
+whole cost of not saying it there.
+
+### Deleting an environment is the piece that was worth building
+
+It is the only real work in that tab, and it is not a list operation: an
+environment is where tests RUN, so removing it stops some of them. The dialog
+splits them the way the domain does - tests whose ONLY environment this was are
+named one by one, because they stop and cannot start again until somebody gives
+them another; tests that run somewhere else too are counted in a second sentence,
+because they lose this one and carry on. `envImpact` and `dropEnvironment` in
+`shared/tests-logic.ts` compute both, so the dialog and the mutation cannot
+disagree about what is about to happen.
+
+### Two additions, both flagged
+
+1. **Cancel merge moved onto the row menu.** In production a pending merge is
+   resolved in the test drawer, which does not exist here yet, so a merge started
+   from this list would otherwise be a state with no way out. It is production's
+   action in a new place, not a new action.
+2. **The rail badges count their own pages.** Tests carries what is waiting on a
+   person (drafts, revisions, merges) and Audits carries the jobs still reading,
+   both derived from the data. A badge that disagrees with the page it opens is
+   worse than no badge.
+
+### Not done
+
+Three panels, all of them detail rather than list: the test panel (steps, run
+settings, schedule, versions, and the review of a proposed change), the run panel
+(every step with its screenshots, the console, and the network capture as a HAR
+viewer) and the audit report (a document with a cover). Plus the environment
+form. Each is a screen in its own right and each is the obvious next piece. Until
+then a row opens a `StubDrawer` that names the row, prints the facts the table
+already knows, and says plainly what is coming. A row that does nothing reads as
+broken rather than unfinished.
+
+### Two bugs this port produced, worth remembering
+
+`FilterStrip` first shipped its CSS under `.m-strip`, which the replay's session
+strip already owns. The later stylesheet won, the strip's track took the card's
+own background, and **the selected tab was invisible in dark mode** while looking
+perfect in light. Nothing in the component was wrong. The lesson is that a
+component prefix is a namespace and this repo has no linter for it: grep the
+prefix before naming a new one, and check the new page in dark mode, where a
+collision between two surface tokens is the difference between a track and no
+track.
+
+And the same failure in antd's clothing: `.m-page__tabs .ant-tabs-ink-bar` is two
+classes and **loses to antd's own three-class rule behind a `:where()`**, so the
+ink bar kept antd's height and never moved onto the header's hairline - the
+declaration was in the stylesheet, applying to nothing. Overriding antd needs
+`.m-page__tabs.ant-tabs-top > .ant-tabs-nav .ant-tabs-ink-bar`, and the way to
+find out is to read the computed value rather than the stylesheet.
+
+
+## 13. One ground, one plane, and a menu with rooms in it (2026-08-28)
+
+Two changes, both to the shell, both from a reference Gabriel brought in.
+
+### The wrap
+
+The window is painted in ONE colour - `--m-surface-canvas` - from edge to edge.
+The menu sits on it with **no background and no border of its own**, and the
+content is a single card floating on that same ground with an **equal margin on
+all four sides**. The ground therefore appears to wrap around the content, which
+it does: there is no seam to place because there is no second surface. A nav with
+its own background and a `border-right` is two columns meeting at a line, and
+that line is what makes an app look like a frame around a document rather than
+one object.
+
+Three things had to change to make that true, and each is a check in
+`proto-check` rather than a claim:
+
+1. **The plane is a fixed height and scrolls inside itself.** A card that grows
+   with its rows pushes its own bottom margin off the screen, and the wrap would
+   only be true at the top of the page. The list's range and pager are pinned to
+   the plane's bottom edge for the same reason.
+2. **The 85rem cap went.** The plane is the window minus the menu and the margin;
+   a cap inside it would put a second, invisible edge next to a visible one.
+3. **The menu's own padding IS the fourth margin.** It is the same 12px the other
+   three sides get, so the gap between the last nav row and the card reads as a
+   margin rather than as a gutter.
+
+### The header, with less in it
+
+Room to breathe and no rule under it. The old header was a hard 44px row with the
+title at 18px and the page's explanation behind an info icon, and it was right
+when the card was one of several possible cards on a grey canvas: the fixed
+height is what kept a title-only page and a page full of controls from putting
+their titles at different heights.
+
+The card is the whole plane now, so the title is the first thing in the page
+rather than a label on a box. It gets real top padding, 22px, and **the sentence
+that was behind the info icon is now printed under it**. A page's own description
+is not a footnote, and there is room for it. The hairline under the header went
+with it: the whitespace does that job, and the content below is not a second
+thing - it is what the title is about.
+
+### The menu has rooms in it now
+
+The icon rail is retired (`git show` has it if the argument reopens). It answered
+"how does this scale to eleven agents" well and could not answer the question
+that came next: **one agent contains three screens**, and a nested icon under an
+icon is not a hierarchy anybody can read.
+
+What is in the menu, top to bottom: the project switcher and a New control;
+Home and Sessions; **Products**, which is the agents, each with its open count,
+one of them expanding into its sections; and pinned at the foot, four tools on a
+single row - settings, notifications, help, theme - with the account beside them
+and the **credits meter** under it.
+
+Four notes on that:
+
+- **Only the products list scrolls.** Home and Sessions above it and the tools,
+  credits and account below it are pinned, so growth never pushes any of them
+  off-screen. That rule survived from the rail.
+- **The sections are data** (`AgentEntry.sections`), not a special case for
+  Tests. The question the menu has to survive is not "what does Tests do" but
+  "what happens when the fourth agent grows a second screen".
+- **The caret is its own control.** The row goes to the agent; the caret opens
+  its sections without going anywhere. A disclosure that also navigates makes it
+  impossible to look at what is inside something without leaving where you are.
+- **The foot is a row, not a list.** Four things you touch rarely and never
+  search for do not deserve four labelled rows competing with the agents.
+
+**The credits meter is the one addition that is not in the reference's place.**
+Agents spend money while nobody is watching - that is the whole proposition - so
+how much they have spent is permanently on screen rather than inside a billing
+page. It is a measure, not an alert: one line, no colour until it matters, exact
+figures on hover.
+
+### What this cost, and what it replaced
+
+**The page tabs lasted one day.** Tests' three sections were tabs in the page
+header on 08-27; they are menu rows now, and the tab strip is gone. Two
+navigations to the same three destinations, ten pixels apart, is one too many,
+and the menu wins because it is where you already are when you decide to go
+somewhere - and because it says what is inside Tests without opening Tests. The
+rule from that day survives unchanged: each section owns its toolbar, and the
+header follows the section.
+
+**One thing to flag rather than defend:** Mehdi picked the icon rail on 08-26.
+This replaces it, on Gabriel's reference and for the reason above. The labelled
+menu costs 256px of width that the rail did not - which is what the wrap gives
+back visually, and what the sections need.
+
+
+## 14. The batch after the shell (2026-08-28, same day)
+
+Five things, all of them consequences of section 13 rather than new directions.
+
+### One left inset, and the queue lost its caret
+
+The queue's rows had a 30px expand column in front of them whose only job was to
+say "this opens" - which a row says by being a row and by moving under the
+cursor. It is gone, the row itself navigates, and the first thing on a row now
+starts **exactly where the page title above it starts** on all four lists: a
+checkbox on Tests, an impact meter on Issues, a result chip on Runs, a name on
+Audits. One number, asserted in `agents-check`.
+
+Two things fell out of doing it. Overriding antd's cell padding needs
+`.m-page__body .ant-table-wrapper .ant-table ...` - two classes TIE with antd's
+own `:where()` rule and lose on order, silently, which is the second time in two
+days that a declaration has landed in the stylesheet and applied to nothing. And
+row height is now **one token** (`--m-row-height`) as a minimum on every list:
+left to their content the three lists came out at 39, 34 and 59px, so moving
+between them changed the rhythm for no reason anybody could name. The audits row
+is still allowed to be taller, because it carries two lines.
+
+### The audits table was badly spaced, and it was the widths
+
+Seven columns and three rows on a 1450px plane leaves ~800px of slack, and antd
+gives all of it to the one column without a width - so the name sat alone at the
+far left, four numbers crowded the right edge, and a corridor of white ran
+between them. The columns are **percentages** on that table, so the slack is
+shared and the proportions hold at every plane width. The row also got real
+vertical padding and its two lines got a gap they can breathe in, and "You · Jul
+9" got a separator instead of a gap that read as a lost column divider.
+
+### An unbuilt page is still a page
+
+Home, Sessions, Preferences and Notifications used to render a bare note on the
+shell's ground - which meant the one thing an unbuilt page still has to show,
+THE SHELL, was the thing it did not show. `Placeholder` is a real `PageCard`
+now: the destination's own name in the header, its own glyph on a plate in the
+middle of the plane, and one sentence. An empty page is still a page.
+
+### Type: five systems, and what they actually move
+
+Two attempts failed before this one, and both failures are worth keeping:
+
+1. **Costume.** A display serif on the page title, JetBrains Mono on the tags,
+   Space Grotesk over Geist. Gabriel: "a little bad taste." The contrast was
+   decorative - it announced a choice instead of doing one, on a screen whose
+   job is a table.
+2. **Too quiet, and shouting in the wrong place.** The replacements were built
+   from real systems but the only thing that really moved was the sans, and at
+   13px one grotesque looks much like another. Meanwhile every alternative set
+   EVERY chip in small caps, statuses included: "unbalanced, it feels too big."
+
+What survived is that **contrast has to be functional** - a face changes when
+the KIND of thing changes - plus two rules that came out of the second failure:
+
+**Small caps belong on tags, never on statuses.** A tag is a label you scan
+("Payment", "Checkout"); a status is a word you read ("Needs review", "Ignores
+SSL errors"), and small caps on a sentence is shouting. `Chip` now takes a
+`kind`, and the tag treatment - face, size, weight, case and tracking together -
+applies only to tags. Uppercase also **comes down a size** (12px → 10px), because
+cap height where an x-height used to be reads a size bigger; that is what "too
+big" was.
+
+**A system has to move more than its family.** Each of these moves four things,
+so they tell apart at a glance:
+
+| | family | page title | tags | figures | base |
+| --- | --- | --- | --- | --- | --- |
+| **Graphite** *(shipped)* | Plex Sans | sans, −0.011em | sentence case | sans | 13px |
+| **Swiss** *(Linear)* | Inter | sans, −0.028em, 21px | UPPERCASE 10px +0.075em | sans | 13px |
+| **Console** *(Vercel)* | Geist | sans, −0.032em, 21px | UPPERCASE mono 10px | **Geist Mono** | 13px |
+| **Editorial** *(Notion)* | Source Sans 3 | **Source Serif 4, 26px** | sentence case | sans | 14px |
+| **System** *(GitHub)* | the OS's face | sans, 23px | sentence case | SF Mono | 14px |
+
+Three notes:
+
+- **Console's figures are the sleeper.** Putting every count, duration,
+  timestamp and page range in the mono changes the texture of a whole table
+  without touching a single word, and it costs no layout. It is also the most
+  honest thing a mono can say here: those numbers are what the machine measured.
+- **Editorial's serif marks the two places you READ** - the page title and the
+  write-up - and stops. Rows stay sans, on Gabriel's note: a serif down a column
+  of names is decoration again.
+- **System is a real answer.** The OS's own face is what GitHub, Slack and
+  Notion's chrome use, it never looks foreign on the machine it runs on, and it
+  loads nothing. It runs a size up, which is the other half of how it differs.
+
+The control is a **dropdown**: five whole systems are picked by name, not
+scrubbed along like a grey ramp.

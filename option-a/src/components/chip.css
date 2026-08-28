@@ -1,5 +1,6 @@
 .m-chip {
   display: inline-flex;
+  font-size: var(--m-text-xs);
   align-items: center;
   gap: var(--m-space-2);
   height: 1.25rem; /* 20: sits inside a 38px row without pushing it */
@@ -8,7 +9,6 @@
   border-radius: var(--m-radius-xs);
   background: var(--m-status-neutral-bg);
   color: var(--m-status-neutral-fg);
-  font-size: var(--m-text-xs);
   line-height: 1;
   white-space: nowrap;
   max-width: 100%;
@@ -41,4 +41,28 @@
   background: var(--m-status-info-bg);
   border-color: var(--m-status-info-border);
   color: var(--m-status-info-fg);
+}
+
+
+/* ── how a chip is SET, which is not the same question as how it is coloured ──
+   A TAG is a label you scan, and a type system may set those as small caps with
+   air in them - the treatment GitHub, Stripe and Vercel all give metadata. The
+   whole treatment moves together (face, size, weight, case, tracking), because
+   half of it is just a chip shouting.
+
+   A STATUS is a word you read - "Needs review", "Ignores SSL errors" - and it
+   stays in the interface's own face and its own case in every system. Small
+   caps on a sentence is the thing that read as unbalanced. */
+.m-chip--tag {
+  font-family: var(--m-font-tag);
+  font-size: var(--m-tag-size);
+  font-weight: var(--m-tag-weight);
+  text-transform: var(--m-tag-case);
+  letter-spacing: var(--m-tag-tracking);
+}
+
+.m-chip--status {
+  font-family: var(--m-font-sans);
+  text-transform: none;
+  letter-spacing: var(--m-tracking-normal);
 }

@@ -1,31 +1,25 @@
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Bug } from 'lucide-react';
 import { action } from 'storybook/actions';
+import { Bug, FlaskConical } from 'lucide-react';
 import { NavItem } from './NavItem.tsx';
 
 const meta = {
-  title: 'Navigation/NavItem',
+  title: 'Nav/NavItem',
   component: NavItem,
-  args: {
-    icon: <Bug size={15} />,
-    label: 'Issues',
-    count: 0,
-    active: false,
-    collapsed: false,
-    onClick: action('navigate'),
+  args: { icon: <Bug size={15} />, label: 'Issues', count: 11, onClick: action('navigate') },
+  parameters: {
+    layout: 'centered',
+    docs: {
+      description: {
+        component:
+          'One nav row. The count is the reason it exists: the menu doubles as the queue, so you can see which agent has work without opening it — that is what makes a growing list of agents useful rather than merely long. The caret is its own control: the row goes to the agent, the caret opens its sections without going anywhere, because a disclosure that also navigates makes it impossible to look inside something without leaving where you are.',
+      },
+    },
   },
   decorators: [
-    (Story, context) => (
-      /* the nav surface, at its real width, because this row is a full-width
-         target and its hover state is only honest against the nav's own ground */
-      <div
-        style={{
-          width: context.args.collapsed ? 'var(--m-nav-width-collapsed)' : 'var(--m-nav-width)',
-          padding: 'var(--m-space-4)',
-          background: 'var(--m-surface-nav)',
-          border: '1px solid var(--m-border-subtle)',
-        }}
-      >
+    (Story) => (
+      <div style={{ width: 216, background: 'var(--m-surface-nav)', padding: 'var(--m-space-4)' }}>
         <Story />
       </div>
     ),
@@ -35,62 +29,55 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: { label: 'Issues' },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'The resting row: a decorative icon, a label that truncates, and nothing else. The icon sits at the muted end of the ramp so a column of eleven of them reads as texture rather than as eleven competing marks.',
-      },
-    },
+export const States: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 1 }}>
+      <NavItem icon={<Bug size={15} />} label="Issues" count={11} onClick={action('issues')} />
+      <NavItem icon={<Bug size={15} />} label="Issues, active" count={11} active onClick={action('issues')} />
+      <NavItem icon={<FlaskConical size={15} />} label="Regressions" badge="Soon" onClick={action('soon')} />
+    </div>
+  ),
+};
+
+/** An agent with more than one body under its name. */
+export const WithSections: Story = {
+  render: () => {
+    const [open, setOpen] = useState(true);
+    const [on, setOn] = useState('tests/runs');
+    return (
+      <div style={{ display: 'grid', gap: 1 }}>
+        <NavItem
+          icon={<FlaskConical size={15} />}
+          label="Tests"
+          count={7}
+          expandable
+          expanded={open}
+          onToggle={() => setOpen((v) => !v)}
+          onClick={() => setOn('tests')}
+          active={on === 'tests' && !open}
+        />
+        {open && (
+          <div
+            style={{
+              display: 'grid',
+              gap: 1,
+              marginLeft: 'var(--m-space-6)',
+              paddingLeft: 'var(--m-space-6)',
+              borderLeft: '1px solid var(--m-border-subtle)',
+            }}
+          >
+            {[
+              { key: 'tests', label: 'List' },
+              { key: 'tests/runs', label: 'Runs' },
+              { key: 'tests/environments', label: 'Environments' },
+            ].map((s) => (
+              <NavItem key={s.key} nested label={s.label} active={on === s.key} onClick={() => setOn(s.key)} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
   },
 };
 
-export const Active: Story = {
-  args: { label: 'Issues', active: true },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Current page, marked by a filled surface and a step up in weight. No coloured bar and no accent fill: the page title already says where you are, and an accent in the nav would compete with the single accent the content plane is allowed. It also sets `aria-current="page"`, so the state is not carried by colour alone.',
-      },
-    },
-  },
-};
-
-export const WithCount: Story = {
-  args: { label: 'Issues', count: 11 },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'The count is why this component exists. The nav doubles as the queue, so you can see which agent has work waiting without opening it, and that is what makes a growing list of agents useful rather than merely long. Zero renders nothing, because a row of "0"s would train the reader to stop reading the numbers.',
-      },
-    },
-  },
-};
-
-export const Collapsed: Story = {
-  args: { label: 'Issues', collapsed: true },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'The rail. The label leaves the layout but not the accessible name: it stays in a screen-reader-only span and comes back as a tooltip on hover, so collapsing costs pixels and not information.',
-      },
-    },
-  },
-};
-
-export const CollapsedWithCount: Story = {
-  args: { label: 'Issues', collapsed: true, count: 11 },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Collapsed with work waiting. A two-digit number will not fit in a 52px rail, so the count degrades to a presence dot and the exact figure moves to the tooltip and the accessible name. Degrading to "there is something here" keeps the rail scannable; dropping the count entirely would make the collapsed nav a worse tool rather than a narrower one.',
-      },
-    },
-  },
-};
+export const Playground: Story = {};

@@ -19,19 +19,18 @@
 }
 
 /* The active row is a filled surface plus a weight change. No coloured bar and
-   no accent fill: the page title already says where you are, and an accent
-   here would compete with the one accent the content plane is allowed. */
+   no accent fill: the page title already says where you are, and an accent here
+   would compete with the one accent the content plane is allowed. */
 .m-nav-item.is-active {
   background: var(--m-surface-active);
   color: var(--m-content-primary);
   font-weight: var(--m-weight-medium);
 }
 
-.m-nav-item.is-collapsed {
-  justify-content: center;
-  padding-inline: 0;
-  position: relative;
-}
+/* A section row. No icon, so the label starts where the parent's label starts
+   minus the rail, and the row is quieter than the thing it belongs to. */
+.m-nav-item.is-nested { height: 1.75rem; color: var(--m-content-muted); }
+.m-nav-item.is-nested:hover { color: var(--m-content-primary); }
 
 .m-nav-item__icon {
   display: inline-flex;
@@ -41,9 +40,10 @@
 .m-nav-item:hover .m-nav-item__icon,
 .m-nav-item.is-active .m-nav-item__icon { color: var(--m-content-secondary); }
 
-.m-nav-item__label { flex: 1; }
+.m-nav-item__label { flex: 1; min-width: 0; }
 
 .m-nav-item__count {
+  font-family: var(--m-font-num);
   flex: none;
   font-size: var(--m-text-xs);
   color: var(--m-content-muted);
@@ -51,13 +51,32 @@
 }
 .m-nav-item.is-active .m-nav-item__count { color: var(--m-content-secondary); }
 
-/* collapsed: the count becomes a presence dot, since a number would not fit */
-.m-nav-item__dot {
-  position: absolute;
-  top: 5px;
-  right: 9px;
-  width: 4px;
-  height: 4px;
-  border-radius: var(--m-radius-full);
-  background: var(--m-content-muted);
+/* A word about the agent rather than a number about its work, so it is a chip
+   and not a count: "Soon" is a state, "3" is a queue. */
+.m-nav-item__badge {
+  flex: none;
+  padding-inline: var(--m-space-3);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-status-info-bg);
+  color: var(--m-status-info-fg);
+  font-size: var(--m-text-2xs);
+  line-height: 1.35;
 }
+
+/* Its own hit area, because it is its own control: the row navigates, the caret
+   only opens. */
+.m-nav-item__caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-right: -2px;
+  border-radius: var(--m-radius-xs);
+  color: var(--m-content-decorative);
+  transition: transform var(--m-duration-fast) var(--m-ease-out),
+    background-color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-nav-item__caret:hover { background: var(--m-surface-active); color: var(--m-content-secondary); }
+.m-nav-item__caret.is-open { transform: rotate(90deg); }

@@ -18,6 +18,18 @@
 
   /* ── scales: type, space, shape, depth, motion, layering, layout ── */
   --m-font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-display: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-prose: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-tag: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-num: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-display-weight: 600;
+  --m-display-tracking: -0.011em;
+  --m-display-scale: 1;
+  --m-title-weight: 500;
+  --m-tag-case: none;
+  --m-tag-tracking: 0em;
+  --m-tag-size: 0.75rem;
+  --m-tag-weight: 400;
   --m-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --m-text-2xs: 0.6875rem;
   --m-text-xs: 0.75rem;
@@ -72,9 +84,7 @@
   --m-z-modal: 400;
   --m-z-toast: 500;
   --m-z-tooltip: 600;
-  --m-rail-width: 3.5rem;
-  --m-nav-width: 13.5rem;
-  --m-nav-width-collapsed: 3.25rem;
+  --m-nav-width: 16rem;
   --m-content-max: 85rem;
   --m-control-height-sm: 1.625rem;
   --m-control-height-md: 1.875rem;

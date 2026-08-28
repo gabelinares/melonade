@@ -1,43 +1,65 @@
+/* ── THE PLANE ───────────────────────────────────────────────────────────────
+   The card the whole app is inside. It fills its share of the window and does
+   its own scrolling, so the ground's margin stays visible on all four sides at
+   every scroll position - a plane that grows with its rows would push its own
+   bottom margin off the screen and the wrap would only be true at the top. */
 .m-page {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  max-width: var(--m-content-max);
-  margin-inline: auto;
-  border: 1px solid var(--m-border-default);
-  border-radius: var(--m-radius-md);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-lg);
   background: var(--m-surface-default);
+  overflow: hidden;
   /* no shadow. A card is defined by its edge in this system. */
 }
 
+/* ── THE HEADER ──────────────────────────────────────────────────────────────
+   Room to breathe, and no hairline under it. The 44px fixed row was right when
+   the card was one of several stacked on a grey canvas and the title had to
+   line up with the nav's own header; now the card IS the page and the title is
+   the first thing in it, so it gets a real top margin, a subtitle underneath
+   and nothing drawn between it and the content. The separator was doing the
+   work the whitespace does better. */
 .m-page__head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--m-space-4);
-  height: 2.75rem; /* 44, fixed on purpose */
-  padding-inline: var(--m-space-5);
-  border-bottom: 1px solid var(--m-border-subtle);
+  flex: none;
+  padding: var(--m-space-7) var(--m-space-7) var(--m-space-6);
 }
 
+.m-page__lead { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+/* The one place a type pairing is allowed to be loud. Size, weight and tracking
+   all come from the pairing, because a serif at the grotesque's size reads
+   smaller and a mono at it reads wider - the size of a title is a property of
+   the face, not of the page. */
 .m-page__title {
-  font-size: var(--m-text-xl);
-  font-weight: var(--m-weight-semibold);
-  letter-spacing: var(--m-tracking-tight);
+  font-family: var(--m-font-display);
+  font-size: calc(var(--m-text-2xl) * var(--m-display-scale));
+  font-weight: var(--m-display-weight);
+  letter-spacing: var(--m-display-tracking);
+  line-height: var(--m-leading-tight);
+}
+
+/* One line under the title, saying what the page is. It replaces the info icon
+   that used to sit beside the title holding the same sentence behind a hover:
+   a page's own description is not a footnote, and there is room for it now. */
+.m-page__sub {
+  font-size: var(--m-text-md);
+  color: var(--m-content-muted);
+  line-height: var(--m-leading-snug);
 }
 
 .m-page__meta {
+  align-self: center;
   font-size: var(--m-text-sm);
   color: var(--m-content-muted);
   font-variant-numeric: tabular-nums;
 }
-
-.m-page__info {
-  display: inline-flex;
-  color: var(--m-content-decorative);
-  cursor: help;
-  border-radius: var(--m-radius-xs);
-}
-.m-page__info:hover { color: var(--m-content-secondary); }
 
 .m-page__actions {
   display: flex;
@@ -50,9 +72,19 @@
   display: flex;
   align-items: center;
   gap: var(--m-space-4);
+  flex: none;
   flex-wrap: wrap;
-  padding: var(--m-space-4) var(--m-space-5);
-  border-bottom: 1px solid var(--m-border-subtle);
+  padding: var(--m-space-4) var(--m-space-6);
+  border-block: 1px solid var(--m-border-subtle);
 }
 
-.m-page__body { display: flex; flex-direction: column; min-width: 0; }
+/* everything below the header scrolls, so the plane's own edges never move */
+.m-page__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+

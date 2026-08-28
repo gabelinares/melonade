@@ -1,7 +1,12 @@
+/* Clear of the plane's footer. Since 2026-08-28 the content plane is a fixed
+   height with its range and pager pinned to its bottom edge, and scaffolding
+   that covers a pager is scaffolding that breaks the thing it is there to let
+   you inspect. It floats over rows instead, where it hides nothing you cannot
+   scroll back to. */
 .m-proto {
   position: fixed;
   right: var(--m-space-6);
-  bottom: var(--m-space-6);
+  bottom: 4rem;
   z-index: var(--m-z-toast);
   width: 16.5rem;
   border: 1px dashed var(--m-border-strong);
@@ -84,3 +89,59 @@
 .m-proto__reset:hover { color: var(--m-content-primary); border-color: var(--m-border-strong); }
 
 .m-proto .ant-slider { margin: 0; }
+
+/* the type picker: full width of the panel, like the strips above and below it */
+.m-proto__select { width: 100%; }
+
+/* ── a type specimen, one per dropdown row ──────────────────────────────────
+   The name takes the width it needs and the three marks are pinned to the
+   right on a grid, so the eye compares like with like down the column instead
+   of chasing marks that move with the length of a name. */
+.m-proto__spec {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: var(--m-space-5);
+  width: 100%;
+}
+
+/* Colours are INHERITED, not set: the selected row in an antd dropdown is a
+   filled surface, and a specimen that hard-codes its greys goes unreadable on
+   exactly the row you are looking at. */
+.m-proto__spec-name {
+  font-size: var(--m-text-sm);
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.m-proto__spec-title {
+  min-width: 1.8rem;
+  /* Big enough to read the letterforms: at 16px a serif and a grotesque are the
+     same grey smudge, which defeats the point of a specimen. */
+  font-size: var(--m-text-xl);
+  line-height: 1;
+  color: inherit;
+  text-align: right;
+}
+
+.m-proto__spec-tag {
+  min-width: 2.4rem;
+  padding: 2px var(--m-space-3);
+  border: 1px solid var(--m-status-neutral-border);
+  border-radius: var(--m-radius-xs);
+  background: var(--m-status-neutral-bg);
+  color: var(--m-status-neutral-fg);
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.m-proto__spec-num {
+  min-width: 2.6rem;
+  font-size: var(--m-text-xs);
+  color: inherit;
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

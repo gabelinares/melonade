@@ -38,7 +38,7 @@ const state = () => p.evaluate(() => {
 });
 
 const list = await state();
-await p.locator('[aria-label="Open the write-up"]').first().click();
+await p.locator('.m-issues__title').first().click();
 await p.locator('.m-scard:not(.m-scard--skeleton) .m-scard__frame').first().waitFor();
 const issue = await state();
 await p.locator('.m-scard').first().click();

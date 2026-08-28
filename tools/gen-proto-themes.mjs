@@ -217,28 +217,149 @@ out.push(`\n/* ── density: Spaced ── */`);
 out.push(`:root[data-density='spaced'] {\n${Object.entries(SPACED)
   .map(([k, v]) => `  --m-${k}: ${v};`).join('\n')}\n}`);
 
-/* ── fonts ─────────────────────────────────────────────────────────────────
-   Three stacks, switched on the same attribute pattern as everything else. The
-   mono moves with the sans where the family has one, because a Geist page with
-   a Plex Mono clock in it is two type systems in one screen. */
+/* ── type systems ───────────────────────────────────────────────────────────
+   FIVE SYSTEMS, each from software that handles type well - not five sets of
+   fonts. Two earlier attempts failed and both failures are instructive: the
+   first was costume (a display serif and a coder's mono over a dense table),
+   and the second was too quiet to tell apart, because the only thing that
+   really moved was the sans - and at 13px one grotesque looks much like
+   another.
+
+   So a system here moves FOUR THINGS, and each one is set differently by each
+   system, which is what makes them tell apart at a glance:
+
+     1. the family
+     2. how the PAGE TITLE is set - face, size, tracking - and, separately, the
+        weight a row's own title takes. Editorial's serif reaches the page title
+        and the write-up and stops there: a list of names is scanning, not
+        reading, and a serif down a column of rows is decoration again.
+     3. how TAGS are set - and only tags. A status is a word you read; a tag is
+        a label you scan, and only the second one wants small caps. Uppercase on
+        both was the note Gabriel sent back: "unbalanced, it feels too big."
+     4. what NUMBERS are set in. Console puts every count, duration and
+        timestamp in its mono, which changes the texture of a whole table
+        without touching a single word.
+
+   Roles: display (titles) / sans (interface + antd) / mono (code) / num
+   (figures in the UI) / prose (the write-up) / tag (chips). */
 const FONTS = [
-  { key: 'plex', label: 'Plex',
+  {
+    key: 'plex', label: 'Graphite',
+    note: 'the shipped voice: one family doing every job, no contrast anywhere',
     sans: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     mono: "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
-    note: 'IBM Plex Sans, the shipped face' },
-  { key: 'inter', label: 'Inter',
+    display: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    prose: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    tag: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    num: "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    weight: 600, tracking: '-0.011em', scale: 1, rowWeight: 500,
+    tagCase: 'none', tagTracking: 'var(--m-tracking-normal)', tagSize: 'var(--m-text-xs)', tagWeight: 400,
+    textSm: '0.8125rem', textMd: '0.875rem',
+  },
+  {
+    /* Linear, Figma, Height. One grotesque, and the hierarchy comes from size,
+       weight and TRACKING rather than a second family: headings pulled tight,
+       metadata set as small uppercase labels. Tags drop to 10px because
+       uppercase reads a size bigger than sentence case at the same number -
+       cap height where an x-height used to be - which is exactly why the first
+       pass "felt too big". */
+    key: 'swiss', label: 'Swiss',
+    note: 'Linear: one grotesque, headings pulled tight, tags as small caps',
     sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     mono: "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
-    note: 'the grotesque Notion and Linear both use, and the quietest of the three' },
-  { key: 'geist', label: 'Geist',
+    display: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    prose: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    tag: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    num: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    weight: 600, tracking: '-0.028em', scale: 0.96, rowWeight: 550,
+    tagCase: 'uppercase', tagTracking: '0.075em', tagSize: '0.625rem', tagWeight: 600,
+    textSm: '0.8125rem', textMd: '0.875rem',
+  },
+  {
+    /* Vercel. Sans for the interface, mono for everything the MACHINE produced:
+       the tags an agent attached, and every figure on the page - counts,
+       durations, timestamps, page ranges. That last one is what you actually
+       see: a table of mono figures has a completely different texture from the
+       same table in a grotesque, and it costs no layout. */
+    key: 'console', label: 'Console',
+    note: 'Vercel: sans interface, and every figure and tag in the mono',
     sans: "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     mono: "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
-    note: 'tighter and more mechanical, with a matching mono' },
+    display: "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    prose: "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    tag: "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+    num: "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+    weight: 600, tracking: '-0.032em', scale: 0.94, rowWeight: 500,
+    tagCase: 'uppercase', tagTracking: '0.04em', tagSize: '0.625rem', tagWeight: 500,
+    textSm: '0.8125rem', textMd: '0.875rem',
+  },
+  {
+    /* Notion, Stripe's docs, Linear's changelog. The serif is on the page's
+       title and on the writing - the two places you are meant to READ - and
+       nowhere else: the rows, the chrome and the tags stay a sans, because a
+       serif down a column of names is decoration again. It also runs a
+       half-step larger, because a text serif at a grotesque's size reads
+       small. */
+    key: 'editorial', label: 'Editorial',
+    note: 'Notion: a text serif on the page title and the writing, sans rows',
+    sans: "'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    mono: "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+    display: "'Source Serif 4', Georgia, 'Times New Roman', serif",
+    prose: "'Source Serif 4', Georgia, 'Times New Roman', serif",
+    tag: "'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    num: "'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    /* The row titles come DOWN to 500, not up to 600. That weight was there
+       when the rows were serif and 500 would have been synthesised; now that
+       they are a sans running a half-step larger than every other system, 600
+       made a table of names read as a table of headings. Size and colour are
+       already doing the separating. */
+    weight: 600, tracking: '-0.012em', scale: 1.16, rowWeight: 500,
+    /* Sentence case here on purpose: small caps beside a serif is two kinds of
+       formality in one row, and the serif is already doing the marking. */
+    tagCase: 'none', tagTracking: 'var(--m-tracking-normal)', tagSize: 'var(--m-text-xs)', tagWeight: 400,
+    textSm: '0.875rem', textMd: '0.9375rem',
+  },
+  {
+    /* GitHub, Slack, Notion's chrome. The OS's own face - SF on a Mac, Segoe on
+       Windows - a half-step larger and a shade quieter than the rest, with
+       nothing loaded and nothing to go wrong. It is the option a shipped product
+       reaches for when it wants the interface to disappear, and it is the only
+       one here that is free. */
+    key: 'system', label: 'System',
+    note: 'GitHub: the OS’s own face, a size up, nothing loaded, nothing foreign',
+    sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+    mono: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
+    display: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+    prose: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+    tag: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+    num: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
+    weight: 600, tracking: '-0.021em', scale: 1.04, rowWeight: 500,
+    tagCase: 'none', tagTracking: 'var(--m-tracking-normal)', tagSize: 'var(--m-text-xs)', tagWeight: 400,
+    textSm: '0.875rem', textMd: '0.9375rem',
+  },
 ];
 
 for (const f of FONTS) {
-  out.push(`\n/* ── font: ${f.label} ─ ${f.note} ── */`);
-  out.push(`:root[data-font='${f.key}'] {\n  --m-font-sans: ${f.sans};\n  --m-font-mono: ${f.mono};\n}`);
+  out.push(`\n/* ── type: ${f.label} ─ ${f.note} ── */`);
+  out.push(
+    `:root[data-font='${f.key}'] {\n` +
+      `  --m-font-sans: ${f.sans};\n` +
+      `  --m-font-mono: ${f.mono};\n` +
+      `  --m-font-display: ${f.display};\n` +
+      `  --m-font-prose: ${f.prose};\n` +
+      `  --m-font-tag: ${f.tag};\n` +
+      `  --m-font-num: ${f.num};\n` +
+      `  --m-display-weight: ${f.weight};\n` +
+      `  --m-display-tracking: ${f.tracking};\n` +
+      `  --m-display-scale: ${f.scale};\n` +
+      `  --m-title-weight: ${f.rowWeight};\n` +
+      `  --m-tag-case: ${f.tagCase};\n` +
+      `  --m-tag-tracking: ${f.tagTracking};\n` +
+      `  --m-tag-size: ${f.tagSize};\n` +
+      `  --m-tag-weight: ${f.tagWeight};\n` +
+      `  --m-text-sm: ${f.textSm};\n` +
+      `  --m-text-md: ${f.textMd};\n}`,
+  );
 }
 
 writeFileSync(resolve(app, 'src/tokens/proto-themes.css'), out.join('\n') + '\n');
@@ -261,8 +382,23 @@ const tsFile = `/* GENERATED by tools/gen-proto-themes.mjs - do not edit by hand
 export interface ProtoFont {
   label: string;
   note: string;
+  /** The five roles a pairing sets. See gen-proto-themes.mjs for what each one
+   *  is for, and why the tag is a role rather than "whatever the mono is". */
   sans: string;
   mono: string;
+  display: string;
+  prose: string;
+  tag: string;
+  num: string;
+  /** How the title and the tags are SET, not just which face they use. The
+   *  prototype panel renders a specimen of each system from these, so the
+   *  dropdown shows the difference instead of naming it. */
+  displayWeight: number;
+  displayTracking: string;
+  tagCase: string;
+  tagTracking: string;
+  tagSize: string;
+  tagWeight: number;
 }
 
 export interface ProtoVariant {
@@ -278,7 +414,7 @@ export const GREYS: Record<string, ProtoVariant> = ${j(ts.grey)};
 
 export const ACCENTS: Record<string, ProtoVariant> = ${j(ts.accent)};
 
-export const FONTS: Record<string, ProtoFont> = ${j(Object.fromEntries(FONTS.map((f) => [f.key, { label: f.label, note: f.note, sans: f.sans, mono: f.mono }])))};
+export const FONTS: Record<string, ProtoFont> = ${j(Object.fromEntries(FONTS.map((f) => [f.key, { label: f.label, note: f.note, sans: f.sans, mono: f.mono, display: f.display, prose: f.prose, tag: f.tag, num: f.num, displayWeight: f.weight, displayTracking: f.tracking, tagCase: f.tagCase, tagTracking: f.tagTracking, tagSize: f.tagSize, tagWeight: f.tagWeight }])))};
 
 export const DEFAULTS = { grey: '${GREYS[0].key}', accent: '${ACCENTS[0].key}', font: '${FONTS[0].key}', density: 'compact' } as const;
 

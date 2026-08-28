@@ -7,28 +7,27 @@
 /* Fills the content plane. The table page is a card that grows with its rows;
    the detail is a FRAME - a player and two panels that divide a fixed height
    between them - so it takes the plane and hands the height downwards. */
-/* SAME MEASURE AND SAME RADIUS AS THE TABLE PAGE. This block used to claim the
-   detail's top edge lined up with the table's and it did not: with no cap and no
-   centring the card started 116px further left and ran 232px wider, and at
-   radius-lg it was a different shape as well. Going from the list to an issue
-   therefore moved the whole page under the reader - which is the "big break"
-   Gabriel reported on 08-26, and it was three numbers, not a feeling.
-   The cap belongs on both or neither: a frame that divides a fixed height still
-   divides it inside 85rem, and the player is 16:10 inside that. */
+/* SAME PLANE AS THE TABLE PAGE, and the history is worth keeping because this
+   block has been wrong twice. It once claimed the detail's edges lined up with
+   the list's while having no cap and no centring, so the card started 116px
+   further left and ran 232px wider - the "big break" Gabriel reported on 08-26,
+   which was three numbers rather than a feeling.
+
+   Since 08-28 the answer is simpler: there is nothing to line up WITH. The
+   content plane is a single card floating on the menu's ground, so both the
+   list and the detail ARE that card - same edges, same radius, same border,
+   because they are the same object with different things inside it. */
 .m-work {
   display: flex;
   flex-direction: column;
   flex: 1;
   width: 100%;
-  max-width: var(--m-content-max);
-  margin-inline: auto;
-  height: 100%;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   background: var(--m-surface-default);
-  border: 1px solid var(--m-border-default);
-  border-radius: var(--m-radius-md);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-lg);
 }
 
 .m-work__body {

@@ -1,47 +1,81 @@
 import type { ReactNode } from 'react';
-import { Tooltip } from 'antd';
+import { ChevronRight } from 'lucide-react';
 import './nav-item.css';
 
 export interface NavItemProps {
-  icon: ReactNode;
+  /** Absent on a child row: the indent and the parent above it already say
+   *  what this belongs to, and six icons in a nested list is a texture. */
+  icon?: ReactNode;
   label: string;
   /** Open work waiting behind this item. Zero renders nothing. */
   count?: number;
+  /** A word, not a number: "Beta". */
+  badge?: string;
   active?: boolean;
-  collapsed?: boolean;
+  /** A section of an agent rather than a destination in its own right. */
+  nested?: boolean;
+  /** Has sections. Renders the caret, which toggles WITHOUT navigating. */
+  expandable?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
   onClick?: () => void;
 }
 
 /**
- * One nav row. The count is the reason this component exists: the nav doubles
- * as the queue, so you can see which agent has work without opening it. That
- * is what makes a growing list of agents useful rather than merely long.
+ * One nav row.
+ *
+ * Two things it does that a list of links would not. The COUNT is the reason
+ * this component exists at all: the menu doubles as the queue, so you can see
+ * which agent has work without opening it, and a growing list of agents stays
+ * useful rather than merely long.
+ *
+ * And the CARET IS ITS OWN CONTROL. Clicking the row goes to the agent;
+ * clicking the caret opens its sections without going anywhere. A disclosure
+ * that also navigates makes it impossible to look at what is inside something
+ * without leaving where you are.
  */
-export function NavItem({ icon, label, count = 0, active, collapsed, onClick }: NavItemProps) {
-  const row = (
+export function NavItem({
+  icon,
+  label,
+  count = 0,
+  badge,
+  active,
+  nested,
+  expandable,
+  expanded,
+  onToggle,
+  onClick,
+}: NavItemProps) {
+  return (
     <button
       type="button"
-      className={`m-nav-item${active ? ' is-active' : ''}${collapsed ? ' is-collapsed' : ''}`}
+      className={`m-nav-item${active ? ' is-active' : ''}${nested ? ' is-nested' : ''}`}
       aria-current={active ? 'page' : undefined}
       onClick={onClick}
     >
-      <span className="m-nav-item__icon" aria-hidden="true">{icon}</span>
-      {!collapsed && (
-        <>
-          <span className="m-nav-item__label m-truncate">{label}</span>
-          {count > 0 && <span className="m-nav-item__count">{count}</span>}
-        </>
+      {icon && (
+        <span className="m-nav-item__icon" aria-hidden="true">
+          {icon}
+        </span>
       )}
-      {collapsed && count > 0 && <span className="m-nav-item__dot" aria-hidden="true" />}
-      {collapsed && <span className="m-sr-only">{label}{count > 0 ? `, ${count} open` : ''}</span>}
+      <span className="m-nav-item__label m-truncate">{label}</span>
+      {badge && <span className="m-nav-item__badge">{badge}</span>}
+      {count > 0 && <span className="m-nav-item__count">{count}</span>}
+      {expandable && (
+        <span
+          role="button"
+          tabIndex={-1}
+          className={`m-nav-item__caret${expanded ? ' is-open' : ''}`}
+          aria-label={`${expanded ? 'Hide' : 'Show'} ${label} sections`}
+          aria-expanded={expanded}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle?.();
+          }}
+        >
+          <ChevronRight size={13} aria-hidden="true" />
+        </span>
+      )}
     </button>
-  );
-
-  return collapsed ? (
-    <Tooltip title={count > 0 ? `${label} · ${count}` : label} placement="right">
-      {row}
-    </Tooltip>
-  ) : (
-    row
   );
 }

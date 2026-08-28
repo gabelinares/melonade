@@ -1,0 +1,52 @@
+/* Centred in the plane, vertically as well: an unbuilt page has one thing to
+   say and it says it in the middle of the space it will one day fill. */
+.m-placeholder {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m-space-4);
+  padding: var(--m-space-10) var(--m-space-6);
+  text-align: center;
+}
+
+/* The destination's own glyph, on a soft plate. It is the one thing on this
+   screen that says WHICH page is missing, so it is drawn rather than named
+   twice. */
+.m-placeholder__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: var(--m-space-2);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-md);
+  background: var(--m-surface-sunken);
+  color: var(--m-content-decorative);
+}
+
+.m-placeholder__name {
+  font-size: var(--m-text-md);
+  font-weight: var(--m-weight-medium);
+  color: var(--m-content-primary);
+}
+
+.m-placeholder__note {
+  max-width: 44ch;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-muted);
+  line-height: var(--m-leading-snug);
+}
+
+/* Inside a row or a panel: no plate, tighter, quieter. */
+.m-placeholder.is-compact {
+  gap: var(--m-space-3);
+  padding: var(--m-space-7) var(--m-space-5);
+}
+.m-placeholder.is-compact .m-placeholder__glyph {
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-bottom: 0;
+}

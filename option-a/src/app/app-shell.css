@@ -1,13 +1,23 @@
-/* `stretch`, not `flex-start`, and a fixed viewport height rather than a
-   minimum. The table page grows with its rows and was happy either way; the
-   issue detail is a FRAME - a player with two panels dividing a fixed height
-   between them - and a frame cannot be told how tall it is by a parent that
-   sizes itself to its child. The page inside decides whether it scrolls. */
+/* ── THE WRAP, 2026-08-28 ────────────────────────────────────────────────────
+   One ground, one plane. The window is painted in the nav's colour edge to
+   edge, the menu sits on it with no surface of its own, and the content is a
+   card with an equal margin on all four sides. Nothing is docked to an edge, so
+   the ground reads as wrapping around the plane rather than as two columns
+   meeting at a seam - and the seam is exactly what a nav with its own
+   background and a border-right creates.
+
+   `stretch` and a fixed viewport height rather than a minimum: the content
+   plane is now a FRAME that does its own scrolling inside, so it has to be told
+   how tall it is. A parent that sizes itself to its child cannot tell it. */
 .m-shell {
   display: flex;
   align-items: stretch;
   height: 100vh;
   overflow: hidden;
+  /* `canvas` and not `surface-nav`: the menu has no surface of its own any
+     more, so the token that means "the ground everything sits on" is the one
+     that should paint it - and it is a step further from white, which is what
+     makes the plane read as floating rather than as merely lighter. */
   background: var(--m-surface-canvas);
 }
 
@@ -17,13 +27,12 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
-  padding: var(--m-space-6);
+  /* the wrap: the same gap the nav leaves on the left, on the other three
+     sides. Any difference here reads as a mistake rather than as a margin. */
+  padding: var(--m-space-5) var(--m-space-5) var(--m-space-5) 0;
+  overflow: hidden;
 }
 
-/* The detail takes the plane and does its own scrolling inside. */
-.m-shell__main:has(> .m-work) { overflow: hidden; }
-
 @media (max-width: 700px) {
-  .m-shell__main { padding: var(--m-space-4); }
+  .m-shell__main { padding: var(--m-space-4) var(--m-space-4) var(--m-space-4) 0; }
 }

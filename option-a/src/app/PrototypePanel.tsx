@@ -1,9 +1,17 @@
 import { useState } from 'react';
-import { Segmented, Slider } from 'antd';
+import { Segmented, Select, Slider } from 'antd';
 import { ChevronDown, FlaskConical, RotateCcw } from 'lucide-react';
 import { AGENTS } from '../nav/agents.ts';
 import { useProtoTokens } from '../theme/ProtoTokens.tsx';
-import { ACCENTS, FONTS, GREYS, type AccentKey, type FontKey, type GreyKey } from '../tokens/proto-themes.ts';
+import {
+  ACCENTS,
+  FONTS,
+  GREYS,
+  type AccentKey,
+  type FontKey,
+  type GreyKey,
+  type ProtoFont,
+} from '../tokens/proto-themes.ts';
 import type { DataState } from '@shared/issues-logic.ts';
 import './prototype-panel.css';
 
@@ -32,6 +40,56 @@ export interface PrototypePanelProps {
  * It looks like scaffolding on purpose. A reviewer must never wonder whether
  * this ships.
  */
+/**
+ * One row of the type dropdown, set in the system it is offering.
+ *
+ * Three marks, because a system moves four things and the fourth - the body -
+ * is the name itself, which is why the name is set in that system's own sans
+ * rather than in the panel's:
+ *
+ *   Ag     the page title's face, at its weight and its tracking
+ *   Tag    a tag, set exactly as that system sets tags (some shout, some do not)
+ *   12.4k  a figure, which is the mark that catches Console
+ *
+ * Compact on purpose. This is a menu, not a type sample book: it has to say
+ * "these two are different and here is how" in one line, at a glance, while the
+ * cursor is already moving.
+ */
+function Specimen({ font }: { font: ProtoFont }) {
+  return (
+    <span className="m-proto__spec">
+      <span className="m-proto__spec-name" style={{ fontFamily: font.sans }}>
+        {font.label}
+      </span>
+      <span
+        className="m-proto__spec-title"
+        style={{
+          fontFamily: font.display,
+          fontWeight: font.displayWeight,
+          letterSpacing: font.displayTracking,
+        }}
+      >
+        Ag
+      </span>
+      <span
+        className="m-proto__spec-tag"
+        style={{
+          fontFamily: font.tag,
+          fontSize: font.tagSize,
+          fontWeight: font.tagWeight,
+          textTransform: font.tagCase as 'none' | 'uppercase',
+          letterSpacing: font.tagTracking,
+        }}
+      >
+        Tag
+      </span>
+      <span className="m-proto__spec-num" style={{ fontFamily: font.num }}>
+        12.4k
+      </span>
+    </span>
+  );
+}
+
 export function PrototypePanel({
   agentCount,
   onAgentCount,
@@ -81,15 +139,35 @@ export function PrototypePanel({
 
           {/* ── the look ─────────────────────────────────────────────────────
               Type first, because it changes every line on the page and it is
-              the note Mehdi opened with. */}
+              the note Mehdi opened with.
+
+              These are PAIRINGS, not faces: each one sets a display face for
+              the titles, a body face for everything else, a mono for numbers
+              and a face for tags - which is where the three combinations
+              actually differ from the shipped design, since Graphite sets its
+              chips in the same sans as the page. */}
           <div className="m-proto__field">
-            <span className="m-proto__label">Typeface</span>
-            <Segmented
+            <span className="m-proto__label">Type</span>
+            {/* A dropdown rather than a strip: five options do not fit across
+                264px, and unlike the greys and the accents these are not a
+                spectrum you scrub along - each one is a whole system.
+
+                And each row SHOWS itself. The names are kept, because a system
+                is easier to talk about than to point at, but a name is not a
+                specimen: "Console" tells you nothing until you have already
+                picked it once. Every row is set in its own faces - see
+                <Specimen> for what the three marks are. */}
+            <Select
               size="small"
-              block
+              className="m-proto__select"
               value={tok.font}
               onChange={(v) => tok.setFont(v as FontKey)}
-              options={opts(FONTS)}
+              options={Object.entries(FONTS).map(([value, f]) => ({ value, label: f.label, font: f }))}
+              optionRender={(opt) => <Specimen font={(opt.data as { font: ProtoFont }).font} />}
+              /* The closed control stays a name: the specimen is for choosing,
+                 and once chosen the page itself is the specimen. */
+              labelRender={({ value }) => FONTS[value as FontKey]?.label ?? String(value)}
+              popupMatchSelectWidth={288}
             />
             <p className="m-proto__hint">{FONTS[tok.font]?.note}.</p>
           </div>

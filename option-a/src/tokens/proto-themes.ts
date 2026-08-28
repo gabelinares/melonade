@@ -15,8 +15,23 @@
 export interface ProtoFont {
   label: string;
   note: string;
+  /** The five roles a pairing sets. See gen-proto-themes.mjs for what each one
+   *  is for, and why the tag is a role rather than "whatever the mono is". */
   sans: string;
   mono: string;
+  display: string;
+  prose: string;
+  tag: string;
+  num: string;
+  /** How the title and the tags are SET, not just which face they use. The
+   *  prototype panel renders a specimen of each system from these, so the
+   *  dropdown shows the difference instead of naming it. */
+  displayWeight: number;
+  displayTracking: string;
+  tagCase: string;
+  tagTracking: string;
+  tagSize: string;
+  tagWeight: number;
 }
 
 export interface ProtoVariant {
@@ -429,22 +444,84 @@ export const ACCENTS: Record<string, ProtoVariant> = {
 
 export const FONTS: Record<string, ProtoFont> = {
     "plex": {
-      "label": "Plex",
-      "note": "IBM Plex Sans, the shipped face",
+      "label": "Graphite",
+      "note": "the shipped voice: one family doing every job, no contrast anywhere",
       "sans": "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      "mono": "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+      "mono": "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+      "display": "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "prose": "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "tag": "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "num": "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "displayWeight": 600,
+      "displayTracking": "-0.011em",
+      "tagCase": "none",
+      "tagTracking": "var(--m-tracking-normal)",
+      "tagSize": "var(--m-text-xs)",
+      "tagWeight": 400
     },
-    "inter": {
-      "label": "Inter",
-      "note": "the grotesque Notion and Linear both use, and the quietest of the three",
+    "swiss": {
+      "label": "Swiss",
+      "note": "Linear: one grotesque, headings pulled tight, tags as small caps",
       "sans": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      "mono": "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+      "mono": "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+      "display": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "prose": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "tag": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "num": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "displayWeight": 600,
+      "displayTracking": "-0.028em",
+      "tagCase": "uppercase",
+      "tagTracking": "0.075em",
+      "tagSize": "0.625rem",
+      "tagWeight": 600
     },
-    "geist": {
-      "label": "Geist",
-      "note": "tighter and more mechanical, with a matching mono",
+    "console": {
+      "label": "Console",
+      "note": "Vercel: sans interface, and every figure and tag in the mono",
       "sans": "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      "mono": "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+      "mono": "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+      "display": "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "prose": "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "tag": "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+      "num": "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+      "displayWeight": 600,
+      "displayTracking": "-0.032em",
+      "tagCase": "uppercase",
+      "tagTracking": "0.04em",
+      "tagSize": "0.625rem",
+      "tagWeight": 500
+    },
+    "editorial": {
+      "label": "Editorial",
+      "note": "Notion: a text serif on the page title and the writing, sans rows",
+      "sans": "'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "mono": "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+      "display": "'Source Serif 4', Georgia, 'Times New Roman', serif",
+      "prose": "'Source Serif 4', Georgia, 'Times New Roman', serif",
+      "tag": "'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "num": "'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "displayWeight": 600,
+      "displayTracking": "-0.012em",
+      "tagCase": "none",
+      "tagTracking": "var(--m-tracking-normal)",
+      "tagSize": "var(--m-text-xs)",
+      "tagWeight": 400
+    },
+    "system": {
+      "label": "System",
+      "note": "GitHub: the OS’s own face, a size up, nothing loaded, nothing foreign",
+      "sans": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+      "mono": "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
+      "display": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+      "prose": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+      "tag": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+      "num": "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
+      "displayWeight": 600,
+      "displayTracking": "-0.021em",
+      "tagCase": "none",
+      "tagTracking": "var(--m-tracking-normal)",
+      "tagSize": "var(--m-text-xs)",
+      "tagWeight": 400
     }
   };
 

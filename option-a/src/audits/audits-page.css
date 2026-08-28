@@ -1,0 +1,77 @@
+/* Two lines in the first cell, which is the one thing this table does that the
+   other two do not: an audit's name is meaningless without its scope.
+
+   The two lines need to read as ONE cell rather than as two rows that happen to
+   be adjacent, so they get a real gap and their own line heights, and the row
+   gets the vertical padding to hold them - the 1px gap in a 53px row had the
+   scope crowding the name from below while the row itself had air to spare. */
+.m-audits__name-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding-block: var(--m-space-3);
+}
+
+.m-audits__name {
+  font-size: var(--m-text-md);
+  font-weight: var(--m-title-weight);
+  line-height: var(--m-leading-tight);
+  color: var(--m-content-primary);
+}
+
+.m-audits__scope {
+  font-size: var(--m-text-xs);
+  line-height: var(--m-leading-tight);
+  color: var(--m-content-muted);
+}
+
+.m-audits__sample {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+
+/* "You · Jul 9" - one line with a separator rather than two words held apart by
+   a gap, which read as two columns that had lost their divider. */
+.m-audits__by {
+  display: flex;
+  align-items: baseline;
+  gap: var(--m-space-3);
+  min-width: 0;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+}
+
+.m-audits__dot { color: var(--m-content-disabled); }
+
+.m-audits__none { color: var(--m-content-disabled); }
+
+.m-audits__artifacts {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-2);
+}
+
+.m-audits__row { cursor: pointer; }
+
+.m-audits__foot {
+  display: flex;
+  /* The plane is a fixed height now, so a short list leaves space under it. The
+     footer takes that space rather than floating in the middle of it: the range
+     and the pager belong to the bottom edge of the list, not to the last row. */
+  margin-top: auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-space-4);
+  padding: var(--m-space-4) var(--m-space-5);
+  border-top: 1px solid var(--m-border-subtle);
+}
+
+.m-audits__range {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}

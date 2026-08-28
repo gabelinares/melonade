@@ -555,8 +555,12 @@ export function clearFilterKey(f: Filters, key: FilterKey): Filters {
 /** One applied filter, ready to render as a removable chip. The chips are what
  *  make a single collapsed control honest: fold five buttons into one icon
  *  without them and the filter state becomes invisible. */
-export interface ActiveFilterChip {
-  key: FilterKey;
+/* Generic in the key for the same reason FilterDimension is: the chips row is
+   drawn for the issue queue, the tests list and anything else that folds its
+   filters behind one button. Defaulting to FilterKey keeps every existing
+   callsite exactly as it was. */
+export interface ActiveFilterChip<K extends string = FilterKey> {
+  key: K;
   value: string;
   /** the dimension name, so a chip can read "Impact: High" */
   dimension: string;

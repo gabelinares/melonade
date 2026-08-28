@@ -10,6 +10,7 @@ export function CountSuffix({ n }: CountSuffixProps) {
       style={{
         marginLeft: 'var(--m-space-3)',
         color: 'var(--m-content-muted)',
+        fontFamily: 'var(--m-font-num)',
         fontVariantNumeric: 'tabular-nums',
       }}
     >

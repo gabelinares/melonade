@@ -15,6 +15,7 @@ export function RelativeTime({ minutesAgo }: RelativeTimeProps) {
         style={{
           fontSize: 'var(--m-text-xs)',
           color: 'var(--m-content-muted)',
+          fontFamily: 'var(--m-font-num)',
           fontVariantNumeric: 'tabular-nums',
           cursor: 'default',
         }}

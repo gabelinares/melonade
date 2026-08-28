@@ -227,6 +227,30 @@ export const darkColors: Record<keyof typeof lightColors, string> = {
 export const typography = {
   'font-sans':
     "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  /* The display and tag roles default to the sans and are only ever moved by a
+     type pairing in the prototype panel. A page that reads its title font from
+     a variable nothing sets is a page with no title font. */
+  'font-display': "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  'font-prose': "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  'font-tag': "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  /* Figures in the interface - counts, durations, timestamps, ranges. The sans
+     by default; a type system that says "the machine's numbers are mono" moves
+     this one role and changes the texture of every table. */
+  'font-num': "'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  'display-weight': '600',
+  'display-tracking': '-0.011em',
+  'display-scale': '1',
+  /* The weight a row's own title takes. A serif at 500 has to be synthesised;
+     the systems that use one ask for 600 instead. */
+  'title-weight': '500',
+  /* Tags are sentence case in the shipped design. Every alternative pairing
+     sets them as small uppercase labels with air in them, which is what the
+     rest of the industry does with metadata - so the treatment is a token
+     rather than a rule inside the chip. */
+  'tag-case': 'none',
+  'tag-tracking': '0em',
+  'tag-size': '0.75rem',
+  'tag-weight': '400',
   'font-mono': "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
 
   /* Fixed rem scale on an untouched 16px root, ratio ~1.09 at the dense end.
@@ -324,9 +348,11 @@ export const layout = {
      measurement the shell needs: no expanded/collapsed pair to keep in
      agreement. The two below are kept for the labelled nav, which is still
      on disk. */
-  'rail-width': '3.5rem',        // 56
-  'nav-width': '13.5rem',        // 216
-  'nav-width-collapsed': '3.25rem', // 52
+  /* One width at every window size. The collapsed width and the icon rail's
+     width both went with the 2026-08-28 menu: there is one nav now, and a token
+     nothing reads is a token that will be read wrongly later. */
+  'nav-width': '16rem',        // 256: the project name is a domain, and a
+                               // truncated project name reads as a bug
   'content-max': '85rem',        // 1360: matches the current app's measure
   'control-height-sm': '1.625rem', // 26
   'control-height-md': '1.875rem', // 30

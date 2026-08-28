@@ -474,20 +474,102 @@
   --m-header-height: 3.25rem;
 }
 
-/* ── font: Plex ─ IBM Plex Sans, the shipped face ── */
+/* ── type: Graphite ─ the shipped voice: one family doing every job, no contrast anywhere ── */
 :root[data-font='plex'] {
   --m-font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --m-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --m-font-display: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-prose: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-tag: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-num: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-display-weight: 600;
+  --m-display-tracking: -0.011em;
+  --m-display-scale: 1;
+  --m-title-weight: 500;
+  --m-tag-case: none;
+  --m-tag-tracking: var(--m-tracking-normal);
+  --m-tag-size: var(--m-text-xs);
+  --m-tag-weight: 400;
+  --m-text-sm: 0.8125rem;
+  --m-text-md: 0.875rem;
 }
 
-/* ── font: Inter ─ the grotesque Notion and Linear both use, and the quietest of the three ── */
-:root[data-font='inter'] {
+/* ── type: Swiss ─ Linear: one grotesque, headings pulled tight, tags as small caps ── */
+:root[data-font='swiss'] {
   --m-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --m-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --m-font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-prose: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-tag: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-num: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-display-weight: 600;
+  --m-display-tracking: -0.028em;
+  --m-display-scale: 0.96;
+  --m-title-weight: 550;
+  --m-tag-case: uppercase;
+  --m-tag-tracking: 0.075em;
+  --m-tag-size: 0.625rem;
+  --m-tag-weight: 600;
+  --m-text-sm: 0.8125rem;
+  --m-text-md: 0.875rem;
 }
 
-/* ── font: Geist ─ tighter and more mechanical, with a matching mono ── */
-:root[data-font='geist'] {
+/* ── type: Console ─ Vercel: sans interface, and every figure and tag in the mono ── */
+:root[data-font='console'] {
   --m-font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --m-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --m-font-display: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-prose: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-tag: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --m-font-num: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --m-display-weight: 600;
+  --m-display-tracking: -0.032em;
+  --m-display-scale: 0.94;
+  --m-title-weight: 500;
+  --m-tag-case: uppercase;
+  --m-tag-tracking: 0.04em;
+  --m-tag-size: 0.625rem;
+  --m-tag-weight: 500;
+  --m-text-sm: 0.8125rem;
+  --m-text-md: 0.875rem;
+}
+
+/* ── type: Editorial ─ Notion: a text serif on the page title and the writing, sans rows ── */
+:root[data-font='editorial'] {
+  --m-font-sans: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --m-font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --m-font-prose: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --m-font-tag: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-font-num: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --m-display-weight: 600;
+  --m-display-tracking: -0.012em;
+  --m-display-scale: 1.16;
+  --m-title-weight: 500;
+  --m-tag-case: none;
+  --m-tag-tracking: var(--m-tracking-normal);
+  --m-tag-size: var(--m-text-xs);
+  --m-tag-weight: 400;
+  --m-text-sm: 0.875rem;
+  --m-text-md: 0.9375rem;
+}
+
+/* ── type: System ─ GitHub: the OS’s own face, a size up, nothing loaded, nothing foreign ── */
+:root[data-font='system'] {
+  --m-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --m-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  --m-font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --m-font-prose: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --m-font-tag: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --m-font-num: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  --m-display-weight: 600;
+  --m-display-tracking: -0.021em;
+  --m-display-scale: 1.04;
+  --m-title-weight: 500;
+  --m-tag-case: none;
+  --m-tag-tracking: var(--m-tracking-normal);
+  --m-tag-size: var(--m-text-xs);
+  --m-tag-weight: 400;
+  --m-text-sm: 0.875rem;
+  --m-text-md: 0.9375rem;
 }

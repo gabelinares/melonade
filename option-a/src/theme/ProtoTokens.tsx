@@ -102,7 +102,7 @@ export function ProtoTokensProvider({ children, frozen = false }: ProtoTokensPro
     root.setAttribute('data-density', saved.density);
   }, [saved]);
 
-  /* WARM THE OTHER TWO FACES. A <link> to Google Fonts only DECLARES the
+  /* WARM EVERY FACE THE PAIRINGS CAN ASK FOR. A <link> to Google Fonts only DECLARES the
      @font-face rules; the browser fetches a file the first time something is
      actually painted in it. So the first switch used to paint the fallback for a
      beat and then swap - which, when the fallback is San Francisco and the target
@@ -114,8 +114,15 @@ export function ProtoTokensProvider({ children, frozen = false }: ProtoTokensPro
     for (const f of Object.values(FONTS)) {
       for (const weight of [400, 500, 600]) {
         void document.fonts.load(`${weight} 14px ${f.sans}`).catch(() => {});
+        void document.fonts.load(`${weight} 22px ${f.display}`).catch(() => {});
+        void document.fonts.load(`${weight} 15px ${f.prose}`).catch(() => {});
       }
-      void document.fonts.load(`400 14px ${f.mono}`).catch(() => {});
+      /* Both weights: a tag renders at 400 and a chip's label can be 500, and a
+         face warmed at one weight is not warmed at the other. */
+      for (const weight of [400, 500]) {
+        void document.fonts.load(`${weight} 14px ${f.mono}`).catch(() => {});
+        void document.fonts.load(`${weight} 12px ${f.tag}`).catch(() => {});
+      }
     }
   }, []);
 

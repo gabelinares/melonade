@@ -31,6 +31,41 @@
   display: none !important;
 }
 
+/* ── ONE LEFT INSET FOR EVERY TABLE ─────────────────────────────────────────
+   The first thing on a row - a checkbox, a meter, a name - starts exactly where
+   the page title above it starts, and the last cell ends where the header's
+   actions end. antd pads every cell equally (12px), which lines the columns up
+   with each other and nothing else; the outer two cells are not gutters between
+   columns, they are the page's margin, and the page has one.
+
+   `:not(.ant-table-selection-column)` is not needed: the checkbox column IS the
+   first cell on the tests table, so it takes the inset and the checkbox lands
+   where the impact meter lands on the queue.
+
+   ⚠ The selector carries `.ant-table-wrapper .ant-table` only to out-specify
+   antd's own cell padding, which is three classes deep behind a `:where()`. Two
+   classes TIE with it and lose on order, silently: the declaration lands in the
+   stylesheet and applies to nothing. Read the computed value, never the file. */
+.m-page__body .ant-table-wrapper .ant-table .ant-table-thead > tr > th:first-child,
+.m-page__body .ant-table-wrapper .ant-table .ant-table-tbody > tr > td:first-child {
+  padding-left: var(--m-space-7);
+}
+
+.m-page__body .ant-table-wrapper .ant-table .ant-table-thead > tr > th:last-child,
+.m-page__body .ant-table-wrapper .ant-table .ant-table-tbody > tr > td:last-child {
+  padding-right: var(--m-space-7);
+}
+
+/* ── ONE ROW HEIGHT ──────────────────────────────────────────────────────────
+   A row is `--m-row-height` on every list, whatever it happens to contain. Left
+   to its content, the queue came out at 39px, the runs log at 34 and the audits
+   shelf at 59, so moving between three lists of the same app changed the rhythm
+   under the reader for no reason anybody could name. This is a MINIMUM - the
+   audits row carries two lines and is still allowed to be taller. */
+.m-page__body .ant-table-wrapper .ant-table .ant-table-tbody > tr > td {
+  height: var(--m-row-height);
+}
+
 /* Row rules are hairlines and the last row has none, so the table's bottom
    edge is the card's border rather than a doubled line. */
 .ant-table-tbody > tr > td {
@@ -108,7 +143,7 @@
 
 /* The disclosure caret is the primary gesture on a row, so it must not be
    fainter than the sort arrows, which are secondary. */
-.ant-table-row-expand-icon-cell { vertical-align: middle; }
+
 
 /* Focus rings antd takes away.
  *

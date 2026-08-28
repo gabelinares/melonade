@@ -1,0 +1,29 @@
+/* A bordered box rather than a bare row: it is a readout, not a nav item, and
+   the edge is what stops it reading as one more thing to click. */
+.m-credits {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  height: 1.875rem;
+  padding-inline: var(--m-space-4);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-default);
+  cursor: default;
+}
+
+.m-credits__label {
+  flex: none;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-secondary);
+}
+
+.m-credits .m-bar { flex: 1; min-width: 2rem; max-width: none; }
+
+.m-credits__value {
+  font-family: var(--m-font-num);
+  flex: none;
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+  font-variant-numeric: tabular-nums;
+}

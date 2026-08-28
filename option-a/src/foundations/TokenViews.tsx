@@ -204,7 +204,7 @@ const remToPx = (value: string): string => {
 };
 
 const TYPE_USE: Record<string, string> = {
-  'text-2xs': 'micro labels, counts, the collapsed-rail dot legend',
+  'text-2xs': 'micro labels, counts, the credits readout in the menu foot',
   'text-xs': 'table meta, captions, chips, tooltips',
   'text-sm': 'THE base size. Body text, table cells, nav rows, controls',
   'text-md': 'emphasis inside a row, empty-state titles, larger controls',

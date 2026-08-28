@@ -11,6 +11,16 @@
    they exist here to prove the nav holds, not as a roadmap.
    ══════════════════════════════════════════════════════════════════════════ */
 
+import { AUDITS } from '@shared/audits-data.ts';
+import { TESTS } from '@shared/tests-data.ts';
+import { attentionCount } from '@shared/tests-logic.ts';
+
+export interface AgentSection {
+  /** The nav key, which is also the route: `tests/runs`. */
+  key: string;
+  label: string;
+}
+
 export interface AgentEntry {
   key: string;
   label: string;
@@ -19,6 +29,13 @@ export interface AgentEntry {
   /** open items waiting on you. Drives the nav count. */
   count: number;
   shipped: boolean;
+  /** An agent with more than one body under its name. The nav expands to show
+   *  them; an agent without sections is a single destination.
+   *
+   *  This is DATA rather than a special case in the nav, because the question
+   *  the menu has to survive is not "what does Tests do" but "what happens when
+   *  the fourth agent grows a second screen". */
+  sections?: AgentSection[];
 }
 
 export type AgentIconName =
@@ -36,8 +53,25 @@ export type AgentIconName =
 
 export const AGENTS: readonly AgentEntry[] = [
   { key: 'issues', label: 'Issues', icon: 'bug', count: 11, shipped: true },
-  { key: 'tests', label: 'Tests', icon: 'flask', count: 4, shipped: true },
-  { key: 'audits', label: 'Audits', icon: 'clipboard', count: 2, shipped: true },
+  /* The two shipped agents that have a page count their own work rather than
+     carrying a number somebody typed: a badge that disagrees with the page it
+     opens is worse than no badge. Tests counts what is waiting on a person -
+     drafts, revisions, merges - and Audits counts the jobs still reading. */
+  {
+    key: 'tests',
+    label: 'Tests',
+    icon: 'flask',
+    count: attentionCount(TESTS),
+    shipped: true,
+    /* The first section is called List, not Tests: a child repeating its parent
+       reads as a mistake, and the parent is already the subject. */
+    sections: [
+      { key: 'tests', label: 'List' },
+      { key: 'tests/runs', label: 'Runs' },
+      { key: 'tests/environments', label: 'Environments' },
+    ],
+  },
+  { key: 'audits', label: 'Audits', icon: 'clipboard', count: AUDITS.filter((a) => a.status === 'running').length, shipped: true },
   { key: 'accessibility', label: 'Accessibility', icon: 'accessibility', count: 7, shipped: false },
   { key: 'performance', label: 'Performance', icon: 'gauge', count: 3, shipped: false },
   { key: 'journeys', label: 'Journeys', icon: 'route', count: 0, shipped: false },

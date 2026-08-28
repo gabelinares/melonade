@@ -15,6 +15,7 @@
    system is one grotesk at seven sizes, and the title's job is to be one clear
    step above the 14px body under it. */
 .m-wu__title {
+  font-family: var(--m-font-display);
   font-size: var(--m-text-xl);
   font-weight: var(--m-weight-semibold);
   line-height: var(--m-leading-snug);
@@ -61,6 +62,7 @@
 .m-wu__tabs .ant-tabs-nav { margin-bottom: var(--m-space-6); }
 
 .m-wu__prose {
+  font-family: var(--m-font-prose);
   max-width: 44rem;
   font-size: var(--m-text-md);
   line-height: var(--m-leading-normal);

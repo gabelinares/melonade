@@ -62,7 +62,14 @@ static screenshot cannot answer:
   claimed.
 - **Queue state.** Loaded, loading, empty. Loading and empty are where list
   designs actually fail, so they are one click away instead of unreachable.
-- Option A adds a rail toggle for its collapsed menu.
+- **Type systems.** Five, in a dropdown, each taken from software that handles
+  type well rather than assembled from fonts: **Graphite** (the shipped voice),
+  **Swiss** (Linear - one grotesque, tight headings, tags in small caps),
+  **Console** (Vercel - tags and every figure in the mono), **Editorial** (Notion
+  - a text serif on the page title and the write-up) and **System** (GitHub - the
+  OS's own face, a size up, nothing loaded). Each moves the family, the page
+  title, the tags and the figures. See DESIGN.md section 14.
+- Option A's menu is one width at every size, so there is nothing to toggle.
 
 Option B also has real keyboard triage: `J` and `K` walk the queue, `Enter` goes
 one step deeper into the flow, `Esc` comes back one step, `F` toggles full width,
@@ -70,12 +77,33 @@ one step deeper into the flow, `Esc` comes back one step, `F` toggles full width
 
 ## What is and is not built
 
-Built: the Issues page, the menu, and every state either of them can be in.
+Built, in option A: the Issues page and its flow, **the Tests agent** (its list,
+its runs and its environments), **the Audits list**, the menu, and every state any
+of them can be in.
 
-Not built: Sessions, Tests, Audits, Preferences, Support. Clicking them lands on a
-plainly labelled placeholder. The brief is one page, and a half-built Tests table
-would just draw review comments away from the thing being decided. The menu rows
-themselves are real, so the menu is still fully judgeable.
+**The shell changed on 2026-08-28** (DESIGN.md section 13): one ground, one
+plane. The window is painted in a single colour, the menu sits on it with no
+surface of its own, and the content is a card floating on that ground with an
+equal margin on four sides — so the ground wraps the content instead of meeting
+it at a seam. The menu is labelled again, with an agent's sections nested under
+it, four tools on one row at the foot and a credits meter under them. Option B is the
+Issues page only - it is the argument for a layout, not a second application.
+
+**Tests and Audits arrived on 2026-08-27, and the Tests page's other two
+sections on the 28th**, ported from what production runs today. Tests is three
+tabs - the tests, their **Runs**, and the **Environments** they run against - with
+the tabs in the page header rather than in a band of their own. Everything at
+list level is real and wired: the queue order, the status tabs, the filters, the
+bulk actions, the row menus, the run log with its seven-day window, the
+environment list and the delete that pauses the tests it would strand.
+
+No detail panel is built yet - the test panel, the run panel with its HAR viewer,
+the audit report, the environment form - so a row opens a drawer that says so and
+names what is coming. See DESIGN.md section 12.
+
+Not built: Sessions, Preferences, Support. Clicking them lands on a plainly
+labelled placeholder. The menu rows themselves are real, so the menu is still
+fully judgeable.
 
 **Held back in option A: the issue write-up.** It is built and it is being
 reworked, so it is behind one flag, `DETAIL_IS_WIP` in `shared/flags.ts`, and A
@@ -125,6 +153,16 @@ melonade-app/
     replay.ts          replay as data: the journey split into timeline markers,
                        the failure moment, durations. Pure and deterministic
     flags.ts           prototype flags. Currently: A's write-up is held back
+    tests-data.ts      the tests dataset and its schedule vocabulary, ported
+                       from the production Tests page (31 tests, 5 states)
+    tests-logic.ts     the tests domain: the queue order, the status counts,
+                       the filters, merging and the bulk scopes. Pure
+    audits-data.ts     audits as data plus the job arithmetic: the sample
+                       share, the health bands, one tick of a running audit
+    runs-data.ts       81 runs, ported from the production fixture (11 written
+                       out, 70 generated the way production generates them)
+    runs-logic.ts      the runs log: the period window, the result counts, the
+                       five filter dimensions. Pure
   option-a/            Graphite. Ant Design v6.
   option-b/            Atrium. Mantine v8.
   tools/

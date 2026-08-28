@@ -1,9 +1,8 @@
-import { Button, Dropdown, Input, Pagination, Table, Tooltip } from 'antd';
+import { Button, Dropdown, Pagination, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
   AlertTriangle,
   BookOpen,
-  ChevronRight,
   CircleX,
   Eye,
   EyeOff,
@@ -19,9 +18,10 @@ import { useIssues } from '../state/useIssues.ts';
 import { useIssueDialogs } from '../dialogs/useIssueDialogs.tsx';
 import { PageCard } from '../components/PageCard.tsx';
 import { ActiveFilters } from '../components/ActiveFilters.tsx';
+import { FilterStrip } from '../components/FilterStrip.tsx';
+import { SearchField } from '../components/SearchField.tsx';
 import { CapturePill } from '../components/CapturePill.tsx';
 import { Chip } from '../components/Chip.tsx';
-import { CountSuffix } from '../components/CountSuffix.tsx';
 import { CriticalFlag } from '../components/CriticalFlag.tsx';
 import { DisplayMenu } from '../components/DisplayMenu.tsx';
 import { EmptyState } from '../components/EmptyState.tsx';
@@ -113,7 +113,11 @@ export function IssuesPage({ model }: IssuesPageProps) {
             )}
             {hidden && (
               <Tooltip title={model.hiddenReason(issue.id) || 'Hidden'}>
-                <span><Chip tone="neutral">Hidden</Chip></span>
+                <span>
+                  <Chip kind="status" tone="neutral">
+                    Hidden
+                  </Chip>
+                </span>
               </Tooltip>
             )}
           </div>
@@ -295,18 +299,13 @@ export function IssuesPage({ model }: IssuesPageProps) {
   return (
     <PageCard
       title="Issues"
-      meta={model.total > 0 ? model.total : undefined}
-      info="What the agent found while reading this project's session replays, ranked by how many people it reaches. Open one to read the write-up and jump to the moment it happened."
+      subtitle="What the agent found while reading this project's sessions, ranked by how many people each one reaches."
       actions={
         <>
-          <Input
-            className="m-issues__search"
-            allowClear
+          <SearchField
             placeholder="Search issues"
             value={filters.q}
-            onChange={(e) => model.setFilter('q', e.target.value)}
-            maxLength={120}
-            aria-label="Search issues"
+            onChange={(v) => model.setFilter('q', v)}
           />
           <Dropdown
             trigger={['click']}
@@ -330,33 +329,23 @@ export function IssuesPage({ model }: IssuesPageProps) {
               radio in a menu of checkboxes, and it meant you could not ask for
               errors or slowness. "All" is not a fourth option, it is the empty
               selection. */}
-          <div className="m-issues__cats" role="group" aria-label="Filter by category">
-            <button
-              type="button"
-              aria-pressed={filters.cats.length === 0}
-              className={`m-cat${filters.cats.length === 0 ? ' is-on' : ''}`}
-              onClick={() => model.setFilter('cats', [])}
-            >
-              All<CountSuffix n={counts.all} />
-            </button>
-            {CAT_ORDER.map((c) => {
-              const Icon = CAT_ICON[c];
-              const on = filters.cats.includes(c);
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  aria-pressed={on}
-                  className={`m-cat${on ? ' is-on' : ''}`}
-                  onClick={() => model.toggleValue('cats', c)}
-                >
-                  <Icon size={13} aria-hidden="true" />
-                  {c}
-                  <CountSuffix n={model.categoryCount(c)} />
-                </button>
-              );
-            })}
-          </div>
+          <FilterStrip
+            label="Filter by category"
+            items={[
+              { key: 'all', label: 'All', count: counts.all },
+              ...CAT_ORDER.map((c) => {
+                const Icon = CAT_ICON[c];
+                return {
+                  key: c,
+                  label: c,
+                  count: model.categoryCount(c),
+                  icon: <Icon size={13} aria-hidden="true" />,
+                };
+              }),
+            ]}
+            selected={filters.cats.length === 0 ? ['all'] : filters.cats}
+            onSelect={(key) => (key === 'all' ? model.setFilter('cats', []) : model.toggleValue('cats', key as CategoryName))}
+          />
           {/* Three controls, not five, and each answers a different question:
               what gets COLLECTED, what is shown of it, and how that is drawn.
               Collapsing them into one menu would put "show hidden" behind a
@@ -412,41 +401,24 @@ export function IssuesPage({ model }: IssuesPageProps) {
             columns={columns}
             dataSource={rows}
             pagination={false}
-            expandable={{
-              /* THE CARET NAVIGATES NOW. It used to expand the row in place,
-                 which was this option's structural answer while the write-up
-                 was three paragraphs; the write-up is now a screen with a
-                 replay in it, and a replay does not belong inside a table row.
-
-                 The expandable machinery stays because the CARET CELL is what
-                 it draws, and that cell is part of the table's rhythm. Nothing
-                 ever lands in `expandedRowKeys`, so no row ever opens; the
-                 handler leaves for the detail instead. */
-              expandedRowKeys: [],
-              expandedRowRender: () => null,
-              rowExpandable: (r) => r.kind === 'issue',
-              expandRowByClick: true,
-              onExpand: (_open, record) => {
-                if (record.kind === 'issue') model.openIssue(record.issue.id);
+            /* NO EXPAND COLUMN. The caret was a 30px cell in front of every
+               row whose only job was to say "this opens" - which the row says
+               by being a row, and by moving under the cursor. Dropping it also
+               puts the first thing on the row at the same distance from the
+               plane's edge as the page title above it, which is the alignment
+               the three tables now share. */
+            onRow={(r) => ({
+              onClick: (e) => {
+                if (r.kind !== 'issue') return;
+                const el = e.target as HTMLElement;
+                if (el.closest('button') || el.closest('.ant-dropdown')) return;
+                model.openIssue(r.issue.id);
               },
-              expandIcon: ({ onExpand, record }) =>
-                record.kind === 'group' ? null : (
-                  <button
-                    type="button"
-                    className="m-issues__caret"
-                    aria-label="Open the write-up"
-                    onClick={(e) => onExpand(record, e)}
-                  >
-                    <ChevronRight size={14} aria-hidden="true" />
-                  </button>
-                ),
-            }}
+            })}
             rowClassName={(r) =>
               r.kind === 'group'
                 ? 'is-group-row'
-                : model.isHidden(r.issue.id)
-                  ? 'is-hidden-row'
-                  : ''
+                : `m-issues__row${model.isHidden(r.issue.id) ? ' is-hidden-row' : ''}`
             }
           />
           <footer className="m-issues__foot">

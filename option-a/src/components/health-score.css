@@ -1,0 +1,21 @@
+.m-health {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-md);
+  font-weight: var(--m-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The bands borrow the impact ramp rather than inventing a third set of
+   semantic colours: it is the same "how bad is this" vocabulary, read from the
+   other end. Good is the accent, because a healthy audit is the one result the
+   page is allowed to be pleased about. */
+.m-health--good { color: var(--m-content-accent); }
+.m-health--fair { color: var(--m-impact-medium); }
+.m-health--poor { color: var(--m-impact-high); }
+
+.m-health__of {
+  margin-left: 1px;
+  font-size: var(--m-text-xs);
+  font-weight: var(--m-weight-regular);
+  color: var(--m-content-muted);
+}

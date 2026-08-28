@@ -1,65 +1,74 @@
+/* ── THE MENU ────────────────────────────────────────────────────────────────
+   It has NO background and NO border of its own. That is the point of the
+   2026-08-28 shell: the nav sits directly on the window's ground, and the
+   content plane is a card floating on that same ground with equal margins on
+   all four sides. The ground therefore appears to wrap around the plane, which
+   it does - there is no seam to place because there is no second surface. A
+   background here, or a border-right, would put the seam back. */
 .m-nav {
   display: flex;
   flex-direction: column;
   flex: none;
   width: var(--m-nav-width);
   height: 100vh;
-  position: sticky;
-  top: 0;
-  background: var(--m-surface-nav);
-  border-right: 1px solid var(--m-border-subtle);
-  transition: width var(--m-duration-normal) var(--m-ease-out);
+  padding: var(--m-space-5) var(--m-space-5) var(--m-space-5) var(--m-space-6);
 }
 
-.m-nav.is-collapsed { width: var(--m-nav-width-collapsed); }
-
-/* ── brand ── */
+/* ── project ── */
 
 .m-nav__brand {
   display: flex;
   align-items: center;
-  gap: var(--m-space-4);
+  gap: var(--m-space-3);
   flex: none;
-  height: 2.75rem; /* 44: lines up with the page-card header */
-  padding-inline: var(--m-space-4);
-  border-bottom: 1px solid var(--m-border-subtle);
+  height: 2rem;
+  margin-bottom: var(--m-space-6);
 }
 
-.m-nav.is-collapsed .m-nav__brand { justify-content: center; padding-inline: 0; }
-
-/* The old ink tile is gone with the "M" it held: a filled 22px square beside a
-   project name is a workspace avatar, and this is a logo. The mark now sits on
-   the nav itself, which is also why it is the only rule Graphite needs for it -
-   the colour comes from the brand-mark role and the size from the component. */
-
-.m-nav__project { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.m-nav__project {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding-inline: var(--m-space-3);
+  border-radius: var(--m-radius-sm);
+  transition: background-color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-nav__project:hover { background: var(--m-surface-hover); }
 
 .m-nav__project-name {
-  font-size: var(--m-text-xs);
+  flex: 1;
+  font-size: var(--m-text-md);
   font-weight: var(--m-weight-medium);
   color: var(--m-content-primary);
+  text-align: left;
 }
 
-.m-nav__project-hint {
-  font-size: var(--m-text-2xs);
-  color: var(--m-content-muted);
-}
+.m-nav__project-caret { flex: none; color: var(--m-content-decorative); }
 
-/* ── the scrolling middle. This is the whole scaling argument: the agent list
-      is the ONLY thing that scrolls, so the footer never moves. ── */
-
-.m-nav__scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--m-space-4) var(--m-space-3);
+/* The one filled control in the column. It is the only thing here that MAKES
+   something rather than going somewhere, which is what earns it the accent. */
+.m-nav__new {
   display: flex;
-  flex-direction: column;
-  gap: var(--m-space-5);
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--m-radius-sm);
+  background: var(--m-action-primary-bg);
+  color: var(--m-action-primary-fg);
+  transition: background-color var(--m-duration-instant) var(--m-ease-out);
 }
+.m-nav__new:hover { background: var(--m-action-primary-bg-hover); }
+
+/* ── the groups ── */
 
 .m-nav__group { display: flex; flex-direction: column; gap: 1px; }
+
+.m-nav__group--top { flex: none; margin-bottom: var(--m-space-6); }
 
 .m-nav__label {
   display: flex;
@@ -73,17 +82,27 @@
   color: var(--m-content-muted);
 }
 
-.m-nav__label-count {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-  color: var(--m-content-disabled);
+/* the only region that scrolls: growth pushes on the products, never on the
+   things pinned above and below them */
+.m-nav__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-/* collapsed has no room for a group label, so a hairline marks the boundary */
-.m-nav__rule {
-  height: 1px;
-  margin: var(--m-space-3) var(--m-space-4);
-  background: var(--m-border-default);
+.m-nav__agent { display: flex; flex-direction: column; gap: 1px; }
+
+/* An agent's sections. The rail is a hairline rather than an indent alone:
+   three unadorned rows under a row read as four siblings. */
+.m-nav__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 2px 0 var(--m-space-3);
+  padding-left: var(--m-space-6);
+  border-left: 1px solid var(--m-border-subtle);
+  margin-left: var(--m-space-6);
 }
 
 .m-nav__add {
@@ -92,63 +111,39 @@
   gap: var(--m-space-4);
   width: 100%;
   height: 1.875rem;
-  margin-top: var(--m-space-2);
+  margin-top: var(--m-space-3);
   padding-inline: var(--m-space-4);
   border-radius: var(--m-radius-sm);
   color: var(--m-content-muted);
   font-size: var(--m-text-sm);
+  text-align: left;
   transition: background-color var(--m-duration-instant) var(--m-ease-out),
     color var(--m-duration-instant) var(--m-ease-out);
 }
-.m-nav__add:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
-.m-nav.is-collapsed .m-nav__add { justify-content: center; padding-inline: 0; }
+.m-nav__add:hover { background: var(--m-surface-hover); color: var(--m-content-secondary); }
+.m-nav__add svg { color: var(--m-content-decorative); }
 
-/* ── pinned foot ── */
+/* ── the foot ─────────────────────────────────────────────────────────────
+   Four things you touch rarely and never search for, so they are icons on one
+   line rather than four labelled rows competing with the agents. */
 
 .m-nav__foot {
+  flex: none;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  flex: none;
-  padding: var(--m-space-3);
-  border-top: 1px solid var(--m-border-subtle);
+  gap: var(--m-space-4);
+  padding-top: var(--m-space-5);
 }
 
-.m-nav__account {
+.m-nav__tools {
   display: flex;
   align-items: center;
-  gap: var(--m-space-4);
-  margin-top: var(--m-space-3);
-  padding: var(--m-space-2) var(--m-space-4);
-  min-width: 0;
-}
-.m-nav.is-collapsed .m-nav__account { flex-direction: column; gap: var(--m-space-3); padding-inline: 0; }
-
-.m-nav__avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 1.375rem;
-  height: 1.375rem;
-  border-radius: var(--m-radius-full);
-  background: var(--m-status-info-bg);
-  border: 1px solid var(--m-status-info-border);
-  color: var(--m-status-info-fg);
-  font-size: var(--m-text-2xs);
-  font-weight: var(--m-weight-medium);
-  letter-spacing: 0;
+  gap: var(--m-space-2);
+  padding-inline: var(--m-space-2);
 }
 
-.m-nav__account-name {
-  flex: 1;
-  font-size: var(--m-text-xs);
-  color: var(--m-content-secondary);
-}
-
-.m-nav__account-actions { display: flex; align-items: center; gap: var(--m-space-1); flex: none; }
-
-.m-nav__collapse {
+.m-nav__tool {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -156,8 +151,37 @@
   height: 1.75rem;
   border-radius: var(--m-radius-sm);
   color: var(--m-content-muted);
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
 }
-.m-nav__collapse:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
+.m-nav__tool:hover { background: var(--m-surface-hover); color: var(--m-content-secondary); }
+.m-nav__tool.is-active { background: var(--m-surface-active); color: var(--m-content-primary); }
 
-/* The rail below 1080px is driven from AppShell, not from a media query: a
-   CSS-only collapse would shrink the box while React kept rendering labels. */
+/* Presence, not a number: what is unread is a fact, how much is a page. */
+.m-nav__unread {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: var(--m-radius-full);
+  background: var(--m-content-danger);
+}
+
+.m-nav__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-left: auto;
+  border-radius: var(--m-radius-full);
+  background: var(--m-surface-active);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+}
+
+@media (max-width: 880px) {
+  .m-nav { width: 11.5rem; }
+}

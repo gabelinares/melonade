@@ -1,0 +1,42 @@
+/* The prefix is `m-seg`, not `m-strip`: the replay's session strip already owns
+   `.m-strip`, and a second component under the same prefix loses to whichever
+   stylesheet imports last - which is how the selected tab first came out
+   invisible in dark mode here.
+
+   Styled to read like the Segmented control it replaces, so the toolbar looks
+   the same on every page, but each item is an independent button whose meaning
+   its page decides. */
+.m-seg {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--m-radius-sm);
+  background: var(--m-surface-sunken);
+  flex-wrap: wrap;
+}
+
+.m-seg__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  height: 1.375rem;
+  padding-inline: var(--m-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--m-radius-xs);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-sm);
+  white-space: nowrap;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-seg__item:hover { color: var(--m-content-primary); }
+.m-seg__item svg { color: var(--m-content-decorative); }
+.m-seg__item:hover svg,
+.m-seg__item.is-on svg { color: var(--m-content-secondary); }
+
+.m-seg__item.is-on {
+  background: var(--m-surface-default);
+  border-color: var(--m-border-default);
+  color: var(--m-content-primary);
+}

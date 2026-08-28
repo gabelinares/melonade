@@ -64,19 +64,19 @@ export const TitleOnly: Story = {
     docs: {
       description: {
         story:
-          'The header with nothing in it but the title, and it is still exactly 44px tall. That height is a hard number rather than vertical padding, because padding makes the row 40px on a title-only page and 44px the moment a control lands in it, so the title would sit at a different height on every page. Fourteen pages in the live app drifted that way.',
+          'The header with nothing in it but the title. It used to be a hard 44px row so that a title lined up across pages that each held different controls; now that the card is the whole content plane rather than one card among several, the header is real padding and the title is the first thing in the page rather than a label on a box.',
       },
     },
   },
 };
 
-export const WithMetaAndInfo: Story = {
-  args: { title: 'Issues', meta: ISSUES.length, info: INFO },
+export const WithSubtitle: Story = {
+  args: { title: 'Issues', meta: ISSUES.length, subtitle: INFO },
   parameters: {
     docs: {
       description: {
         story:
-          'A count beside the title and the page\'s own explanation on an info icon. The count is meta, not a subtitle: the shell has no subtitle slot, because a sentence under the title is how a 44px header becomes a 72px header on one page only. The explanation goes behind an icon so it is available to a reader who needs it and costs nothing to a reader who does not.',
+          'A count beside the title, and the page\'s own description on the line under it. That sentence used to live behind an info icon, back when the header was a fixed 44px row and a second line would have made one page taller than the rest. Every page has the room now, and a page\'s own description is not a footnote.',
       },
     },
   },
@@ -86,7 +86,7 @@ export const WithActions: Story = {
   args: {
     title: 'Issues',
     meta: ISSUES.length,
-    info: INFO,
+    subtitle: INFO,
     actions: (
       <>
         <Input placeholder="Search issues" style={{ width: 200 }} aria-label="Search issues" />
@@ -109,7 +109,7 @@ export const WithActions: Story = {
     docs: {
       description: {
         story:
-          'The right-hand cluster, and a demonstration of what belongs in it. Search acts on this page, so it stays visible; Settings and Documentation are destinations, so they collapse into one overflow. Two more full-width buttons in a 44px header is how the search field ends up too narrow to read a query in.',
+          'The right-hand cluster, and a demonstration of what belongs in it. Search acts on this page, so it stays visible; Settings and Documentation are destinations, so they collapse into one overflow. Two more full-width buttons here is how the search field ends up too narrow to read a query in.',
       },
     },
   },
@@ -157,7 +157,7 @@ export const Full: Story = {
   args: {
     title: 'Issues',
     meta: ISSUES.length,
-    info: INFO,
+    subtitle: INFO,
     lede: <Chip tone="info">Capturing 2 segments</Chip>,
     actions: (
       <Input placeholder="Search issues" style={{ width: 200 }} aria-label="Search issues" />
