@@ -126,6 +126,25 @@
   border: 1px solid var(--m-border-default);
 }
 
+/* ── THE PAGER'S CURRENT PAGE ────────────────────────────────────────────────
+   antd draws the active item's BORDER from `colorPrimary`, and this app sets
+   that token to near-black so the figure inside it is near-black. The result
+   was the only near-black outline anywhere in the build - a 26px box ringed in
+   #161c1e, which at the Round radius reads as a sticker somebody dropped on the
+   footer rather than as "you are on page one".
+
+   Selection in this system is a FILL plus a weight change: the nav's current
+   row, the segmented thumb, the selected table row. The pager is not an
+   exception, so the ring goes and the fill stays.
+
+   ⚠ Two classes TIE with antd's own `:where()` rule and lose on order, so this
+   is scoped to the wrapper to win outright rather than by import order. */
+.ant-pagination .ant-pagination-item-active {
+  border-color: transparent;
+  font-weight: var(--m-weight-medium);
+}
+.ant-pagination .ant-pagination-item-active a { color: var(--m-content-primary); }
+
 /* antd's icon-only text Button is 30px wide with a 15px glyph, which puts the
    tap target under the 44px floor. Grow the hit area without growing the box. */
 .ant-btn.ant-btn-icon-only {

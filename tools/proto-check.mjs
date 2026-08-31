@@ -276,6 +276,29 @@ check('and the slot is on every row, so the titles keep one edge',
 check('it is the same mark the menu wears, in the same colour',
   unread.colour != null && unread.colour === unread.navDot, `${unread.colour} vs ${unread.navDot}`);
 
+/* ── THE PAGER'S CURRENT PAGE ─────────────────────────────────────────────
+   antd draws the active item's border from `colorPrimary`, which this app sets
+   to near-black for the figure inside it - so the footer carried the only
+   near-black outline in the build. Selection here is a FILL plus a weight
+   change, like the nav's current row and the segmented thumb. */
+const pager = await p.evaluate(() => {
+  const a = document.querySelector('.ant-pagination-item-active');
+  if (!a) return null;
+  const cs = getComputedStyle(a);
+  const nav = document.querySelector('.m-nav-item.is-active');
+  return {
+    border: cs.borderTopColor,
+    bg: cs.backgroundColor,
+    weight: cs.fontWeight,
+    navWeight: nav ? getComputedStyle(nav).fontWeight : null,
+  };
+});
+check('the current page is a fill, not a ring',
+  !!pager && pager.border === 'rgba(0, 0, 0, 0)' && pager.bg !== 'rgba(0, 0, 0, 0)',
+  `border ${pager?.border}, fill ${pager?.bg}`);
+check('and it carries the same weight the menu gives the row you are on',
+  !!pager && pager.weight === pager.navWeight, `${pager?.weight} vs ${pager?.navWeight}`);
+
 // ── 1b. the segments control, now a toolbar icon ──────────────────────────
 const seg = await p.evaluate(() => {
   const group = document.querySelector('.m-issues__controls');

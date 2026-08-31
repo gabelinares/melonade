@@ -2961,6 +2961,20 @@ does the next agent go", and nothing in this build creates one. Its two lines of
 CSS sit on top of `.m-nav-item`, so it comes back as a row rather than as a
 shape of its own.
 
+### The pager's current page was the only near-black outline in the build
+
+antd draws the active item's border from `colorPrimary`, and this app sets that
+token to near-black so the figure inside it is near-black — so page one came out
+as a 26px box ringed in `#161c1e`, which at the Round radius reads as a sticker
+dropped on the footer rather than as "you are here". Selection in this system is
+a **fill plus a weight change** — the nav's current row, the segmented thumb, the
+selected table row — and the pager is not an exception. The ring is gone and the
+fill stays.
+
+⚠ Scoped to `.ant-pagination .ant-pagination-item-active` rather than the class
+alone: two classes tie with antd's `:where()` rule and lose on import order,
+which is now the fourth time that has caught something in this build.
+
 ### The pager's arrows are lucide
 
 Same complaint and same answer as `SortIcon`: antd draws prev/next with its own
