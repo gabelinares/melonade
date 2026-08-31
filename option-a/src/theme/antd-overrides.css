@@ -145,6 +145,23 @@
 }
 .ant-pagination .ant-pagination-item-active a { color: var(--m-content-primary); }
 
+/* ── AND THE ARROWS SIT IN THE MIDDLE OF THEIR OWN BOX ───────────────────────
+   antd's prev/next are `display: block` with a line-height, which is the right
+   shape for the glyph FONT it ships and the wrong one for an SVG: an inline svg
+   sits on the baseline and starts at the content box's left edge, so ours came
+   out 6px high and 6px left of centre while the digits beside them were
+   perfectly centred. Measured, not eyeballed - the box centres were 866/1312
+   and the chevrons were at 860/1306.
+
+   Centring the box is the fix rather than nudging the glyph: a margin tuned to
+   one icon size is a margin that breaks at the next one. */
+.ant-pagination .ant-pagination-prev,
+.ant-pagination .ant-pagination-next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* antd's icon-only text Button is 30px wide with a 15px glyph, which puts the
    tap target under the 44px floor. Grow the hit area without growing the box. */
 .ant-btn.ant-btn-icon-only {

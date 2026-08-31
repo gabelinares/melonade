@@ -299,6 +299,27 @@ check('the current page is a fill, not a ring',
 check('and it carries the same weight the menu gives the row you are on',
   !!pager && pager.weight === pager.navWeight, `${pager?.weight} vs ${pager?.navWeight}`);
 
+/* ⚠ AND EVERY MARK IS IN THE MIDDLE OF ITS OWN BOX. antd's prev/next are
+   `display: block` with a line-height, which is the right shape for the icon
+   FONT it ships and the wrong one for the SVG we swapped in: an inline svg sits
+   on the baseline and starts at the content box's left edge, so the chevrons
+   were 6px high and 6px left while the digits beside them were centred. */
+const pagerCentres = await p.evaluate(() =>
+  [...document.querySelectorAll('.ant-pagination > li')].map((li) => {
+    const inner = li.querySelector('svg, a');
+    if (!inner) return null;
+    const b = li.getBoundingClientRect();
+    const i = inner.getBoundingClientRect();
+    return {
+      cls: li.className.split(' ')[1] ?? li.className,
+      dx: Math.round((i.left + i.right) / 2 - (b.left + b.right) / 2),
+      dy: Math.round((i.top + i.bottom) / 2 - (b.top + b.bottom) / 2),
+    };
+  }).filter(Boolean));
+check('every mark in the pager sits in the middle of its own box',
+  pagerCentres.length >= 4 && pagerCentres.every((c) => c.dx === 0 && c.dy === 0),
+  pagerCentres.map((c) => `${c.cls} ${c.dx},${c.dy}`).join(' | '));
+
 // ── 1b. the segments control, now a toolbar icon ──────────────────────────
 const seg = await p.evaluate(() => {
   const group = document.querySelector('.m-issues__controls');

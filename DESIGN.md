@@ -2975,6 +2975,16 @@ fill stays.
 alone: two classes tie with antd's `:where()` rule and lose on import order,
 which is now the fourth time that has caught something in this build.
 
+**And the arrows were not in the middle of their own boxes.** antd's prev/next
+are `display: block` with a line-height, which is the right shape for the icon
+*font* it ships and the wrong one for the SVG we swapped in: an inline svg sits
+on the baseline and starts at the content box's left edge, so the chevrons came
+out 6px high and 6px left while the digits beside them were centred. Centring
+the box is the fix rather than nudging the glyph — a margin tuned to one icon
+size is a margin that breaks at the next one. **Any icon-font swap inherits the
+font's alignment assumptions**; this is the same shape of defect as the sort
+arrows and the pager arrows themselves.
+
 ### The pager's arrows are lucide
 
 Same complaint and same answer as `SortIcon`: antd draws prev/next with its own
