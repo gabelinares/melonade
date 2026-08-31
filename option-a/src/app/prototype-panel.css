@@ -10,7 +10,7 @@
   z-index: var(--m-z-toast);
   width: 16.5rem;
   border: 1px dashed var(--m-border-strong);
-  border-radius: var(--m-radius-md);
+  border-radius: var(--m-radius-surface);
   background: var(--m-surface-raised);
   box-shadow: var(--m-shadow-popover);
   overflow: hidden;
@@ -82,7 +82,7 @@
   gap: var(--m-space-3);
   height: var(--m-control-height-sm);
   border: 1px dashed var(--m-border-default);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   color: var(--m-content-muted);
   font-size: var(--m-text-2xs);
 }
@@ -129,7 +129,7 @@
   min-width: 2.4rem;
   padding: 2px var(--m-space-3);
   border: 1px solid var(--m-status-neutral-border);
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-chip);
   background: var(--m-status-neutral-bg);
   color: var(--m-status-neutral-fg);
   line-height: 1.2;
@@ -145,3 +145,25 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+/* The accent palette. Thirteen hues do not fit a segmented control, and a
+   swatch says the thing it is offering better than its name does. */
+.m-proto__swatches {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--m-space-3);
+}
+
+.m-proto__swatch {
+  height: 1.25rem;
+  border-radius: var(--m-radius-control);
+  border: 1px solid rgb(0 0 0 / 0.12);
+  transition: outline-color var(--m-duration-instant) var(--m-ease-out),
+    transform var(--m-duration-instant) var(--m-ease-out);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.m-proto__swatch:hover { transform: scale(1.08); }
+/* The chosen one is ringed in the page's own ink rather than in itself: a ring
+   the colour of the swatch disappears into it. */
+.m-proto__swatch.is-on { outline-color: var(--m-content-primary); }

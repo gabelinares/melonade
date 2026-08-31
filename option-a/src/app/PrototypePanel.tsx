@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Segmented, Select, Slider } from 'antd';
+import { Segmented, Select, Slider, Tooltip } from 'antd';
 import { ChevronDown, FlaskConical, RotateCcw } from 'lucide-react';
 import { AGENTS } from '../nav/agents.ts';
-import { useProtoTokens } from '../theme/ProtoTokens.tsx';
+import { FILTERS, useProtoTokens, type FiltersKey } from '../theme/ProtoTokens.tsx';
 import {
   ACCENTS,
+  CORNERS,
   FONTS,
   GREYS,
   type AccentKey,
+  type CornersKey,
   type FontKey,
   type GreyKey,
   type ProtoFont,
@@ -133,9 +135,6 @@ export function PrototypePanel({
               onChange={onAgentCount}
               tooltip={{ open: false }}
             />
-            <p className="m-proto__hint">
-              Three ship today. Drag it up to see whether the menu still holds.
-            </p>
           </div>
 
           {/* ── the look ─────────────────────────────────────────────────────
@@ -170,7 +169,6 @@ export function PrototypePanel({
               labelRender={({ value }) => FONTS[value as FontKey]?.label ?? String(value)}
               popupMatchSelectWidth={288}
             />
-            <p className="m-proto__hint">{FONTS[tok.font]?.note}.</p>
           </div>
 
           <div className="m-proto__field">
@@ -182,25 +180,52 @@ export function PrototypePanel({
               onChange={(v) => tok.setGrey(v as GreyKey)}
               options={opts(GREYS)}
             />
-            <p className="m-proto__hint">
-              Same lightness ladder in all three, only the hue moves, so every
-              contrast step survives the switch.
-            </p>
           </div>
 
           <div className="m-proto__field">
             <span className="m-proto__label">Accent</span>
+            {/* A PALETTE, not a segmented control. Thirteen hues in thirteen
+                labelled cells is thirteen words nobody reads; a swatch says the
+                thing it is offering. Each one is that accent's own 600 step -
+                the colour a selected row and a link would take - and the
+                tooltip carries the name and how far it sits from the nearest
+                alarm colour, which is the only fact that can rule one out. */}
+            <div className="m-proto__swatches" role="group" aria-label="Accent">
+              {Object.entries(ACCENTS).map(([key, a]) => (
+                <Tooltip key={key} title={`${a.label} — ${a.note}`}>
+                  <button
+                    type="button"
+                    className={`m-proto__swatch${tok.accent === key ? ' is-on' : ''}`}
+                    style={{ background: a.palette['a-600'] }}
+                    aria-label={a.label}
+                    aria-pressed={tok.accent === key}
+                    onClick={() => tok.setAccent(key as AccentKey)}
+                  />
+                </Tooltip>
+              ))}
+            </div>
+          </div>
+
+          <div className="m-proto__field">
+            <span className="m-proto__label">Corners</span>
             <Segmented
               size="small"
               block
-              value={tok.accent}
-              onChange={(v) => tok.setAccent(v as AccentKey)}
-              options={opts(ACCENTS)}
+              value={tok.corners}
+              onChange={(v) => tok.setCorners(v as CornersKey)}
+              options={opts(CORNERS)}
             />
-            <p className="m-proto__hint">
-              Indigo is the suggestion: quiet at these chromas, and far enough
-              from the alarm colours that a selected row can never read as one.
-            </p>
+          </div>
+
+          <div className="m-proto__field">
+            <span className="m-proto__label">Filter pills</span>
+            <Segmented
+              size="small"
+              block
+              value={tok.filters}
+              onChange={(v) => tok.setFilters(v as FiltersKey)}
+              options={opts(FILTERS)}
+            />
           </div>
 
           <div className="m-proto__field">
@@ -215,10 +240,6 @@ export function PrototypePanel({
                 { value: 'spaced', label: 'Spaced' },
               ]}
             />
-            <p className="m-proto__hint">
-              Spacing and control heights move together. Gaps that grow while the
-              rows stay put read as a bug, not as a roomier product.
-            </p>
           </div>
 
           <div className="m-proto__field">

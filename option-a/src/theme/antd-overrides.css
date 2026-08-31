@@ -87,8 +87,19 @@
    live with that component; nothing is left to override here. */
 
 /* Segmented's selected thumb ships with a shadow. In a hairline system the
-   thumb reads as raised from its border and its background alone. */
-.ant-segmented-item-selected {
+   thumb reads as raised from its border and its background alone.
+
+   ⚠ THE BORDER IS ON EVERY ITEM, transparent until selected, and on the THUMB
+   as well. antd takes `-selected` off the item for the length of the thumb's
+   motion - the thumb is drawing the selection during it - so a border that
+   exists only on the selected item disappears for those frames and the whole
+   control loses 2px of height. In a modal that is centred, that is a 2px jump
+   and a 1px slide every time you change tabs. Measured per frame: 28 → 26 → 28. */
+.ant-segmented-item {
+  border: 1px solid transparent;
+}
+.ant-segmented-item-selected,
+.ant-segmented .ant-segmented-thumb {
   box-shadow: none !important;
   border: 1px solid var(--m-border-default);
 }
@@ -100,7 +111,15 @@
 }
 
 /* Popovers and dropdowns get a hairline in addition to their shadow, so they
-   stay legible against a white card where a soft shadow alone disappears. */
+   stay legible against a white card where a soft shadow alone disappears.
+
+   ⚠ `.ant-popover-container` is the v6 name and it is the one that was doing
+   nothing here: antd v6 renders popover > container > content and ships no
+   `.ant-popover-inner` at all, so since the v6 upgrade every popover in the app
+   has been a shadow with no edge. A selector against a class that does not
+   exist is not an error - it is a rule that quietly stops applying. Both names
+   are kept so this survives in either direction. */
+.ant-popover-container,
 .ant-popover-inner,
 .ant-dropdown-menu,
 .ant-select-dropdown {
@@ -163,7 +182,7 @@
 .ant-table-thead th.ant-table-column-has-sorters:focus-visible {
   outline: 2px solid var(--m-focus-ring);
   outline-offset: -2px;
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-control);
 }
 
 /* Pagination items and the Segmented thumb are focusable too, and antd styles
@@ -173,5 +192,21 @@
 .ant-segmented-item-input:focus-visible + .ant-segmented-item-label {
   outline: 2px solid var(--m-focus-ring);
   outline-offset: 1px;
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-control);
+}
+
+
+/* antd sizes a tooltip's box from `controlHeight` - a 30px floor over 26px of
+   content - and the spare 4px all lands under the text, because the box is a
+   block and the line sits at its top. A tip is a LABEL, not a control: it is as
+   tall as what is in it.
+
+   ⚠ Two classes, because antd's own rule is `.ant-tooltip .ant-tooltip-container`
+   and a single class ties with it and loses on order. Measured, not assumed:
+   the first attempt at this changed nothing and the computed min-height was
+   still 30px. */
+.ant-tooltip .ant-tooltip-container {
+  min-height: 0;
+  padding: 5px var(--m-space-4);
+  line-height: var(--m-leading-snug);
 }

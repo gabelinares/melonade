@@ -5,7 +5,7 @@
   width: 100%;
   min-height: 1.75rem;
   padding: var(--m-space-2) var(--m-space-4);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   color: var(--m-content-secondary);
   font-size: var(--m-text-sm);
   text-align: left;
@@ -29,7 +29,7 @@
   width: 14px;
   height: 14px;
   border: 1px solid transparent;
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-check);
   background: transparent;
   color: var(--m-content-inverse);
   transition: border-color var(--m-duration-instant) var(--m-ease-out),

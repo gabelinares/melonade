@@ -29,6 +29,11 @@ export interface AgentEntry {
   /** open items waiting on you. Drives the nav count. */
   count: number;
   shipped: boolean;
+  /** What the count counts, for the tooltip the narrow menu shows: "11 open",
+   *  "7 waiting", "1 running". Three agents, three different meanings of a
+   *  number - and a rail that has room for the dot but not the figure has to be
+   *  able to say which one it is on hover. */
+  countNoun?: string;
   /** An agent with more than one body under its name. The nav expands to show
    *  them; an agent without sections is a single destination.
    *
@@ -52,26 +57,38 @@ export type AgentIconName =
   | 'languages';
 
 export const AGENTS: readonly AgentEntry[] = [
-  { key: 'issues', label: 'Issues', icon: 'bug', count: 11, shipped: true },
+  { key: 'issues', label: 'Issues', icon: 'bug', count: 11, shipped: true, countNoun: 'open' },
   /* The two shipped agents that have a page count their own work rather than
      carrying a number somebody typed: a badge that disagrees with the page it
      opens is worse than no badge. Tests counts what is waiting on a person -
      drafts, revisions, merges - and Audits counts the jobs still reading. */
   {
     key: 'tests',
-    label: 'Tests',
+    label: 'Synthetics',
     icon: 'flask',
     count: attentionCount(TESTS),
     shipped: true,
-    /* The first section is called List, not Tests: a child repeating its parent
-       reads as a mistake, and the parent is already the subject. */
+    countNoun: 'waiting on you',
+    /* THE FIRST SECTION IS "TESTS", 2026-08-31. It was called List for exactly
+       as long as the agent was called Tests, because a child repeating its
+       parent reads as a mistake. Renaming the agent to Synthetics - which is
+       what this category is called everywhere else - frees the word up, and
+       "Tests / Runs / Environments" says what is in each of the three where
+       "List" only said what shape it is. */
     sections: [
-      { key: 'tests', label: 'List' },
+      { key: 'tests', label: 'Tests' },
       { key: 'tests/runs', label: 'Runs' },
       { key: 'tests/environments', label: 'Environments' },
     ],
   },
-  { key: 'audits', label: 'Audits', icon: 'clipboard', count: AUDITS.filter((a) => a.status === 'running').length, shipped: true },
+  {
+    key: 'audits',
+    label: 'Audits',
+    icon: 'clipboard',
+    count: AUDITS.filter((a) => a.status === 'running').length,
+    shipped: true,
+    countNoun: 'still reading',
+  },
   { key: 'accessibility', label: 'Accessibility', icon: 'accessibility', count: 7, shipped: false },
   { key: 'performance', label: 'Performance', icon: 'gauge', count: 3, shipped: false },
   { key: 'journeys', label: 'Journeys', icon: 'route', count: 0, shipped: false },

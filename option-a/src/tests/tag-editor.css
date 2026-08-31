@@ -1,0 +1,31 @@
+.m-tags { display: flex; align-items: center; flex-wrap: wrap; gap: var(--m-space-3); }
+
+.m-tags__add {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  height: 1.375rem;
+  padding-inline: var(--m-space-3);
+  border: 1px dashed var(--m-border-default);
+  border-radius: var(--m-radius-chip);
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+}
+.m-tags__add:hover { border-color: var(--m-border-strong); color: var(--m-content-primary); }
+
+.m-tags__input { width: 8rem; }
+
+/* What the team already calls things. Offered rather than enforced: the
+   vocabulary is theirs. */
+.m-tags__sugg { display: inline-flex; align-items: center; gap: var(--m-space-2); }
+.m-tags__sugg button {
+  height: 1.375rem;
+  padding-inline: var(--m-space-3);
+  border-radius: var(--m-radius-chip);
+  background: var(--m-surface-hover);
+  font-size: var(--m-text-xs);
+  color: var(--m-content-secondary);
+}
+.m-tags__sugg button:hover { background: var(--m-surface-active); color: var(--m-content-primary); }
+
+.m-tags__full { font-size: var(--m-text-xs); color: var(--m-content-muted); }

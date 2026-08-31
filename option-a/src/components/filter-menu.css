@@ -12,17 +12,19 @@
 
 .m-fm__search .ant-input { font-size: var(--m-text-sm); }
 
-/* One ring per field, and it belongs to the ROW. The input is the only focusable
-   thing here and it autofocuses when the menu opens, so a ring drawn tight around
-   the glyphs collides with the search affordance beside it. Both options do this
-   the same way, which is the point of them sharing a token layer. */
+/* One ring per field, and it belongs to the ROW - the input is the only
+   focusable thing in here and it autofocuses when the menu opens, so a ring
+   drawn tight around the glyphs collides with the search affordance beside it.
+   Inset from the row's edges and rounded on all four corners, like any other
+   text field: a ring that borrows the popover's top corners and squares off at
+   the bottom reads as half a control, which is what it looked like. */
 .m-fm__search .ant-input:focus-visible,
 .m-fm__search .ant-input:focus { outline: none; box-shadow: none; }
 
 .m-fm__search:focus-within {
   outline: 2px solid var(--m-focus-ring);
-  outline-offset: -2px;
-  border-radius: var(--m-radius-md) var(--m-radius-md) 0 0;
+  outline-offset: -3px;
+  border-radius: var(--m-radius-control);
 }
 
 /* The back affordance doubles as the breadcrumb: inside a dimension it names
@@ -34,7 +36,7 @@
   flex: none;
   height: 1.375rem;
   padding-inline: var(--m-space-2) var(--m-space-3);
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-control);
   background: var(--m-surface-hover);
   color: var(--m-content-secondary);
   font-size: var(--m-text-xs);
@@ -60,7 +62,7 @@
   width: 100%;
   min-height: 1.75rem;
   padding: var(--m-space-2) var(--m-space-4);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   color: var(--m-content-secondary);
   font-size: var(--m-text-sm);
   text-align: left;
@@ -78,7 +80,7 @@
   min-width: 15px;
   height: 15px;
   padding-inline: 3px;
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-chip);
   background: var(--m-surface-inverse);
   color: var(--m-content-inverse);
   font-size: var(--m-text-2xs);
@@ -97,7 +99,7 @@
 .m-fm__dim {
   padding-inline: var(--m-space-2);
   border: 1px solid var(--m-border-subtle);
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-chip);
   background: var(--m-surface-sunken);
   color: var(--m-content-muted);
   font-size: var(--m-text-2xs);

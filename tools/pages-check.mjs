@@ -72,6 +72,33 @@ t('SHELL: card edges match the list on both', issue.cardLeft === list.cardLeft &
 t('SHELL: header height constant', issue.headerH === replay.headerH, `${issue.headerH}/${replay.headerH}`);
 t('no page errors', errs.length === 0, errs.join(' | '));
 
+await p.goto(process.argv[2] || 'http://localhost:4310/', { waitUntil: 'networkidle' });
+await p.waitForTimeout(700);
+
+/* ── THE STRIP'S THUMB ──────────────────────────────────────────────────────
+   The selected surface MOVES between tabs rather than appearing on the new one:
+   two views of one list, and the eye is carried to where the change happened.
+   Asserted as a real interpolation - sampled mid-flight, the transform is
+   somewhere between the two positions - because a transition that is declared
+   and never runs looks identical in a screenshot. */
+const thumbAt = () => p.evaluate(() => {
+  const el = document.querySelector('.m-seg__thumb');
+  return el ? new DOMMatrix(getComputedStyle(el).transform).m41 : null;
+});
+const from = await thumbAt();
+await p.locator('.m-seg__item', { hasText: 'Slowness' }).click();
+await p.waitForTimeout(60);
+const mid = await thumbAt();
+await p.waitForTimeout(400);
+const to = await thumbAt();
+t('STRIP: the selected surface slides rather than jumping',
+  from != null && to != null && mid != null && mid > from && mid < to,
+  `${Math.round(from)} → ${Math.round(mid)} → ${Math.round(to)}`);
+/* Multi-select has no single selected surface, so it draws no thumb: one
+   sliding pill over three pressed items would be a lie about what is on. */
+await p.locator('.m-seg__item', { hasText: 'All' }).click();
+await p.waitForTimeout(300);
+
 console.log('PASS'); ok.forEach(l => console.log('  ✓ ' + l));
 if (bad.length) { console.log('\nFAIL'); bad.forEach(l => console.log('  ✗ ' + l)); }
 await b.close();

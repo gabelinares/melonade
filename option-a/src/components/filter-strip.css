@@ -7,13 +7,43 @@
    the same on every page, but each item is an independent button whose meaning
    its page decides. */
 .m-seg {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
   padding: 2px;
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-track);
   background: var(--m-surface-sunken);
   flex-wrap: wrap;
+}
+
+/* ── THE THUMB ───────────────────────────────────────────────────────────────
+   One surface that moves, rather than a background that appears on one item and
+   disappears from another. It is measured in JS because the items are as wide as
+   their labels and the strip wraps, so there is no ratio to compute this from.
+
+   The transition is on TRANSFORM and WIDTH only - both cheap - and it is short:
+   at 180ms the eye follows it and the click still feels immediate. It is
+   attached by a class that arrives one frame after mount, so the first paint
+   places the thumb rather than sliding it in from nothing. */
+.m-seg__thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-control);
+  background: var(--m-surface-default);
+  pointer-events: none;
+}
+.m-seg__thumb.is-live {
+  transition: transform var(--m-duration-normal) var(--m-ease-out),
+    width var(--m-duration-normal) var(--m-ease-out),
+    height var(--m-duration-normal) var(--m-ease-out);
+}
+/* Motion is a nicety and never the message: with it off, the thumb still lands
+   in the right place, it just gets there instantly. */
+@media (prefers-reduced-motion: reduce) {
+  .m-seg__thumb.is-live { transition: none; }
 }
 
 .m-seg__item {
@@ -23,7 +53,7 @@
   height: 1.375rem;
   padding-inline: var(--m-space-4);
   border: 1px solid transparent;
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-control);
   color: var(--m-content-muted);
   font-size: var(--m-text-sm);
   white-space: nowrap;
@@ -40,3 +70,9 @@
   border-color: var(--m-border-default);
   color: var(--m-content-primary);
 }
+
+/* With a thumb present the selected item draws no surface of its own: two
+   surfaces on one item is a double edge, and the one that moves should be the
+   only one there is. The label still lifts to full contrast. */
+.m-seg__item.has-thumb { position: relative; z-index: 1; }
+.m-seg__item.has-thumb.is-on { background: transparent; border-color: transparent; }

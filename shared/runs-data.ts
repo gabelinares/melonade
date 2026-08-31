@@ -38,6 +38,38 @@ export interface RunData {
   tags?: string[];
 }
 
+/** What a step did when the run executed it. `unknown` is a real answer while a
+ *  run is in flight: the runner reports as it goes, so "we have not heard yet"
+ *  is not the same as "pending" and guessing between them is how a live drawer
+ *  starts lying. */
+export type StepStatus = 'passed' | 'failed' | 'skipped' | 'running' | 'unknown';
+
+export interface RunStep {
+  text: string;
+  status: StepStatus;
+  /** How many screenshots this step captured. */
+  shots: number;
+}
+
+export type ConsoleLevel = 'log' | 'warn' | 'error';
+export interface ConsoleLine {
+  level: ConsoleLevel;
+  text: string;
+  /** ms into the run */
+  at: number;
+}
+
+export interface NetworkCall {
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  url: string;
+  status: number;
+  /** ms */
+  time: number;
+  size: number;
+  /** The phases the HAR viewer breaks a request into, in ms. */
+  timing: { blocked: number; dns: number; connect: number; send: number; wait: number; receive: number };
+}
+
 export const REGIONS: readonly { value: string; label: string }[] = [
   { value: 'paris', label: 'Paris' },
   { value: 'ny', label: 'New York' },

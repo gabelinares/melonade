@@ -1,0 +1,59 @@
+/* The one destructive fact in this feature, said before the steps rather than
+   beside them. Warning rather than danger: running the test is not a mistake,
+   it just has consequences outside this screen. */
+.m-tdrawer__fx {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--m-space-4);
+  margin: var(--m-space-5) var(--m-space-6) 0;
+  padding: var(--m-space-4);
+  border: 1px solid var(--m-status-warning-border);
+  border-radius: var(--m-radius-control);
+  background: var(--m-status-warning-bg);
+  color: var(--m-status-warning-fg);
+  font-size: var(--m-text-sm);
+  line-height: var(--m-leading-snug);
+}
+.m-tdrawer__fx svg { flex: none; margin-top: 1px; }
+
+/* v2 → v3 in the section heading, so the drawer says which two versions you are
+   deciding between before you read a single row. */
+.m-tdrawer__vpair {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-sm);
+  font-weight: var(--m-weight-regular);
+  color: var(--m-content-muted);
+}
+
+/* What saving would do, in two numbers. */
+.m-tdrawer__sum { display: inline-flex; align-items: center; gap: var(--m-space-3); font-size: var(--m-text-sm); }
+.m-tdrawer__sum .is-add { color: var(--m-content-success); }
+.m-tdrawer__sum .is-rm { color: var(--m-content-danger); }
+.m-tdrawer__sum .is-none { color: var(--m-content-muted); }
+
+.m-tdrawer__vswitch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-4);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-control);
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  color: var(--m-content-secondary);
+}
+.m-tdrawer__vswitch:hover { border-color: var(--m-border-strong); color: var(--m-content-primary); }
+
+.m-tdrawer__runs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--m-space-3);
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+}
+.m-tdrawer__runs.is-none { color: var(--m-content-muted); }

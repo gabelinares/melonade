@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { App as AntApp, ConfigProvider } from 'antd';
+import { ChevronDown } from 'lucide-react';
 import { antdTheme, type Mode } from './antd.ts';
 import { useAntdOverrides } from './ProtoTokens.tsx';
 import '../tokens/tokens.css';
@@ -71,7 +72,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider value={value}>
-      <ConfigProvider theme={antdTheme(mode, overrides)} componentSize="small">
+      {/* ONE CHEVRON IN THE APP. antd draws its own `DownOutlined` on every
+          Select - a thin, wide glyph with sharp corners - beside lucide's
+          rounded ones on the nav, the sort headers, the filter menu and the
+          version switcher. Set here rather than on seven call sites, so a new
+          Select cannot arrive wearing the other one. */}
+      <ConfigProvider
+        theme={antdTheme(mode, overrides)}
+        componentSize="small"
+        select={{ suffixIcon: <ChevronDown size={13} strokeWidth={1.75} aria-hidden="true" /> }}
+      >
         {/* antd's <App> is what makes modal/message/notification inherit this
             theme. The static Modal.confirm() API mounts outside ConfigProvider
             and silently drops every token, so it is banned in this codebase:

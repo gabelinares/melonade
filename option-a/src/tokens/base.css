@@ -68,7 +68,7 @@ svg { display: block; flex: none; }
 :focus-visible {
   outline: 2px solid var(--m-focus-ring);
   outline-offset: 1px;
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
 }
 
 /* ── selection ────────────────────────────────────────────────────────── */
@@ -126,6 +126,37 @@ svg { display: block; flex: none; }
   border: 0;
 }
 
+/* ── THE DOT ─────────────────────────────────────────────────────────────────
+   One mark, one meaning, three places: SOMETHING HERE IS NEW AND NOBODY HAS
+   READ IT. On the notification bell it is unread notifications, on an agent's
+   row it is work waiting, on a list row it is a thing you have not opened. It
+   is the same 5px in the same colour everywhere, because two dots that meant
+   slightly different things would be a thing to learn rather than a thing to
+   notice.
+
+   ⚠ NOT RED. Red is the alarm colour and it is spoken for - a critical issue, a
+   failed run, a destructive confirm. New work arriving is the normal state of a
+   product whose whole proposition is that it works while nobody is watching;
+   marking that in the alarm colour says the product is broken every time it
+   does its job. */
+.m-dot {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: var(--m-radius-full);
+  background: var(--m-content-accent);
+  pointer-events: none;
+}
+
+/* THE UNREAD SLOT at the head of a list row. It is on EVERY row and painted on
+   some of them: rendered only where it applies, it pushes those rows' titles
+   five pixels right of all the others, and a column of titles that does not
+   line up is worse than a column with some empty space in it. The negative
+   margins claw back most of the cell's gap, so reserving it costs the title
+   column nine pixels rather than twenty-one. */
+.m-dot.is-slot { margin-inline: -2px; }
+.m-dot.is-off { visibility: hidden; }
+
 /* the skeleton shimmer, defined once so every loading surface matches */
 @keyframes m-shimmer {
   from { background-position: -180% 0; }
@@ -133,7 +164,7 @@ svg { display: block; flex: none; }
 }
 
 .m-skeleton {
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-chip);
   background-image: linear-gradient(
     90deg,
     var(--m-surface-hover) 0%,

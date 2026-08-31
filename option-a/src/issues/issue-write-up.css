@@ -112,7 +112,7 @@
   display: inline-flex;
   align-items: stretch;
   border: 1px solid var(--m-border-default);
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-chip);
   font-size: var(--m-text-2xs);
   overflow: hidden;
 }

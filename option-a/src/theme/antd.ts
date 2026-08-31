@@ -40,6 +40,10 @@ export interface ThemeOverrides {
    *  `fontFamily` token, so the CSS variable alone never reaches a table, tab,
    *  input or button - which is most of the page. */
   fonts?: { sans?: string; mono?: string };
+  /** corner radius by role, in px. antd wants numbers and computes with them
+   *  (inner corners, the segmented thumb), so a CSS variable is no more use
+   *  here than it is for a colour. */
+  radii?: { chip?: number; control?: number; surface?: number; check?: number };
 }
 
 /** px numbers antd wants, kept next to the rem tokens they mirror. */
@@ -49,9 +53,10 @@ const px = {
   textMd: 14,
   textLg: 16,
   textXl: 18,
-  radiusXs: 2,
-  radiusSm: 4,
-  radiusMd: 6,
+  radiusChip: 2,
+  radiusControl: 4,
+  radiusSurface: 8,
+  radiusCheck: 2,
   controlSm: 26,
   controlMd: 30,
   controlLg: 36,
@@ -61,6 +66,21 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
   const isDark = mode === 'dark';
   const pv: Record<string, string> = { ...p, ...overrides?.palette };
   const c = { ...(isDark ? darkColors : lightColors), ...overrides?.roles };
+  /* Three numbers, and every antd corner in the app comes from one of them.
+     The mapping is by ROLE, never by size: `borderRadiusSM` used to be the chip
+     value, which is why a small button and a small input came out at 2px while
+     our own IconButton beside them sat at 4px. Same object, two shapes, and
+     that is the seam Mehdi spotted. */
+  const r = {
+    chip: overrides?.radii?.chip ?? px.radiusChip,
+    control: overrides?.radii?.control ?? px.radiusControl,
+    surface: overrides?.radii?.surface ?? px.radiusSurface,
+    check: overrides?.radii?.check ?? px.radiusCheck,
+  };
+  /* A track that wraps controls with 2px of padding. The outer radius has to be
+     the inner one PLUS the gap or the two corners are not concentric, which is
+     visible at a glance and unfixable by eye. Mirrors --m-radius-track. */
+  const track = r.control + 2;
 
   return {
     algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
@@ -135,10 +155,13 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
       lineHeightSM: 1.45,
 
       /* ── shape ── */
-      borderRadius: px.radiusSm,
-      borderRadiusSM: px.radiusXs,
-      borderRadiusLG: px.radiusMd,
-      borderRadiusXS: px.radiusXs,
+      /* A control is a control at every size, so SM is not smaller. LG is the
+         surface radius because that is what antd draws popovers, dropdowns,
+         drawers and modals with - not because anything here is "large". */
+      borderRadius: r.control,
+      borderRadiusSM: r.control,
+      borderRadiusLG: r.surface,
+      borderRadiusXS: r.chip,
       lineWidth: 1,
       lineWidthBold: 1, // there is no 2px rule in this system
 
@@ -218,8 +241,17 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
         itemSelectedBg: c['surface-default'],
         trackBg: c['surface-sunken'],
         trackPadding: 2,
-        borderRadius: px.radiusSm,
-        borderRadiusSM: px.radiusXs,
+        /* A toggle IS a control, so the thumb takes the control radius and the
+           track takes control + its 2px padding, which is what makes the two
+           corners concentric. Both sizes are spelled out because antd reads the
+           TRACK from `borderRadiusSM` at size="small" and the thumb from
+           `borderRadiusXS`: leave those alone and the panel's own toggles come
+           out a different shape from the identical-looking strip on the
+           toolbar, and the thumb sits in its track like a pill in the wrong
+           hole. */
+        borderRadius: track,
+        borderRadiusSM: track,
+        borderRadiusXS: r.control,
       },
 
       Input: {
@@ -263,7 +295,7 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
         itemMarginInline: 4,
         itemMarginBlock: 1,
         itemPaddingInline: 8,
-        itemBorderRadius: px.radiusSm,
+        itemBorderRadius: r.control,
         activeBarWidth: 0,
         activeBarBorderWidth: 0,
         groupTitleColor: c['content-muted'],
@@ -276,20 +308,20 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
         titleFontSize: px.textLg,
         headerBg: c['surface-default'],
         contentBg: c['surface-default'],
-        borderRadiusLG: px.radiusMd,
+        borderRadiusLG: r.surface,
         padding: 20,
         paddingContentHorizontalLG: 20,
       },
 
       Popover: {
         titleMinWidth: 0,
-        borderRadiusLG: px.radiusMd,
+        borderRadiusLG: r.surface,
       },
 
       Tooltip: {
         colorBgSpotlight: c['surface-inverse'],
         colorTextLightSolid: c['content-inverse'],
-        borderRadius: px.radiusSm,
+        borderRadius: r.control,
         fontSize: px.textXs,
         paddingSM: 8,
         paddingXS: 6,
@@ -298,7 +330,7 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
       Tag: {
         defaultBg: c['status-neutral-bg'],
         defaultColor: c['status-neutral-fg'],
-        borderRadiusSM: px.radiusXs,
+        borderRadiusSM: r.chip,
       },
 
       Pagination: {
@@ -310,7 +342,10 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
       },
 
       Checkbox: {
-        borderRadiusSM: px.radiusXs,
+        /* THE ONE CAPPED RADIUS. CSS clamps a radius to half the box, so any
+           "round" value turns this 14px square into a circle - and a circle
+           means one-of-these. It stays a rounded square at every shape. */
+        borderRadiusSM: r.check,
         controlInteractiveSize: 14,
       },
 

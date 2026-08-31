@@ -157,7 +157,7 @@
   height: var(--m-control-height-sm);
   padding-inline: var(--m-space-5);
   border: 1px solid var(--m-border-default);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   background: var(--m-surface-default);
   color: var(--m-content-secondary);
   font-size: var(--m-text-xs);

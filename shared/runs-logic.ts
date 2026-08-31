@@ -187,3 +187,116 @@ export function activeRunFilters(state: RunsState, now: number): RunFilterChip[]
       .map((o) => ({ key: d.key, value: o.value, dimension: d.label, label: o.label })),
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WHAT ONE RUN RECORDED.
+
+   Derived rather than stored, and that is the honest shape of it: a run is one
+   execution of a TEST, so its steps ARE the test's steps and storing a second
+   copy of them per run is how eighty rows drift from the four they came from.
+   What a run adds is what happened to each one.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+import type { ConsoleLine, NetworkCall, RunStep, StepStatus } from './runs-data.ts';
+
+/** A small deterministic number from a string, so the generated detail of a run
+ *  is the same on every render and every reload. `Math.random()` here would
+ *  make a screenshot count change while you are looking at it. */
+const hash = (s: string): number => {
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+};
+
+/**
+ * The run's steps, with what happened to each.
+ *
+ * A finished run tells a simple story: everything before the failure passed,
+ * the failing step failed, and everything after it never ran.
+ *
+ * ⚠ A RUN IN FLIGHT TELLS NOTHING AT ALL, and that is the honest answer rather
+ * than a missing feature. This used to infer a position from elapsed time -
+ * so many seconds a step - and hand back "passed, passed, running, unknown".
+ * Every part of that was invented: the runner does not report progress, so the
+ * ticks were a guess dressed as a result and the one "running" step was a guess
+ * about the only thing anybody wanted to know. Gabriel, twice: "the runs with
+ * status running can't have check or loading indicators in the steps, because
+ * we don't know which step we're at."
+ *
+ * So while a run is running, EVERY step is running. The drawer draws them all
+ * the same because they are all the same to us, and the shimmer says the thing
+ * that is actually true: this is happening now.
+ */
+export function runSteps(run: RunData, testSteps: readonly string[]): RunStep[] {
+  const source = testSteps.length > 0 ? testSteps : Array.from({ length: run.stepCount }, (_, i) => `Step ${i + 1}`);
+  const seed = hash(run.key);
+  return source.map((text, i) => {
+    const shots = 1 + ((seed + i * 7) % 3);
+    let status: StepStatus;
+    if (run.status === 'running') {
+      status = 'running';
+    } else if (run.failedStep == null) {
+      status = 'passed';
+    } else if (i + 1 < run.failedStep) {
+      status = 'passed';
+    } else if (i + 1 === run.failedStep) {
+      status = 'failed';
+    } else {
+      status = 'skipped';
+    }
+    return { text, status, shots };
+  });
+}
+
+/* A passed run captures no console and no network: there is nothing to look at,
+   and keeping the panels but empty is what makes people think the capture is
+   broken. The drawer disables those tabs and says why. */
+
+/** The console, as the run recorded it. Only a failing run has one. */
+export function runConsole(run: RunData): ConsoleLine[] {
+  if (run.status === 'passed') return [];
+  const seed = hash(run.key);
+  const base: ConsoleLine[] = [
+    { level: 'log', at: 120, text: 'app: hydrated' },
+    { level: 'log', at: 480 + (seed % 200), text: 'router: navigated to /checkout' },
+    { level: 'warn', at: 1200 + (seed % 400), text: 'Deprecated: `window.legacyPay` will be removed in v4' },
+  ];
+  if (run.status === 'failed') {
+    base.push(
+      { level: 'error', at: (run.duration ?? 4000) - 900, text: 'Failed to load resource: the server responded with a status of 500' },
+      { level: 'error', at: (run.duration ?? 4000) - 40, text: run.error ?? 'Uncaught (in promise) TimeoutError' },
+    );
+  }
+  return base;
+}
+
+/** The requests the run made. Only a failing run keeps them. */
+export function runNetwork(run: RunData): NetworkCall[] {
+  if (run.status === 'passed') return [];
+  const seed = hash(run.key);
+  const t = (wait: number) => ({
+    blocked: 1 + (seed % 3),
+    dns: seed % 7,
+    connect: 4 + (seed % 9),
+    send: 1,
+    wait,
+    receive: 2 + (seed % 5),
+  });
+  const calls: NetworkCall[] = [
+    { method: 'GET', url: '/api/session', status: 200, time: 84 + (seed % 40), size: 1240, timing: t(70) },
+    { method: 'GET', url: '/api/cart', status: 200, time: 122 + (seed % 60), size: 4820, timing: t(96) },
+    { method: 'POST', url: '/api/checkout/validate', status: 200, time: 210 + (seed % 90), size: 320, timing: t(180) },
+  ];
+  if (run.status === 'failed') {
+    calls.push(
+      { method: 'POST', url: '/api/payments/authorize', status: 500, time: 5010, size: 180, timing: t(4980) },
+      { method: 'GET', url: '/api/orders/latest', status: 404, time: 61, size: 96, timing: t(48) },
+    );
+  }
+  return calls;
+}
+
+/** How many of them failed, for the count on the tab. A tab that says 2 is the
+ *  reason anybody opens it. */
+export const netErrorCount = (calls: readonly NetworkCall[]): number => calls.filter((c) => c.status >= 400).length;
+export const consoleErrorCount = (lines: readonly ConsoleLine[]): number => lines.filter((l) => l.level === 'error').length;

@@ -66,15 +66,15 @@ const navTo = async (label) => {
   await p.mouse.move(900, 600);
   await p.waitForTimeout(350);
 };
-await navTo('Tests');
+await navTo('Synthetics');
 await p.locator('.m-tests__table').waitFor();
 const tests = await shell();
 
 /* No count beside the title once the page has sections: the header meta would
-   have to say 31 on Tests and 81 on Runs while the title still said "Tests".
+   have to say 31 on Tests and 81 on Runs while the title still said "Synthetics".
    Each section's footer carries its own count instead. */
 t('TESTS: the page is the page, and the count is in the footer',
-  tests.title === 'Tests' && /31 tests/.test(tests.range ?? ''),
+  tests.title === 'Synthetics' && /31 tests/.test(tests.range ?? ''),
   `${tests.title} — "${tests.range}"`);
 t('TESTS: one page of twenty', tests.rows === 20 && /1–20 of 31/.test(tests.range ?? ''), `${tests.rows} rows, "${tests.range}"`);
 t('TESTS: five status tabs plus the review tab',
@@ -147,22 +147,102 @@ const restored = await p.evaluate(() =>
   document.querySelector('.ant-table-tbody tr.ant-table-row')?.textContent?.trim().slice(0, 30) ?? null);
 t('TESTS: a third click gives the queue back', restored === tests.firstRow?.slice(0, 30), restored);
 
-// a row opens something, and what it opens names the row
+/* ── THE TEST DRAWER ────────────────────────────────────────────────────────
+   It was a stub until 08-31. What replaced it is the production drawer's whole
+   lifecycle, so the checks are about the lifecycle rather than about the panel:
+   a draft is a PROPOSAL and its footer says so, and the reject grammar (dismiss
+   a suggestion, delete your own work) survives into it. */
 await p.locator('.ant-table-tbody tr.ant-table-row').first().locator('.m-tests__title').click();
 await p.locator('.ant-drawer').waitFor();
+await p.waitForTimeout(400);
 const drawer = await p.evaluate(() => ({
-  title: document.querySelector('.ant-drawer-title')?.textContent?.trim() ?? null,
-  stub: !!document.querySelector('.ant-drawer .m-placeholder'),
+  eyebrow: document.querySelector('.m-drawer__eyebrow')?.textContent?.trim() ?? null,
+  title: document.querySelector('.m-drawer__title')?.textContent?.trim() ?? null,
+  steps: [...document.querySelectorAll('.ant-drawer .m-step__text')].map((s) => s.textContent.trim()),
+  foot: [...document.querySelectorAll('.ant-drawer .m-dfoot button')].map((b) => b.textContent.trim()),
+  sections: [...document.querySelectorAll('.ant-drawer .m-dsec__title')].map((s) => s.textContent.trim()),
 }));
-t('TESTS: the row opens a panel that names it', /New sign-up flow/.test(drawer.title ?? '') && drawer.stub, drawer.title);
+t('TESTS: the row opens the test, named, with its real steps',
+  /New sign-up flow/.test(drawer.title ?? '') && drawer.steps.length === 5 &&
+    /Open the sign-up page/.test(drawer.steps[0] ?? ''),
+  `${drawer.title} — ${drawer.steps.length} steps`);
+t('TESTS: a draft is a proposal, and the footer says so',
+  drawer.eyebrow?.startsWith('Draft') && drawer.foot.join('|') === 'Dismiss|Save draft|Approve steps',
+  `${drawer.eyebrow} — ${drawer.foot.join(' | ')}`);
+t('TESTS: the drawer is sections, in one order',
+  drawer.sections.join(',').startsWith('Steps'), drawer.sections.join(' | '));
+
+/* Editing a step is the list itself: click the line, type, Enter. */
+await p.locator('.ant-drawer .m-step__text').first().click();
+await p.waitForTimeout(200);
+await p.locator('.ant-drawer .m-step__input').fill('Open the sign-up page from an ad');
+await p.keyboard.press('Enter');
+await p.waitForTimeout(250);
+const edited = await p.evaluate(() => ({
+  first: document.querySelector('.ant-drawer .m-step__text')?.textContent?.trim() ?? null,
+  save: [...document.querySelectorAll('.ant-drawer .m-dfoot button')].find((b) => /Save draft/.test(b.textContent))?.disabled,
+}));
+t('TESTS: a step edits in place, and the footer wakes up',
+  edited.first === 'Open the sign-up page from an ad' && edited.save === false, `${edited.first} / save disabled: ${edited.save}`);
+/* Closed by the mask, not by Escape: the step editor swallows Escape on
+   purpose, so a key that sometimes closes the drawer is not a way to close it
+   in a check. */
+await p.locator('.ant-drawer-mask').click();
+await p.waitForTimeout(500);
 await p.keyboard.press('Escape');
 await p.waitForTimeout(300);
+
+/* ── EDITING THE STEPS ──────────────────────────────────────────────────────
+   Three behaviours that a screenshot cannot see and that both broke while this
+   was being built: the text you type survives the row that Enter chains after
+   it; Escape abandons the LINE and not the drawer; and dragging reorders. */
+await p.locator('.ant-table-tbody tr.ant-table-row', { hasText: 'Logout flow' }).first().click();
+await p.locator('.ant-drawer').waitFor();
+await p.waitForTimeout(500);
+const stepTexts = () =>
+  p.evaluate(() => [...document.querySelectorAll('.ant-drawer .m-step__text')].map((s) => s.textContent.trim()));
+
+const gaps = p.locator('.ant-drawer .m-steps__gap');
+await gaps.nth(1).hover();
+await p.waitForTimeout(120);
+await gaps.nth(1).locator('button').click({ force: true });
+await p.waitForTimeout(200);
+await p.keyboard.type('Confirm the session cookie is cleared');
+await p.keyboard.press('Enter');
+await p.waitForTimeout(200);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(300);
+const afterInsert = await stepTexts();
+t('STEPS: a typed step survives the row Enter chains after it',
+  afterInsert[1] === 'Confirm the session cookie is cleared' && afterInsert.length === 4,
+  afterInsert.join(' | '));
+t('STEPS: Escape abandons the line, not the drawer',
+  (await p.locator('.ant-drawer').count()) > 0);
+
+const src = await p.locator('.ant-drawer .m-step').nth(3).boundingBox();
+const dst = await gaps.first().boundingBox();
+await p.mouse.move(src.x + 20, src.y + 10);
+await p.mouse.down();
+/* The gap's CENTRE. It is 16px tall with negative margins, so its top edge
+   overlaps the row above and a drop two pixels in lands on the wrong target. */
+await p.mouse.move(dst.x + 100, dst.y + dst.height / 2, { steps: 14 });
+await p.mouse.up();
+await p.waitForTimeout(350);
+const afterDrag = await stepTexts();
+t('STEPS: dragging the grip reorders', afterDrag[0] === 'Confirm the sign-in page is shown', afterDrag[0]);
+/* Closing without saving changes nothing: the buffer is the drawer's, and the
+   list behind it never saw any of this. */
+await p.locator('.ant-drawer-mask').click();
+await p.waitForTimeout(500);
+const rowAfter = await p.evaluate(() =>
+  [...document.querySelectorAll('.ant-table-tbody tr')].find((r) => /Logout flow/.test(r.textContent))?.textContent ?? '');
+t('STEPS: closing without saving leaves the test alone', !/cookie/.test(rowAfter));
 
 // ── THE TESTS AGENT'S THREE SECTIONS ───────────────────────────────────────
 // The menu carries them as nested rows AND the page carries them as a strip
 // under a title that never changes. The duplication is deliberate: the menu
-// says what is inside Tests before you open it, the strip says you are still
-// inside Tests once you are reading the page - which is the thing a heading
+// says what is inside Synthetics before you open it, the strip says you are
+// still inside Synthetics once you are reading the page - which is the thing a heading
 // that renamed itself to "Runs" destroyed.
 const sections = await p.evaluate(() => ({
   navSections: [...document.querySelectorAll('.m-nav__sections .m-nav-item__label')].map((l) => l.textContent.trim()),
@@ -182,11 +262,11 @@ const sections = await p.evaluate(() => ({
   toolbarTop: getComputedStyle(document.querySelector('.m-page__toolbar')).borderTopWidth,
 }));
 t('SECTIONS: the menu and the page both hold them',
-  sections.navSections.join(',') === 'List,Runs,Environments'
-    && sections.pageTabs.join(',') === 'List,Runs,Environments',
+  sections.navSections.join(',') === 'Tests,Runs,Environments'
+    && sections.pageTabs.join(',') === 'Tests,Runs,Environments',
   `menu ${sections.navSections.join(' | ')} — page ${sections.pageTabs.join(' | ')}`);
 t('SECTIONS: the header is a title and a sentence, with no rule under it',
-  sections.title === 'Tests' && !!sections.sub && sections.headBorder === '0px',
+  sections.title === 'Synthetics' && !!sections.sub && sections.headBorder === '0px',
   `${sections.title} / ${sections.sub}`);
 t('SECTIONS: the strip starts where the title starts', sections.tabsX === tests.titleX,
   `tabs ${sections.tabsX} vs title ${tests.titleX}`);
@@ -273,7 +353,7 @@ const runsHead = await p.evaluate(() => ({
 /* The one that started this batch: arriving on Runs from the MENU still leaves
    the page saying Tests, with Runs marked in the strip. */
 t('SECTIONS: the title stays, the strip moves',
-  runsHead.title === 'Tests' && runsHead.activeTab === 'Runs', `${runsHead.title} / ${runsHead.activeTab}`);
+  runsHead.title === 'Synthetics' && runsHead.activeTab === 'Runs', `${runsHead.title} / ${runsHead.activeTab}`);
 t('SECTIONS: the sentence follows the section', /Every execution/.test(runsHead.sub ?? ''), runsHead.sub);
 
 
@@ -302,6 +382,46 @@ const t1 = await p.evaluate(() => document.querySelector('.ant-table-tbody')?.te
 await p.waitForTimeout(1600);
 const t2 = await p.evaluate(() => document.querySelector('.ant-table-tbody')?.textContent?.match(/\d+:\d\d/)?.[0] ?? null);
 t('RUNS: an unfinished run counts up', t1 !== null && t1 !== t2, `${t1} → ${t2}`);
+
+/* ── THE RUN DRAWER ─────────────────────────────────────────────────────────
+   A run is over, so the drawer is read-only and says where it stopped. The
+   check that matters is that a failure is attributed to ONE step and the rest
+   read as skipped: a run does not fail eleven times. */
+await p.locator('.ant-table-tbody tr.ant-table-row', { hasText: 'Failed' }).first().click();
+await p.locator('.ant-drawer').waitFor();
+await p.waitForTimeout(500);
+const rd = await p.evaluate(() => ({
+  eyebrow: document.querySelector('.m-drawer__eyebrow')?.textContent?.trim() ?? null,
+  stepMarks: [...document.querySelectorAll('.ant-drawer .m-rd__step')].map((s) => s.className.replace('m-rd__step is-', '')),
+  error: document.querySelector('.ant-drawer .m-rd__error')?.textContent?.trim().slice(0, 30) ?? null,
+  tabs: [...document.querySelectorAll('.ant-drawer .ant-segmented-item')].map((s) => s.textContent.trim()),
+  foot: document.querySelector('.ant-drawer .m-rd__foot')?.textContent?.trim() ?? null,
+}));
+t('RUNS: the drawer says which step stopped it, once',
+  rd.stepMarks.filter((m) => m === 'failed').length === 1 && rd.stepMarks.includes('skipped') && !!rd.error,
+  `${rd.stepMarks.join(' ')} — "${rd.error}"`);
+t('RUNS: activity is the three things you would check on a session',
+  rd.tabs.length === 3 && /Screenshots/.test(rd.tabs[0] ?? '') && /Network/.test(rd.tabs[1] ?? ''),
+  rd.tabs.join(' | '));
+t('RUNS: the footer says where it got to', /Stopped at step/.test(rd.foot ?? ''), rd.foot);
+
+/* A passed run captured no network and no console, and the tabs say so rather
+   than disappearing between runs. */
+await p.locator('.ant-drawer-mask').click();
+await p.waitForTimeout(500);
+await p.locator('.ant-table-tbody tr.ant-table-row', { hasText: 'Passed' }).first().click();
+await p.locator('.ant-drawer').waitFor();
+await p.waitForTimeout(500);
+const passedRun = await p.evaluate(() => ({
+  disabled: [...document.querySelectorAll('.ant-drawer .ant-segmented-item')]
+    .filter((s) => s.className.includes('disabled')).map((s) => s.textContent.trim()),
+  hint: document.querySelector('.ant-drawer .m-dsec__hint')?.textContent?.trim() ?? null,
+}));
+t('RUNS: a passed run disables the panels it never captured, and says why',
+  passedRun.disabled.length === 2 && /passed/.test(passedRun.hint ?? ''),
+  `${passedRun.disabled.join(' | ')} — ${passedRun.hint}`);
+await p.locator('.ant-drawer-mask').click();
+await p.waitForTimeout(500);
 
 // ENVIRONMENTS: no toolbar at all, and deleting one names what it stops
 await navTo('Environments');
@@ -340,7 +460,7 @@ await p.waitForTimeout(300);
    menu's nested row moves with it, because both read the one route string the
    shell keeps - a page that held its own copy is how two controls that show the
    same thing end up disagreeing. */
-await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'List' }).click();
+await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'Tests' }).first().click();
 await p.locator('.m-tests__table').waitFor();
 await p.waitForTimeout(300);
 const viaStrip = await p.evaluate(() => ({
@@ -350,7 +470,7 @@ const viaStrip = await p.evaluate(() => ({
   addTest: [...document.querySelectorAll('.m-page__actions button')].some((b) => /Add test/.test(b.textContent)),
 }));
 t('SECTIONS: the strip navigates, and the menu follows it',
-  viaStrip.activeTab === 'List' && viaStrip.navActive === 'List' && viaStrip.title === 'Tests',
+  viaStrip.activeTab === 'Tests' && viaStrip.navActive === 'Tests' && viaStrip.title === 'Synthetics',
   `${viaStrip.title} / strip ${viaStrip.activeTab} / menu ${viaStrip.navActive}`);
 t('SECTIONS: the header actions follow the section too', viaStrip.addTest);
 
@@ -412,6 +532,139 @@ const before = await p.evaluate(() => document.querySelector('.m-audits__table .
 await p.waitForTimeout(2200);
 const after = await p.evaluate(() => document.querySelector('.m-audits__table .m-bar__fill')?.getAttribute('style'));
 t('AUDITS: the running job advances while you watch', before !== after, `${before} → ${after}`);
+
+/* ── THE STEP MARK: one shape, five states ────────────────────────────────
+   The complaint it answers is "when a run is running you can't know which step
+   we're at", and the constraint on the answer was that the loading state must
+   not be a glyph only one row can have. So the check is structural: every step
+   draws the same ring, exactly one of them carries the turning arc, and the
+   rail is solid down to it and quiet past it. */
+await navTo('Synthetics');
+await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'Runs' }).click();
+await p.waitForTimeout(500);
+await p.locator('.ant-table-tbody tr', { hasText: 'Checkout flow' }).first().click();
+await p.waitForTimeout(800);
+const stepMarks = await p.evaluate(() => {
+  const steps = [...document.querySelectorAll('.m-rd__step')];
+  const cs = (s) => getComputedStyle(s.querySelector('.m-rd__step-text'));
+  return {
+    steps: steps.length,
+    rings: steps.filter((s) => s.querySelector('.m-rd__ring')).length,
+    live: !!document.querySelector('.m-rd__steps.is-live'),
+    /* ⚠ THE WHOLE POINT: nothing in a running run may single a step out. */
+    statuses: [...new Set(steps.map((s) => s.className.replace('m-rd__step ', '')))],
+    innerGlyphs: document.querySelectorAll('.m-rd__steps .m-rd__in').length,
+    weights: [...new Set(steps.map((s) => cs(s).fontWeight))],
+    ringStrokes: [...new Set(steps.map((s) => getComputedStyle(s.querySelector('.m-rd__ring')).stroke))],
+    /* the text sweeps HORIZONTALLY and all of it in phase */
+    textAnim: cs(steps[0]).animationName,
+    textDelays: [...new Set(steps.map((s) => cs(s).animationDelay))],
+    textDirection: cs(steps[0]).backgroundImage.slice(0, 30),
+    /* ONE wire per GAP, circle to circle: it starts on this node and ends on
+       the next one, overflowing its own row to get there. Anything that stops
+       at a row boundary cuts the pulse in half. */
+    segments: steps.filter((s) => getComputedStyle(s, '::after').content !== 'none').length,
+    wireDelays: steps.slice(0, -1).map((s) => parseFloat(getComputedStyle(s, '::before').animationDelay)),
+    wireRepeat: getComputedStyle(steps[0], '::before').backgroundRepeat,
+    /* the wire's length against the distance between two node centres */
+    wireSpansGap: (() => {
+      const centres = steps.map((s) => {
+        const r = s.querySelector('.m-rd__mark').getBoundingClientRect();
+        return (r.top + r.bottom) / 2;
+      });
+      const gaps = centres.slice(1).map((y, i) => Math.round(y - centres[i]));
+      const cs = getComputedStyle(steps[0], '::before');
+      const len = steps[0].getBoundingClientRect().height - parseFloat(cs.top) - parseFloat(cs.bottom);
+      return gaps.every((g) => Math.abs(g - Math.round(len)) <= 1);
+    })(),
+    lastWire: getComputedStyle(steps[steps.length - 1], '::before').content,
+    separators: steps.filter((s) => getComputedStyle(s).borderTopWidth !== '0px').length,
+    markZ: getComputedStyle(steps[0].querySelector('.m-rd__mark')).zIndex,
+    ringFill: getComputedStyle(steps[0].querySelector('.m-rd__ring')).fill,
+    surface: getComputedStyle(document.querySelector('.ant-drawer-section')).backgroundColor,
+  };
+});
+t('STEPS: every step wears the same ring', stepMarks.rings === stepMarks.steps && stepMarks.steps > 1,
+  `${stepMarks.rings}/${stepMarks.steps}`);
+t('STEPS: a running run singles out no step at all',
+  stepMarks.live && stepMarks.statuses.length === 1 && stepMarks.innerGlyphs === 0
+    && stepMarks.weights.length === 1 && stepMarks.ringStrokes.length === 1,
+  `${stepMarks.statuses.join('/')}, ${stepMarks.innerGlyphs} glyphs, ${stepMarks.weights.length} weights, ${stepMarks.ringStrokes.length} strokes`);
+t('STEPS: the text sweeps horizontally, every row in phase',
+  /m-rd-text/.test(stepMarks.textAnim) && stepMarks.textDelays.length === 1
+    && /90deg/.test(stepMarks.textDirection),
+  `${stepMarks.textAnim} @ ${stepMarks.textDelays.join('/')}, ${stepMarks.textDirection}`);
+t('STEPS: one wire per gap, circle to circle, so a pulse is never cut in half',
+  stepMarks.segments === 0 && stepMarks.wireRepeat === 'no-repeat'
+    && stepMarks.wireSpansGap && stepMarks.lastWire === 'none',
+  `${stepMarks.segments} second segments, spans gap ${stepMarks.wireSpansGap}, last ${stepMarks.lastWire}`);
+t('STEPS: and the pulse walks down it, one step at a time',
+  stepMarks.wireDelays.every((d, i) => i === 0 || d > stepMarks.wireDelays[i - 1]),
+  stepMarks.wireDelays.join(' '));
+t('STEPS: the node sits on top of the wire, not under it',
+  stepMarks.markZ === '1' && stepMarks.ringFill === stepMarks.surface,
+  `z ${stepMarks.markZ}, ring ${stepMarks.ringFill} on ${stepMarks.surface}`);
+t('STEPS: the rail replaced the row rules rather than joining them',
+  stepMarks.separators === 0, `${stepMarks.separators} rows still ruled`);
+
+/* THE DRAWER'S CLOSE is a control in the corner, not a glyph inside the title. */
+const drawerClose = await p.evaluate(() => {
+  const headEl = document.querySelector('.ant-drawer-header');
+  const head = headEl.getBoundingClientRect();
+  const pad = parseFloat(getComputedStyle(headEl).paddingLeft);
+  const lead = document.querySelector('.m-drawer__lead').getBoundingClientRect();
+  const x = document.querySelector('.ant-drawer-extra .m-iconbtn')?.getBoundingClientRect();
+  return {
+    antdClose: !!document.querySelector('.ant-drawer-close'),
+    /* the lead starts on the header's own padding and not one glyph further in */
+    leadLeft: Math.round(lead.left - head.left - pad),
+    closeRight: x ? Math.round(head.right - x.right) : null,
+  };
+});
+t('DRAWER: the close is ours and it is in the corner',
+  !drawerClose.antdClose && drawerClose.closeRight !== null, `antd close present: ${drawerClose.antdClose}`);
+t("DRAWER: and the lead starts on the panel's own inset, not past a glyph",
+  drawerClose.leadLeft === 0, `${drawerClose.leadLeft}px in`);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(400);
+
+/* ── ONE MARK IN BOTH LISTS ────────────────────────────────────────────────
+   The tests list had a 6px dot of its own, trailing the row; the issues list
+   grew a 5px one leading it. Gabriel: "the dots in tests and issues should be
+   the same, I liked it on the left side." Both draw `.m-dot.is-slot` now, so
+   this asserts the two lists agree on the mark AND that reserving the slot on
+   every row keeps one left edge in each of them. */
+await navTo('Synthetics');
+await p.locator('.m-tests__table').waitFor();
+await p.waitForTimeout(400);
+const testDots = await p.evaluate(() => {
+  const rows = [...document.querySelectorAll('.m-tests__table tbody tr')];
+  const lit = rows.map((r) => r.querySelector('.m-dot.is-slot')).filter((d) => d && !d.classList.contains('is-off'));
+  const cs = lit[0] ? getComputedStyle(lit[0]) : null;
+  const lefts = rows.map((r) => r.querySelector('.m-tests__title')?.getBoundingClientRect().left)
+    .filter((x) => x != null).map(Math.round);
+  return {
+    rows: rows.length,
+    slots: rows.filter((r) => r.querySelector('.m-dot.is-slot')).length,
+    lit: lit.length,
+    edges: new Set(lefts).size,
+    mark: cs ? `${cs.width}/${cs.backgroundColor}` : null,
+    /* the old trailing dot must be gone, not merely hidden */
+    legacy: document.querySelectorAll('.m-tests__dot').length,
+    /* it LEADS the title rather than trailing the row */
+    leads: (() => {
+      const row = lit[0]?.closest('tr');
+      const t = row?.querySelector('.m-tests__title');
+      return row && t ? lit[0].getBoundingClientRect().left < t.getBoundingClientRect().left : null;
+    })(),
+  };
+});
+t('DOTS: the tests list wears the app\u2019s mark, not one of its own',
+  testDots.legacy === 0 && testDots.lit > 0, `${testDots.lit} lit, ${testDots.legacy} legacy`);
+t('DOTS: it leads the name rather than trailing the row', testDots.leads === true);
+t('DOTS: the slot is on every row, so the names keep one edge',
+  testDots.slots === testDots.rows && testDots.edges === 1,
+  `${testDots.slots}/${testDots.rows} slots, ${testDots.edges} edge`);
 
 t('no console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 

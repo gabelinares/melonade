@@ -31,7 +31,7 @@ function Panel({ children }: { children: ReactNode }) {
         width: 232,
         padding: 'var(--m-space-2)',
         border: '1px solid var(--m-border-default)',
-        borderRadius: 'var(--m-radius-md)',
+        borderRadius: 'var(--m-radius-surface)',
         background: 'var(--m-surface-raised)',
       }}
     >

@@ -36,7 +36,7 @@
   max-width: 30rem;
   padding: 1px var(--m-space-5);
   border: 1px solid var(--m-border-default);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   background: var(--m-surface-default);
   color: var(--m-content-muted);
   font-size: var(--m-text-2xs);
@@ -93,7 +93,7 @@
   translate: -50% 0;
   max-width: 80%;
   padding: var(--m-space-3) var(--m-space-5);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-chip);
   background: var(--m-surface-inverse);
   color: var(--m-content-inverse);
   font-size: var(--m-text-xs);

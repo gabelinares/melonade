@@ -1,4 +1,5 @@
 import { Button, Dropdown, Pagination, Table, Tooltip } from 'antd';
+import { pagerItem } from '../components/Pager.tsx';
 import type { TableColumnsType } from 'antd';
 import {
   AlertTriangle,
@@ -106,6 +107,21 @@ export function IssuesPage({ model }: IssuesPageProps) {
               state={state}
               matchedBy={matched.find((x) => !x.mine)?.createdBy}
               onClick={() => dialogs.openCritical(issue)}
+            />
+            {/* NEW TO YOU, in the same 5px accent the menu uses one level up:
+                there it says an agent has found something, here it says which
+                of the things it found you have not opened.
+
+                ⚠ THE SLOT IS ON EVERY ROW, empty on most of them. Rendered only
+                where it applies it would push those titles five pixels right of
+                all the others, and a column of titles that does not line up is
+                the exact complaint this dot came out of. It leads the title
+                rather than the row because the row's left edge is the page
+                title's inset and every list in this app starts on it. */}
+            <span
+              className={`m-dot is-slot${model.isNew(issue.id) ? '' : ' is-off'}`}
+              aria-hidden={!model.isNew(issue.id)}
+              aria-label="Not opened yet"
             />
             <span className="m-issues__title m-truncate">{model.titleOf(issue)}</span>
             {model.hasField('category') && (
@@ -447,6 +463,7 @@ export function IssuesPage({ model }: IssuesPageProps) {
                 pageSize={model.pageSize}
                 onChange={model.setPage}
                 showSizeChanger={false}
+                itemRender={pagerItem}
               />
             )}
           </footer>

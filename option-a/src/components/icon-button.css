@@ -11,7 +11,7 @@
   min-width: var(--m-control-height-sm);
   padding-inline: var(--m-space-4);
   border: 1px solid transparent;
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   color: var(--m-content-secondary);
   transition: border-color var(--m-duration-fast) var(--m-ease-out),
     background-color var(--m-duration-fast) var(--m-ease-out),
@@ -56,7 +56,7 @@
   min-width: 15px;
   height: 15px;
   padding-inline: 3px;
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-chip);
   background: var(--m-surface-inverse);
   color: var(--m-content-inverse);
   font-size: var(--m-text-2xs);

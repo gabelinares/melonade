@@ -10,7 +10,7 @@
   min-height: 0;
   width: 100%;
   border: 1px solid var(--m-border-subtle);
-  border-radius: var(--m-radius-lg);
+  border-radius: var(--m-radius-surface);
   background: var(--m-surface-default);
   overflow: hidden;
   /* no shadow. A card is defined by its edge in this system. */

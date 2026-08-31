@@ -12,16 +12,73 @@
   width: var(--m-nav-width);
   height: 100vh;
   padding: var(--m-space-5) var(--m-space-5) var(--m-space-5) var(--m-space-6);
+  transition: width var(--m-duration-normal) var(--m-ease-out),
+    padding var(--m-duration-normal) var(--m-ease-out);
+
+  /* ── the two steps a row takes off whatever it is standing on ──
+     A row in the MENU stands on the ground, so it steps towards the plane:
+     hover is the next surface up and the current row IS the plane, the same
+     colour as the card it opens. The same row inside a FLYOUT is standing on a
+     card already, so it steps the other way - which is what the :root values
+     below are, and why they are not the same pair. One component, two grounds,
+     two steps; see the note on `.m-nav-item:hover` for what happens when a row
+     borrows the wrong one. */
+  --m-nav-row-hover: var(--m-surface-nav);
+  --m-nav-row-on: var(--m-surface-default);
+}
+
+:root {
+  --m-nav-row-hover: var(--m-surface-hover);
+  --m-nav-row-on: var(--m-surface-active);
+}
+
+/* ── THE NARROW MENU ─────────────────────────────────────────────────────────
+   52px: one 28px glyph with an equal 12px gutter either side. THE GLYPHS ARE
+   THE COLUMN AND THEY ARE CENTRED IN IT - which is the whole reason
+   the counts are not a second column any more. A figure column to the right of
+   the glyphs is legible, and it also pushes every glyph off the middle of the
+   strip, so the rail reads as left-aligned inside its own width. Gabriel, twice:
+   "the numbers make all the icons seem disaligned, when they should be aligned
+   center."
+
+   The counts become DOTS here and the figures move to the tooltip - see the
+   note on `.m-nav-item__count` below for the two versions that came before it.
+   "Which agent has work" is still answerable without opening anything, which is
+   the part of the queue that has to survive; "how much" is one hover away.
+
+   ⚠ Nothing may hang past the row. The agents list is a scroll container, and
+   `overflow-y: auto` clips the other axis too - a mark set 4px past the edge
+   was silently sliced down its right side.
+
+   ⚠ The left gutter drops from 16 to 12 here, so the window's left margin
+   finally matches the plane's other three. Collapsed, the whole app is wrapped
+   in one even 12px.
+
+   What each thing becomes, and it is always a REDUCTION of itself rather than
+   a substitute for itself:
+     row          the glyph, with its count as a chip on its shoulder
+     "Products"   a hairline the width of the glyph column
+     switcher     the mark; search folds underneath it
+     tools        the same five glyphs, folded into one column
+     credits      the bar, turned a quarter turn so it has room to be read
+   ────────────────────────────────────────────────────────────────────────── */
+.m-nav.is-collapsed {
+  width: var(--m-nav-width-collapsed);
+  padding-inline: var(--m-space-5);
 }
 
 /* ── project ── */
 
+/* `flex-wrap` and a minimum, not a second layout. The switcher will not go
+   under 6rem, so somewhere around 160px the search button has nowhere left to
+   sit on this line and drops to the next one by itself - continuously, on the
+   same frames the width is already animating. */
 .m-nav__brand {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--m-space-3);
   flex: none;
-  height: 2rem;
   margin-bottom: var(--m-space-6);
 }
 
@@ -30,23 +87,63 @@
   align-items: center;
   gap: var(--m-space-4);
   flex: 1;
-  min-width: 0;
-  height: 100%;
+  min-width: 6rem;
+  height: 2rem;
   padding-inline: var(--m-space-3);
-  border-radius: var(--m-radius-sm);
-  transition: background-color var(--m-duration-instant) var(--m-ease-out);
+  border-radius: var(--m-radius-control);
+  overflow: hidden;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    min-width var(--m-duration-normal) var(--m-ease-out),
+    padding-inline var(--m-duration-normal) var(--m-ease-out),
+    gap var(--m-duration-normal) var(--m-ease-out);
 }
-.m-nav__project:hover { background: var(--m-surface-hover); }
+.m-nav__project:hover { background: var(--m-nav-row-hover); }
+
+.m-nav.is-collapsed .m-nav__project {
+  min-width: 1.75rem;
+  gap: 0;
+  padding-inline: 0;
+}
+
+/* Everything in the narrow menu centres on the rail, not on its left gutter:
+   the row already does it with `justify-content`, and these four have to be
+   told. proto-check asserts all four centres against the rail's own. */
+.m-nav.is-collapsed .m-nav__brand,
+.m-nav.is-collapsed .m-nav__project,
+.m-nav.is-collapsed .m-nav__tools { justify-content: center; }
+.m-nav.is-collapsed .m-nav__label,
+.m-nav.is-collapsed .m-credits { margin-inline: auto; }
+
+/* Expanded it is just the mark; narrow it is the glyph column, like every
+   other icon box in the menu. */
+.m-nav__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.0625rem; /* 17 */
+  transition: width var(--m-duration-normal) var(--m-ease-out);
+}
+.m-nav.is-collapsed .m-nav__mark { width: 1.75rem; }
 
 .m-nav__project-name {
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
   font-size: var(--m-text-md);
   font-weight: var(--m-weight-medium);
   color: var(--m-content-primary);
   text-align: left;
 }
 
-.m-nav__project-caret { flex: none; color: var(--m-content-decorative); }
+.m-nav__project-caret { flex: none; width: 0.8125rem; color: var(--m-content-decorative); }
+
+.m-nav.is-collapsed :is(.m-nav__project-name, .m-nav__project-caret) {
+  max-width: 0;
+  width: 0;
+  opacity: 0;
+  transition-delay: 0s;
+}
 
 /* The one filled control in the column. It is the only thing here that MAKES
    something rather than going somewhere, which is what earns it the accent. */
@@ -57,7 +154,7 @@
   flex: none;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   background: var(--m-action-primary-bg);
   color: var(--m-action-primary-fg);
   transition: background-color var(--m-duration-instant) var(--m-ease-out);
@@ -74,12 +171,34 @@
   display: flex;
   align-items: center;
   gap: var(--m-space-3);
+  height: 1.5rem;
   padding: var(--m-space-2) var(--m-space-4) var(--m-space-3);
+  background: transparent;
   font-size: var(--m-text-2xs);
   font-weight: var(--m-weight-medium);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--m-content-muted);
+  overflow: hidden;
+  transition: height var(--m-duration-normal) var(--m-ease-out),
+    width var(--m-duration-normal) var(--m-ease-out),
+    margin var(--m-duration-normal) var(--m-ease-out),
+    padding var(--m-duration-normal) var(--m-ease-out),
+    color var(--m-duration-fast) var(--m-ease-out) var(--m-duration-fast),
+    background-color var(--m-duration-fast) var(--m-ease-out) var(--m-duration-fast);
+}
+
+/* The label reduced to what a label is for: a rule where the group starts. The
+   text is not hidden, it is set in nothing - which is what lets one element be
+   both states and animate between them. */
+.m-nav.is-collapsed .m-nav__label {
+  height: 1px;
+  width: 1.75rem;
+  margin: var(--m-space-4) 0;
+  padding: 0;
+  background: var(--m-border-default);
+  color: transparent;
+  transition-delay: 0s, 0s, 0s, 0s, 0s, 0s;
 }
 
 /* the only region that scrolls: growth pushes on the products, never on the
@@ -91,7 +210,10 @@
   overscroll-behavior: contain;
 }
 
-.m-nav__agent { display: flex; flex-direction: column; gap: 1px; }
+/* An agent and whatever it has opened, as one block - which is also the element
+   the flyout hangs off when the menu is narrow, so antd has a real DOM node to
+   clone without NavItem having to forward anything. */
+.m-nav__row { display: flex; flex-direction: column; gap: 1px; }
 
 /* An agent's sections. The rail is a hairline rather than an indent alone:
    three unadorned rows under a row read as four siblings. */
@@ -105,27 +227,25 @@
   margin-left: var(--m-space-6);
 }
 
-.m-nav__add {
-  display: flex;
-  align-items: center;
-  gap: var(--m-space-4);
-  width: 100%;
-  height: 1.875rem;
+/* A nav row that happens to add rather than navigate: it takes the row's
+   geometry wholesale (`.m-nav-item`) so that everything the collapse does to a
+   row happens to it too, and overrides only its colour. */
+.m-nav .m-nav__add {
   margin-top: var(--m-space-3);
-  padding-inline: var(--m-space-4);
-  border-radius: var(--m-radius-sm);
   color: var(--m-content-muted);
-  font-size: var(--m-text-sm);
-  text-align: left;
-  transition: background-color var(--m-duration-instant) var(--m-ease-out),
-    color var(--m-duration-instant) var(--m-ease-out);
 }
-.m-nav__add:hover { background: var(--m-surface-hover); color: var(--m-content-secondary); }
-.m-nav__add svg { color: var(--m-content-decorative); }
+.m-nav .m-nav__add:hover { color: var(--m-content-secondary); }
 
 /* ── the foot ─────────────────────────────────────────────────────────────
-   Four things you touch rarely and never search for, so they are icons on one
-   line rather than four labelled rows competing with the agents. */
+   Five things you touch rarely and never search for, so they are icons on one
+   line rather than five labelled rows competing with the agents.
+
+   A GRID OF 28px TRACKS, not a row. `auto-fill` recomputes the track count from
+   whatever width the menu currently has, so the bar folds - five across, then
+   three, then one - on the same frames as the width transition. A flex row
+   flipped to a column by a class would arrive at the column while the menu was
+   still 256px wide, which is the single most obvious way to make a collapse
+   look broken. */
 
 .m-nav__foot {
   flex: none;
@@ -136,11 +256,16 @@
 }
 
 .m-nav__tools {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 1.75rem);
   gap: var(--m-space-2);
+  justify-content: start;
   padding-inline: var(--m-space-2);
+  transition: padding var(--m-duration-normal) var(--m-ease-out);
 }
+
+.m-nav.is-collapsed .m-nav__tools { padding-inline: 0; }
+
 
 .m-nav__tool {
   position: relative;
@@ -149,39 +274,171 @@
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   color: var(--m-content-muted);
   transition: background-color var(--m-duration-instant) var(--m-ease-out),
     color var(--m-duration-instant) var(--m-ease-out);
 }
-.m-nav__tool:hover { background: var(--m-surface-hover); color: var(--m-content-secondary); }
-.m-nav__tool.is-active { background: var(--m-surface-active); color: var(--m-content-primary); }
+.m-nav__tool:hover { background: var(--m-nav-row-hover); color: var(--m-content-secondary); }
+.m-nav__tool.is-active { background: var(--m-nav-row-on); color: var(--m-content-primary); }
 
-/* Presence, not a number: what is unread is a fact, how much is a page. */
-.m-nav__unread {
+/* ── WHERE THE DOT SITS IN THE MENU ──────────────────────────────────────
+   The mark itself is in base.css - it is the app's, not the menu's. What is
+   here is the two places the menu puts it: on the bell's glyph, and on an
+   agent's glyph once the width has taken the figure it normally rides. Both are
+   measured off the containing block's CENTRE rather than its corner, so one
+   piece of arithmetic serves a 28px tile and a 28px row alike. */
+/* ON THE BELL it is a mark on a glyph. Measured from the tile's CENTRE rather
+   than its corner - half the box minus half the glyph minus a hair is the
+   glyph's top-right corner, whatever size the tile is. */
+.m-nav__tool .m-dot {
   position: absolute;
-  top: 4px;
-  right: 5px;
-  width: 5px;
-  height: 5px;
-  border-radius: var(--m-radius-full);
-  background: var(--m-content-danger);
+  top: calc(50% - 9px);
+  left: calc(50% + 2px);
 }
 
+
+/* THE SAME 28px BOX AS EVERY TOOL, with a 24px disc drawn inside it.
+   It used to be a 24px element in a 28px track, which put it 2px above the
+   glyph line in both states (a fixed-height grid item does not stretch, it sits
+   at the top of its cell) and left a 6px gap where every other pair had 4.
+   `background-clip: content-box` inside 2px of padding paints the smaller disc
+   without shrinking the box, so the account keeps its lighter weight and still
+   sits on the rhythm - and the hit target grows to 28 rather than shrinking. */
 .m-nav__avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  margin-left: auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 2px;
   border-radius: var(--m-radius-full);
   background: var(--m-surface-active);
+  background-clip: content-box;
   color: var(--m-content-secondary);
   font-size: var(--m-text-2xs);
   font-weight: var(--m-weight-medium);
 }
 
+/* ── the rows, narrow ────────────────────────────────────────────────────────
+   Two columns and nothing between them: 28 + 20 is exactly the menu's content
+   width, so the gap and the padding go to zero rather than being squeezed. The
+   glyph grows into its column instead of sliding into it - its centre moves
+   1.5px in the whole transition, which is why the icons look stationary while
+   the labels leave. */
+.m-nav.is-collapsed :is(.m-nav-item, .m-nav__add) {
+  gap: 0;
+  padding-inline: 0;
+  justify-content: center;
+}
+
+.m-nav.is-collapsed .m-nav-item__icon { width: 1.75rem; }
+
+.m-nav.is-collapsed :is(.m-nav-item__label, .m-nav-item__badge) {
+  max-width: 0;
+  padding-inline: 0;
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+.m-nav.is-collapsed .m-nav-item__caret {
+  width: 0;
+  margin-right: 0;
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+/* ── THE COUNT, AT THIS WIDTH, IS ITS DOT ──────────────────────────────────────
+   Three tries at keeping the figure on the rail, and the last one is Gabriel's
+   call: a column beside the glyphs pushed every icon off the rail's centre, and
+   a chip on the glyph's shoulder had to grow with the number - "what if I have
+   3 digits, I can barely see the icon". Both were the same mistake: a 28px tile
+   has room for ONE thing, and that thing is the glyph.
+
+   So the figure goes to the tooltip and the rail keeps the fact that matters at
+   a glance: THERE IS SOMETHING HERE. Which is the notification bell's dot, in
+   the bell's colour, meaning the bell's thing - so the menu is still a queue,
+   just a queue you read in two steps instead of one. */
+/* NARROW, the figure goes and what is left of the count - the dot - climbs onto
+   the glyph, because that is the only thing left in the row to put it on. Same
+   offsets as the bell's, against the row rather than the tile: both are 28px
+   wide with the glyph in the middle, so it is the same arithmetic. */
+.m-nav.is-collapsed .m-nav-item__num { display: none; }
+.m-nav.is-collapsed .m-nav-item__count {
+  position: absolute;
+  top: calc(50% - 9px);
+  left: calc(50% + 3px);
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+}
+
+/* ── the credits, narrow ──
+   The box, the word and the figures go; the measure stays. Everything it said
+   in words it still says on hover, and the one thing you read from across the
+   room was never the words. */
+.m-credits {
+  transition: width var(--m-duration-normal) var(--m-ease-out),
+    height var(--m-duration-normal) var(--m-ease-out),
+    padding var(--m-duration-normal) var(--m-ease-out),
+    border-color var(--m-duration-normal) var(--m-ease-out),
+    background-color var(--m-duration-normal) var(--m-ease-out);
+}
+
+/* THE METER TURNS RATHER THAN SHRINKS.
+   Laid flat in a 28px column the bar was 28x4 with a 7px fill in it - present
+   in the DOM and invisible on screen, which is the worst of both. The narrow
+   menu has no width and plenty of height, so the measure takes the axis that is
+   free: the same track, the same fill, rotated a quarter turn and filling from
+   the bottom. 6x40 instead of 4x28, and the rotation is on the same 180ms as
+   the width, so it reads as the object turning to fit rather than as a
+   different component appearing. */
+.m-nav.is-collapsed .m-credits {
+  width: 1.75rem;
+  height: 2.75rem;
+  padding: 0;
+  justify-content: center;
+  border-color: transparent;
+  background: transparent;
+}
+
+.m-credits .m-bar {
+  transform: rotate(0deg);
+  transition: transform var(--m-duration-normal) var(--m-ease-out),
+    width var(--m-duration-normal) var(--m-ease-out),
+    height var(--m-duration-normal) var(--m-ease-out);
+}
+
+.m-nav.is-collapsed .m-credits .m-bar {
+  flex: none;
+  width: 2.5rem; /* 40 long once it is standing up */
+  height: 6px;
+  transform: rotate(-90deg);
+}
+
+.m-nav.is-collapsed :is(.m-credits__label, .m-credits__value) {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition-delay: 0s;
+}
+
+.m-nav.is-collapsed .m-credits .m-bar { min-width: 0; }
+
+/* Below 880 the open menu is already the wrong shape for the window; this is
+   the width it takes if somebody forces it open there anyway. */
 @media (max-width: 880px) {
-  .m-nav { width: 11.5rem; }
+  .m-nav:not(.is-collapsed) { width: 11.5rem; }
+}
+
+/* A collapse is a change of layout, not a piece of expression: with motion
+   turned down it still has to HAPPEN, it just stops being a movement. */
+@media (prefers-reduced-motion: reduce) {
+  .m-nav,
+  .m-nav *,
+  .m-nav *::before,
+  .m-nav *::after {
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
+  }
 }

@@ -11,6 +11,7 @@ export interface NavItemProps {
   count?: number;
   /** A word, not a number: "Beta". */
   badge?: string;
+
   active?: boolean;
   /** A section of an agent rather than a destination in its own right. */
   nested?: boolean;
@@ -65,7 +66,20 @@ export function NavItem({
       )}
       <span className="m-nav-item__label m-truncate">{label}</span>
       {badge && <span className="m-nav-item__badge">{badge}</span>}
-      {count > 0 && <span className="m-nav-item__count">{count}</span>}
+      {/* ONE MARK, TWO PLACES, and it travels WITH the figure rather than beside
+          it. Left to float in the count column's own left edge it sat a dozen
+          pixels off a single digit - "the dot is in the middle of nowhere" - so
+          it lives inside the count, hard against the number, and the pair is
+          what gets right-aligned. Narrow, side-nav.css hides the number and
+          lifts what is left onto the glyph's shoulder. */}
+      {count > 0 && (
+        <span className="m-nav-item__count">
+          <span className="m-dot" aria-hidden="true" />
+          {/* three digits is a different column width for one agent, so it
+              stops at 99+ - the exact figure is on the page it opens */}
+          <span className="m-nav-item__num">{count > 99 ? '99+' : count}</span>
+        </span>
+      )}
       {expandable ? (
         <span
           role="button"

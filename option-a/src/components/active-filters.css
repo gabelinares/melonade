@@ -1,3 +1,25 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   THE APPLIED FILTERS.
+
+   Three treatments, switchable in the prototype panel, because Mehdi's note was
+   two notes: the pill's colours were not good, AND the grey band under it "gives
+   a muted vibe". The band went in all three - a filter that is ON should not sit
+   on the quietest surface in the app - and what replaced it is the argument each
+   treatment makes about what an applied filter IS.
+
+     outline   a control you can take off. Hairline, white, the dimension quiet
+               and the value at full contrast. The default, and the one that
+               looks like the rest of the toolbar.
+     tinted    a STATE the list is in. The accent, at its softest: the same tint
+               a selected row carries, so "this list is filtered" reads the way
+               "this row is selected" reads.
+     text      a sentence. No chip at all - the bar says what it is showing and
+               each part is removable. The quietest thing that can still be
+               clicked, and the one that makes the table start highest.
+
+   All three share the markup. A treatment that needed its own JSX would be a
+   fourth component pretending to be a variant.
+   ════════════════════════════════════════════════════════════════════════════ */
 .m-af {
   display: flex;
   align-items: center;
@@ -5,35 +27,33 @@
   gap: var(--m-space-3);
   padding: var(--m-space-4) var(--m-space-5);
   border-bottom: 1px solid var(--m-border-subtle);
-  background: var(--m-surface-sunken);
 }
 
-/* Two-part chip: the dimension in a quieter well, the value at full contrast.
-   One element, so a chip cannot wrap between its own halves. */
+/* ── outline (default) ────────────────────────────────────────────────────── */
 .m-af__chip {
   display: inline-flex;
   align-items: center;
   gap: var(--m-space-3);
-  max-width: 15rem;
-  height: 1.375rem;
-  padding-inline: var(--m-space-1) var(--m-space-3);
+  max-width: 16rem;
+  height: 1.5rem;
+  padding-inline: var(--m-space-4) var(--m-space-3);
   border: 1px solid var(--m-border-default);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   background: var(--m-surface-default);
   color: var(--m-content-primary);
   font-size: var(--m-text-xs);
+  transition: border-color var(--m-duration-instant) var(--m-ease-out),
+    background-color var(--m-duration-instant) var(--m-ease-out);
 }
 .m-af__chip:hover { border-color: var(--m-border-strong); }
-.m-af__chip svg { color: var(--m-content-muted); }
+.m-af__chip svg { color: var(--m-content-decorative); flex: none; }
 .m-af__chip:hover svg { color: var(--m-content-primary); }
 
-.m-af__dim {
-  padding-inline: var(--m-space-3);
-  border-radius: var(--m-radius-xs);
-  background: var(--m-surface-hover);
-  color: var(--m-content-muted);
-  line-height: 1.125rem;
-}
+/* The dimension names the axis and the value answers it, so they are two
+   weights of one line rather than two objects. The well that used to sit behind
+   the dimension made a chip inside a chip. */
+.m-af__dim { color: var(--m-content-muted); }
+.m-af__dim::after { content: ':'; }
 
 .m-af__val { font-weight: var(--m-weight-medium); }
 
@@ -45,3 +65,34 @@
 }
 
 .m-af__clear { margin-left: auto; }
+
+/* ── tinted ───────────────────────────────────────────────────────────────── */
+:root[data-filters='tinted'] .m-af__chip {
+  border-color: var(--m-border-accent);
+  background: var(--m-surface-selected);
+  color: var(--m-content-primary);
+}
+:root[data-filters='tinted'] .m-af__chip:hover { border-color: var(--m-content-accent); }
+:root[data-filters='tinted'] .m-af__dim { color: var(--m-content-accent); }
+:root[data-filters='tinted'] .m-af__chip svg { color: var(--m-content-accent); }
+
+/* ── text ─────────────────────────────────────────────────────────────────── */
+:root[data-filters='text'] .m-af { gap: var(--m-space-5); }
+:root[data-filters='text'] .m-af__chip {
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  gap: var(--m-space-2);
+  font-size: var(--m-text-sm);
+}
+/* The value is what you would strike out to remove it, so it carries the
+   affordance: a dotted rule that goes solid under the cursor. */
+:root[data-filters='text'] .m-af__val {
+  border-bottom: 1px dotted var(--m-border-strong);
+  font-weight: var(--m-weight-regular);
+}
+:root[data-filters='text'] .m-af__chip:hover .m-af__val { border-bottom-style: solid; }
+:root[data-filters='text'] .m-af__chip svg { opacity: 0; }
+:root[data-filters='text'] .m-af__chip:hover svg { opacity: 1; }
+:root[data-filters='text'] .m-af__result { font-size: var(--m-text-sm); }

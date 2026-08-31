@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { App } from 'antd';
 import type { Audit } from '@shared/audits-data.ts';
 import { SideNav } from '../nav/SideNav.tsx';
+import { useNavCollapse } from '../nav/useNavCollapse.ts';
 import { SHIPPED_AGENT_COUNT } from '../nav/agents.ts';
 import { AuditsPage } from '../audits/AuditsPage.tsx';
 import { IssuesPage } from '../issues/IssuesPage.tsx';
@@ -18,9 +19,12 @@ import './app-shell.css';
    sits on it with no surface of its own, and the content is a card with an
    equal margin on all four sides. See app-shell.css.
 
-   The menu is one width at every window size - no collapse state, no resize
-   listener, no stored preference - because those three things existed only to
-   decide which of two navs to show. */
+   THE MENU HAS TWO WIDTHS since 2026-08-31, and only one of the three things
+   that used to come with a collapse: there is a state, there is no resize
+   listener (matchMedia fires on the crossing, which is the only moment the
+   window is allowed an opinion) and there is no stored preference (a menu that
+   comes back collapsed on a wide screen is a menu nobody asked to collapse).
+   See useNavCollapse. */
 export function AppShell() {
   const { message } = App.useApp();
   const model = useIssues();
@@ -42,10 +46,17 @@ export function AppShell() {
      thing without drifting apart. */
   const [active, setActive] = useState('issues');
   const [agentCount, setAgentCount] = useState(SHIPPED_AGENT_COUNT);
+  const { collapsed, toggle: toggleNav } = useNavCollapse();
 
   return (
     <div className="m-shell">
-      <SideNav active={active} onNavigate={setActive} agentCount={agentCount} />
+      <SideNav
+        active={active}
+        onNavigate={setActive}
+        agentCount={agentCount}
+        collapsed={collapsed}
+        onToggleCollapsed={toggleNav}
+      />
       <main className="m-shell__main">
         {active === 'issues' ? (
           <IssuesPage model={model} />

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { X } from 'lucide-react';
 import './chip.css';
 
 export type ChipTone = 'neutral' | 'danger' | 'warning' | 'success' | 'info';
@@ -19,6 +20,13 @@ export interface ChipProps {
   /** An icon replaces the label entirely, used for the origin badge. */
   iconOnly?: boolean;
   title?: string;
+  /** Makes the chip removable. The control lives INSIDE the chip's own outline,
+   *  because a chip and the X that takes it away are one object: a sibling
+   *  button pulled over the edge by a negative margin sits on the border, and
+   *  at a pill radius it reads as broken. */
+  onRemove?: () => void;
+  /** What the remove control says to a screen reader: "Remove Billing". */
+  removeLabel?: string;
 }
 
 /**
@@ -27,13 +35,28 @@ export interface ChipProps {
  * grew four near-identical chip treatments because each callsite rolled its
  * own span.
  */
-export function Chip({ children, tone = 'neutral', kind = 'tag', iconOnly = false, title }: ChipProps) {
+export function Chip({
+  children,
+  tone = 'neutral',
+  kind = 'tag',
+  iconOnly = false,
+  title,
+  onRemove,
+  removeLabel,
+}: ChipProps) {
   return (
     <span
-      className={`m-chip m-chip--${tone} m-chip--${kind}${iconOnly ? ' m-chip--icon' : ''}`}
+      className={`m-chip m-chip--${tone} m-chip--${kind}${iconOnly ? ' m-chip--icon' : ''}${
+        onRemove ? ' m-chip--removable' : ''
+      }`}
       title={title}
     >
       {children}
+      {onRemove && (
+        <button type="button" className="m-chip__x" aria-label={removeLabel ?? 'Remove'} onClick={onRemove}>
+          <X size={11} aria-hidden="true" />
+        </button>
+      )}
     </span>
   );
 }

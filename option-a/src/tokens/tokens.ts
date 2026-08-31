@@ -298,11 +298,46 @@ export const space = {
 
 /* ── shape, depth, motion, layering ──────────────────────────────────────── */
 
+/* ── corner radius, BY ROLE ──────────────────────────────────────────────────
+   Four values, and the name says what kind of object gets it rather than how
+   big the value is. That is the whole fix: the old scale was xs/sm/md/lg, so
+   picking one meant guessing a size, and antd made it worse by handing small
+   controls a smaller radius than big ones. A 26px button and a 36px button are
+   both BUTTONS - the shape of a corner is a property of what the thing is, not
+   of how tall it happens to be. Mehdi found the seam from across a screen
+   share: "the corners here are rounded, but if you look at the search bar the
+   corners are not rounded. Is that done on purpose?" It was not.
+
+     chip      small labelled marks INSIDE a row - chips, tags, counts, badges,
+               the checkbox's box - and controls nested inside another control,
+               where the inner corner has to be tighter than the outer one or
+               the two read as misaligned
+     control   anything you click or type in, at any size: buttons, inputs,
+               selects, nav rows, toggle tracks, the focus ring
+     surface   anything that contains or floats: the plane, cards, popovers,
+               drawers, dialogs, inset boxes, the replay frame
+     full      circles and pills: avatars, dots, progress bars
+
+   All four move together in the prototype panel's Corners control; see
+   tools/gen-proto-themes.mjs. */
 export const radius = {
-  'radius-xs': '2px',   // chips
-  'radius-sm': '4px',   // controls
-  'radius-md': '6px',   // cards, popovers
-  'radius-lg': '8px',
+  'radius-chip': '2px',
+  'radius-control': '4px',
+  'radius-surface': '8px',
+  /* A TRACK THAT WRAPS CONTROLS, and the only radius in the system that is
+     arithmetic rather than a choice. Two concentric rounded rectangles look
+     nested when the outer radius is the inner one PLUS the gap between them,
+     and wrong at every other value - the corners either pinch or bulge. Both
+     tracks in the app (the filter strip, the replay's speed picker) pad their
+     items by 2px, so this is control + 2 and it follows the control wherever it
+     goes. Caught by eye at the Round shape, where a fully round item inside a
+     10px track read as a pill dropped into the wrong hole. */
+  'radius-track': 'calc(var(--m-radius-control) + 2px)',
+  /* THE ONE CAPPED VALUE. A checkbox is square, and CSS clamps a radius to half
+     the box, so a "round" shape turns a 14px box into a circle - and a circle
+     means "one of these", not "any of these". It stays a rounded square at
+     every shape. */
+  'radius-check': '2px',
   'radius-full': '999px',
 } as const;
 
@@ -344,15 +379,18 @@ export const layer = {
 /* ── layout constants ────────────────────────────────────────────────────── */
 
 export const layout = {
-  /* The menu is an icon rail at every width, so this is the only nav
-     measurement the shell needs: no expanded/collapsed pair to keep in
-     agreement. The two below are kept for the labelled nav, which is still
-     on disk. */
-  /* One width at every window size. The collapsed width and the icon rail's
-     width both went with the 2026-08-28 menu: there is one nav now, and a token
-     nothing reads is a token that will be read wrongly later. */
+  /* TWO nav widths, 2026-08-31, and the second one is ARITHMETIC rather than a
+     number: ONE 28px glyph with the same gutter either side, so the glyphs land
+     on the rail's own centre line. Nothing shares the row with them - the
+     counts are dots on the glyphs and their figures are in the tooltip - which
+     is what lets the rail be this narrow and still be read.
+
+     ⚠ Written as a calc and not as 3.25rem, because the gutter is a SPACE TOKEN
+     and the prototype's density control moves it. Frozen as a number, Spaced
+     silently clipped the row. */
   'nav-width': '16rem',        // 256: the project name is a domain, and a
                                // truncated project name reads as a bug
+  'nav-width-collapsed': 'calc(var(--m-space-5) * 2 + 1.75rem)', // 52 at compact
   'content-max': '85rem',        // 1360: matches the current app's measure
   'control-height-sm': '1.625rem', // 26
   'control-height-md': '1.875rem', // 30

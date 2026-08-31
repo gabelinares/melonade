@@ -7,20 +7,19 @@ import type { TestsController } from '../state/useTests.ts';
 import { IconButton } from '../components/IconButton.tsx';
 import { PageCard } from '../components/PageCard.tsx';
 import { SearchField } from '../components/SearchField.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
 import { EnvironmentsPanel } from './EnvironmentsPanel.tsx';
 import { RunsPanel } from './RunsPanel.tsx';
 import { TestsList } from './TestsList.tsx';
 
 export type TestsSection = 'list' | 'runs' | 'environments';
 
-/** The strip under the title. The first section is called List, not Tests: a
- *  child repeating its parent reads as a mistake, and the title above it is
- *  already the subject. Same three labels as the menu's nested rows, in the
- *  same order, from the same argument - they are one set of sections shown in
- *  two places, not two navigations that happen to agree. */
+/** The strip under the title. Same three labels as the menu's nested rows, in
+ *  the same order - they are one set of sections shown in two places, not two
+ *  navigations that happen to agree. The first one is "Tests" now that the
+ *  agent above it is Synthetics; while the agent was also called Tests it had
+ *  to be "List", because a child repeating its parent reads as a mistake. */
 const TABS: { key: TestsSection; label: string }[] = [
-  { key: 'list', label: 'List' },
+  { key: 'list', label: 'Tests' },
   { key: 'runs', label: 'Runs' },
   { key: 'environments', label: 'Environments' },
 ];
@@ -45,14 +44,14 @@ export interface TestsPageProps {
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
- * THE TESTS AGENT, which is three bodies under one name.
+ * THE SYNTHETICS AGENT, which is three bodies under one name.
  *
  * The tests it maintains, the runs those tests produced, and the environments
  * they run against.
  *
- * ── 2026-08-28: THE TITLE IS "TESTS", ALWAYS ───────────────────────────────
+ * ── 2026-08-28: THE TITLE NEVER CHANGES ────────────────────────────────────
  * For one day the sections lived only in the menu and the header renamed itself
- * to match - "Runs" where "Tests" had been. That is what a different PAGE looks
+ * to match - "Runs" where the agent's name had been. That is what a different PAGE looks
  * like. The menu can show you that Runs is nested under Tests, but only while
  * you are looking at the menu; the moment you are reading the page, a heading
  * that says "Runs" and a body full of runs is a screen of its own, and the
@@ -61,8 +60,8 @@ export interface TestsPageProps {
  * So the heading is fixed and the SECTIONS ARE A STRIP UNDER IT. The menu keeps
  * its nested rows - they jump straight into a section from anywhere in the app,
  * which the strip cannot do - and the strip says the thing the menu cannot:
- * you are inside Tests, there are three of these, and this is the one you are
- * on. The duplication is the point; it is a landmark, not a second navigation.
+ * you are inside Synthetics, there are three of these, and this is the one you
+ * are on. The duplication is the point; it is a landmark, not a second navigation.
  *
  * Two rules from that day survive unchanged. **Each section owns its toolbar**
  * and renders it as the first thing in its body - a shell that assembled three
@@ -72,11 +71,15 @@ export interface TestsPageProps {
  * ════════════════════════════════════════════════════════════════════════════
  */
 export function TestsPage({ model, runs, section, onSection, dataState }: TestsPageProps) {
-  /* Writing a test by hand opens the panel it would be written in rather than
-     seeding an empty row: a test with no steps is not a test, and a row called
-     "Untitled" that cannot be finished is worse than a button that says what is
-     missing. */
+  /* Creating is not a mode of this page: it makes a row and opens the drawer on
+     it, and Discard takes the row away again. The page only has to know that
+     the drawer about to open is a new one, so its footer says "Create test"
+     instead of "Save". */
   const [creating, setCreating] = useState(false);
+  const startCreating = () => {
+    setCreating(true);
+    model.createTest();
+  };
 
   const search =
     section === 'list' ? (
@@ -87,7 +90,7 @@ export function TestsPage({ model, runs, section, onSection, dataState }: TestsP
 
   return (
     <PageCard
-      title="Tests"
+      title="Synthetics"
       subtitle={SUBTITLE[section]}
       tabs={
         <Tabs
@@ -100,7 +103,7 @@ export function TestsPage({ model, runs, section, onSection, dataState }: TestsP
         <>
           {search}
           {section === 'list' && (
-            <Button type="primary" size="small" icon={<Plus size={14} />} onClick={() => setCreating(true)}>
+            <Button type="primary" size="small" icon={<Plus size={14} />} onClick={startCreating}>
               Add test
             </Button>
           )}
@@ -120,20 +123,23 @@ export function TestsPage({ model, runs, section, onSection, dataState }: TestsP
       }
     >
       {section === 'list' ? (
-        <TestsList model={model} dataState={dataState} onCreate={() => setCreating(true)} />
+        <TestsList
+          model={model}
+          dataState={dataState}
+          creating={creating}
+          onCreated={() => setCreating(false)}
+          onCreate={startCreating}
+          onViewRuns={(title) => {
+            runs.setQuery(title);
+            onSection('runs');
+          }}
+        />
       ) : section === 'runs' ? (
         <RunsPanel model={runs} dataState={dataState} />
       ) : (
         <EnvironmentsPanel model={model} />
       )}
 
-      <StubDrawer
-        open={creating}
-        onClose={() => setCreating(false)}
-        title="New test"
-        meta={<span>Written by hand — it skips the draft, and starts ready to run</span>}
-        note="The test panel — the steps, the run settings, the schedule, the versions and the review of a proposed change — is the next piece. This round is the list: the queue order, the status tabs, the filters and every action that lives on a row."
-      />
     </PageCard>
   );
 }

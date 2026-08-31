@@ -91,7 +91,7 @@
   height: var(--m-control-height-sm);
   padding-inline: var(--m-space-4);
   border: 1px solid var(--m-border-default);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   background: var(--m-surface-default);
   color: var(--m-content-secondary);
   font-size: var(--m-text-xs);
@@ -110,14 +110,14 @@
   gap: 2px;
   flex: none;
   padding: 2px;
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-track);
   background: var(--m-surface-active);
 }
 .m-tl__speed {
   height: 1.25rem;
   padding-inline: var(--m-space-4);
   border: 1px solid transparent;
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-control);
   background: none;
   color: var(--m-content-muted);
   font-size: var(--m-text-2xs);

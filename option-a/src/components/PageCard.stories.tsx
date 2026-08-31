@@ -155,13 +155,13 @@ export const WithToolbar: Story = {
 
 export const WithSections: Story = {
   args: {
-    title: 'Tests',
+    title: 'Synthetics',
     subtitle: 'End-to-end tests the agent writes and maintains from your real user journeys.',
     tabs: (
       <Tabs
         defaultActiveKey="list"
         items={[
-          { key: 'list', label: 'List' },
+          { key: 'list', label: 'Tests' },
           { key: 'runs', label: 'Runs' },
           { key: 'environments', label: 'Environments' },
         ]}

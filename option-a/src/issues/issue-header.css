@@ -32,7 +32,7 @@
   align-self: stretch;
   padding-inline: var(--m-space-4);
   border: 0;
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   background: none;
   text-align: left;
   cursor: pointer;

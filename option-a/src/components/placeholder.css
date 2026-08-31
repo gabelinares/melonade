@@ -22,7 +22,7 @@
   height: 3rem;
   margin-bottom: var(--m-space-2);
   border: 1px solid var(--m-border-subtle);
-  border-radius: var(--m-radius-md);
+  border-radius: var(--m-radius-surface);
   background: var(--m-surface-sunken);
   color: var(--m-content-decorative);
 }

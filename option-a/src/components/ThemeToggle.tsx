@@ -22,7 +22,7 @@ export function ThemeToggle() {
           justifyContent: 'center',
           width: '1.75rem',
           height: '1.75rem',
-          borderRadius: 'var(--m-radius-sm)',
+          borderRadius: 'var(--m-radius-control)',
           color: 'var(--m-content-muted)',
         }}
       >

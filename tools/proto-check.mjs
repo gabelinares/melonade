@@ -74,6 +74,208 @@ check('the ground is the menu colour and it wraps the plane on four equal sides'
 check('the plane scrolls inside itself, so its bottom margin never leaves',
   !!nav && nav.scrollsInside);
 
+// ── 1a. THE NARROW MENU, 2026-08-31 ───────────────────────────────────────
+/* The claim is that this is not an icon rail: it keeps the COUNT column, which
+   is the menu's whole argument, and its width is the arithmetic of what is
+   left. That is four measurements and one hover, so it is asserted rather than
+   looked at. */
+const geom = () =>
+  p.evaluate(() => {
+    const nav = document.querySelector('.m-nav');
+    const page = document.querySelector('.m-page');
+    const glyph = (sel) => {
+      const el = document.querySelector(sel);
+      const r = el?.getBoundingClientRect();
+      return r ? Math.round((r.left + r.right) / 2) : null;
+    };
+    const rows = [...nav.querySelectorAll('.m-nav__scroll .m-nav-item')];
+    const shown = (el) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && getComputedStyle(el).opacity !== '0' ? el.textContent.trim() : '';
+    };
+    return {
+      width: Math.round(nav.getBoundingClientRect().width),
+      plane: Math.round(page.getBoundingClientRect().width),
+      collapsed: nav.classList.contains('is-collapsed'),
+      labels: rows.map((r) => shown(r.querySelector('.m-nav-item__label'))).filter(Boolean).length,
+      counts: rows.map((r) => shown(r.querySelector('.m-nav-item__count'))).filter(Boolean),
+      /* every glyph in the column, measured by its centre: the switcher's mark,
+         an agent, the add row and a foot tool have to agree on one x. */
+      centres: [
+        glyph('.m-nav__project svg'),
+        glyph('.m-nav__scroll .m-nav-item__icon'),
+        glyph('.m-nav__foot .m-credits .m-bar'),
+        glyph('.m-nav__tools button'),
+      ],
+      /* the rail's own centre line, to compare against the glyphs' */
+      navMid: (() => {
+        const r = nav.getBoundingClientRect();
+        return Math.round((r.left + r.right) / 2);
+      })(),
+      /* the figure goes and the dot - which lives inside the count, hard
+         against the number - is what is left of it */
+      numShown: getComputedStyle(nav.querySelector('.m-nav__scroll .m-nav-item__num')).display,
+      dots: nav.querySelectorAll('.m-nav__scroll .m-dot').length,
+      dotsShown: [...nav.querySelectorAll('.m-nav__scroll .m-dot')]
+        .filter((d) => getComputedStyle(d).display !== 'none').length,
+      /* ⚠ nothing may hang past the scroller, which clips both axes */
+      spill: (() => {
+        const box = nav.querySelector('.m-nav__scroll').getBoundingClientRect();
+        return Math.max(0, ...[...nav.querySelectorAll('.m-nav__scroll .m-dot')]
+          .map((d) => Math.round(d.getBoundingClientRect().right - box.right)));
+      })(),
+      toolsBox: (() => {
+        const el = document.querySelector('.m-nav__tools');
+        const r = el.getBoundingClientRect();
+        return {
+          tracks: getComputedStyle(el).gridTemplateColumns.split(/\s+/).filter(Boolean).length,
+          h: Math.round(r.height),
+        };
+      })(),
+      creditsBox: (() => {
+        const r = document.querySelector('.m-credits').getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height) };
+      })(),
+      /* the rotated bar reports a 6x40 box, so measure the LONG side */
+      barLength: (() => {
+        const r = document.querySelector('.m-credits .m-bar').getBoundingClientRect();
+        return Math.round(Math.max(r.width, r.height));
+      })(),
+    };
+  });
+
+const open0 = await geom();
+await p.click('.m-nav [aria-label="Collapse menu"]');
+await p.waitForTimeout(400);
+const shut = await geom();
+
+check('the menu collapses to one glyph column with an equal gutter either side',
+  shut.collapsed && shut.width === 52, `${shut.width}px`);
+check('the collapse takes the labels', shut.labels === 0, `${shut.labels} labels still drawn`);
+check('the open menu keeps its count column',
+  open0.counts.length > 0, open0.counts.join(','));
+check('the figure leaves the rail and its dot takes its place',
+  shut.numShown === 'none' && shut.dotsShown === shut.dots && shut.dots > 0,
+  `${shut.dotsShown}/${shut.dots} dots, figures ${shut.numShown}`);
+check('and the same dot rides the figure in the open menu',
+  open0.dotsShown === open0.dots && open0.dots === shut.dots && open0.numShown !== 'none',
+  `${open0.dotsShown}/${open0.dots} open, ${shut.dotsShown}/${shut.dots} narrow`);
+check('nothing hangs past the agents scroller, which clips both axes',
+  shut.spill <= 0, `${shut.spill}px past the edge`);
+check('and the glyphs are centred in the rail, which is what that buys',
+  shut.centres.every((c) => c === shut.navMid),
+  `glyphs at ${shut.centres.join('/')}, rail centre ${shut.navMid}`);
+check('every glyph in the narrow menu shares one column',
+  new Set(shut.centres).size === 1 && shut.centres[0] !== null, shut.centres.join(' / '));
+/* 6px, and all of it is the left gutter closing from 16 to 12 plus the row
+   losing its 8px padding to centre the glyph. The icons drift, they do not
+   travel: a collapse where the glyphs stay put reads as the labels leaving
+   rather than as two different navs. */
+check('the glyphs drift rather than travel between the two widths',
+  Math.abs(shut.centres[1] - open0.centres[1]) <= 8,
+  `${open0.centres[1]} -> ${shut.centres[1]}`);
+check('the tool bar folds into one column rather than switching to one',
+  open0.toolsBox.tracks > 1 && shut.toolsBox.tracks === 1 && shut.toolsBox.h > open0.toolsBox.h * 3,
+  `${open0.toolsBox.tracks} tracks/${open0.toolsBox.h}px -> ${shut.toolsBox.tracks} track/${shut.toolsBox.h}px`);
+check('the credits turn rather than shrink, so the measure is still readable',
+  shut.barLength >= 32 && shut.creditsBox.w <= 32,
+  `bar ${open0.barLength}px across -> ${shut.barLength}px tall, in ${shut.creditsBox.w}px`);
+check('the plane takes back every pixel the menu gave up',
+  shut.plane - open0.plane === open0.width - shut.width,
+  `plane +${shut.plane - open0.plane}, menu -${open0.width - shut.width}`);
+
+/* THE FLYOUT: the row the width took away, including what is inside it. */
+await p.hover('.m-nav__scroll .m-nav__row:nth-of-type(2)');
+await p.waitForTimeout(600);
+const fly = await p.evaluate(() => {
+  const el = document.querySelector('.m-flyout');
+  if (!el) return null;
+  return {
+    name: el.querySelector('.m-flyout__name')?.textContent?.trim(),
+    count: el.querySelector('.m-flyout__count')?.textContent?.trim(),
+    sections: [...el.querySelectorAll('.m-flyout__sections .m-nav-item__label')].map((n) => n.textContent.trim()),
+  };
+});
+check('a narrow row gives its label back on hover', fly?.name === 'Synthetics', fly?.name);
+check('and the sections the menu can no longer nest',
+  fly?.sections.join('/') === 'Tests/Runs/Environments', fly?.sections.join('/'));
+/* ⚠ A HOVER MENU YOU CANNOT REACH IS NOT A MENU. antd sets the card down clear
+   of the rail, and that gap belonged to neither element: a cursor crossing it
+   left the trigger and the card closed before it arrived. The popup's root
+   carries the gap as padding now, so this must never go positive. */
+const bridge = await p.evaluate(() => {
+  const t = document.querySelectorAll('.m-nav__scroll .m-nav__row')[1].getBoundingClientRect();
+  const r = document.querySelector('.m-flyout-root').getBoundingClientRect();
+  return Math.round(r.left - t.right);
+});
+check('and the cursor can actually get to them', bridge <= 0, `${bridge}px of dead ground`);
+
+/* A LEAF ROW GETS THE NAME AND NOTHING ELSE: its count is still on the row, so
+   a card restating it would be reading the row back to someone looking at it. */
+await p.hover('.m-nav__foot');
+await p.waitForTimeout(300);
+await p.hover('.m-nav__scroll .m-nav__row:nth-of-type(1)');
+await p.waitForTimeout(700);
+const leafCard = await p.evaluate(() => document.querySelector('.m-flyout')?.textContent ?? null);
+check('and only a row with something inside it gets a card',
+  leafCard === null, leafCard ? 'a leaf agent opened a flyout card' : 'Issues shows a plain tooltip');
+
+/* THE HOVER BUG the collapse exposed: `--m-surface-hover` is the ground's own
+   colour in light mode, so a row on the ground had no hover at all. */
+const rowSteps = await p.evaluate(() => {
+  const row = document.querySelector('.m-nav__scroll .m-nav-item');
+  const ground = getComputedStyle(document.querySelector('.m-shell')).backgroundColor;
+  const cs = getComputedStyle(row);
+  return {
+    ground,
+    hover: cs.getPropertyValue('--m-nav-row-hover').trim(),
+    on: getComputedStyle(document.querySelector('.m-nav-item.is-active')).backgroundColor,
+    plane: getComputedStyle(document.querySelector('.m-page')).backgroundColor,
+  };
+});
+check('a nav row steps off the ground rather than towards a card that is not there',
+  rowSteps.hover !== '' && rowSteps.hover !== rowSteps.ground, `hover ${rowSteps.hover} on ${rowSteps.ground}`);
+check('the row you are standing on is the plane you opened',
+  rowSteps.on === rowSteps.plane, `${rowSteps.on} vs ${rowSteps.plane}`);
+
+/* And the keyboard puts it back. */
+await p.keyboard.press(process.platform === 'darwin' ? 'Meta+\\' : 'Control+\\');
+await p.waitForTimeout(400);
+const back = await geom();
+check('the shortcut opens it again', !back.collapsed && back.width === open0.width, `${back.width}px`);
+
+// ── 1c. WHAT YOU HAVE NOT OPENED YET ──────────────────────────────────────
+/* The menu's dot one level down: which of the things the agent found are new to
+   you. The slot is on every row so the titles keep one left edge - rendering it
+   only where it applies pushes those three titles five pixels right of the
+   other seven, which is the exact complaint the dot came out of. */
+const unread = await p.evaluate(() => {
+  const rows = [...document.querySelectorAll('.m-issues__table tbody tr')];
+  const lefts = rows.map((r) => r.querySelector('.m-issues__title')?.getBoundingClientRect().left)
+    .filter((x) => x != null).map(Math.round);
+  const dot = document.querySelector('.m-issues__table .m-dot.is-slot:not(.is-off)');
+  return {
+    rows: rows.length,
+    size: dot ? `${getComputedStyle(dot).width}x${getComputedStyle(dot).height}` : null,
+    slots: rows.filter((r) => r.querySelector('.m-dot.is-slot')).length,
+    lit: rows.filter((r) => !r.querySelector('.m-dot.is-slot')?.classList.contains('is-off')).length,
+    titleEdges: new Set(lefts).size,
+    colour: dot ? getComputedStyle(dot).backgroundColor : null,
+    navDot: (() => {
+      const d = document.querySelector('.m-nav .m-dot');
+      return d ? getComputedStyle(d).backgroundColor : null;
+    })(),
+  };
+});
+check('some issues are marked as not opened yet',
+  unread.lit > 0 && unread.lit < unread.rows, `${unread.lit} of ${unread.rows}`);
+check('and the slot is on every row, so the titles keep one edge',
+  unread.slots === unread.rows && unread.titleEdges === 1,
+  `${unread.slots}/${unread.rows} slots, ${unread.titleEdges} title edge`);
+check('it is the same mark the menu wears, in the same colour',
+  unread.colour != null && unread.colour === unread.navDot, `${unread.colour} vs ${unread.navDot}`);
+
 // ── 1b. the segments control, now a toolbar icon ──────────────────────────
 const seg = await p.evaluate(() => {
   const group = document.querySelector('.m-issues__controls');
@@ -397,7 +599,12 @@ await pickFont('Graphite');
 const warm = await pick('Warm');
 check('grey switches (CSS)', warm.canvas !== base.canvas, `${base.canvas} -> ${warm.canvas}`);
 
-const indigo = await pick('Indigo');
+/* The accent is a PALETTE of swatches now, not a segmented control: thirteen
+   hues in thirteen labelled cells is thirteen words nobody reads. Picked by the
+   swatch's accessible name. */
+await p.locator('.m-proto__swatch[aria-label="Indigo"]').click();
+await p.waitForTimeout(400);
+const indigo = await read();
 check('accent switches (CSS)', indigo.accent !== base.accent, `${base.accent} -> ${indigo.accent}`);
 check('accent reaches antd', !!indigo.antdPrimary && indigo.antdPrimary !== base.antdPrimary,
   `${base.antdPrimary} -> ${indigo.antdPrimary}`);
@@ -406,6 +613,137 @@ const spaced = await pick('Spaced');
 check('density switches', spaced.space6 !== base.space6 && spaced.row !== base.row,
   `space-6 ${base.space6} -> ${spaced.space6}, row ${base.row} -> ${spaced.row}`);
 
+/* ── CORNERS ────────────────────────────────────────────────────────────────
+   The check that guards Mehdi's own finding: "the corners here are rounded, but
+   if you look at the search bar the corners are not rounded. Is that done on
+   purpose?" It was not. The radius is a ROLE scale now - chip, control, surface
+   - so the assertion is not "the value changed" but "every object of one kind
+   has one shape", measured across the rendered page including antd's own
+   components, which are themed through a separate channel and are exactly what
+   drifted before. */
+const shapeOf = () => p.evaluate(() => {
+  const t = getComputedStyle(document.documentElement);
+  const tok = (k) => t.getPropertyValue('--m-radius-' + k).trim();
+  const one = (sel) => {
+    const el = document.querySelector(sel);
+    return el ? getComputedStyle(el).borderTopLeftRadius : null;
+  };
+  /* Two controls that antd draws and two we draw ourselves. The pair that
+     disagreed was the search input (antd, 2px) and the icon button beside it
+     (ours, 4px), ten pixels apart on the same toolbar row. */
+  return {
+    tokens: { chip: tok('chip'), control: tok('control'), surface: tok('surface'), check: tok('check') },
+    /* every small SQUARE mark reads the capped value, not the chip one */
+    crit: one('.m-crit'),
+    searchInput: one('.ant-input-affix-wrapper'),
+    button: one('.ant-btn'),
+    iconButton: one('.m-iconbtn'),
+    navRow: one('.m-nav-item'),
+    segTrack: one('.ant-segmented'),
+    ownTrack: one('.m-seg'),
+    /* A toggle is a control and its track is control + 2, so the two corners
+       are concentric. Measured on both strips: antd's and ours. */
+    segItem: one('.ant-segmented-item'),
+    ownItem: one('.m-seg__item'),
+    /* antd v6 draws the box on `.ant-checkbox` itself - there is no `-inner`
+       any more, and a selector for one silently measures nothing. */
+    checkbox: one('.ant-checkbox'),
+    chip: one('.m-chip'),
+    plane: one('.m-page'),
+    /* Every distinct radius on screen, so a stray literal shows up as a fourth
+       bucket rather than hiding behind a spot check. */
+    buckets: (() => {
+      const set = new Set();
+      for (const el of document.querySelectorAll('*')) {
+        const v = getComputedStyle(el).borderTopLeftRadius;
+        const r = el.getBoundingClientRect();
+        if (!v || v === '0px' || r.width < 6 || r.height < 6) continue;
+        set.add(v);
+      }
+      return [...set].sort((a, b) => parseFloat(a) - parseFloat(b));
+    })(),
+  };
+});
+
+/* The corner checks need a table with checkboxes in it, and the queue has none
+   since the row itself became the gesture. */
+await p.locator('.m-nav-item__label', { hasText: /^Synthetics$/ }).first().click();
+await p.locator('.m-tests__table').waitFor();
+await p.waitForTimeout(400);
+
+for (const [label, expect] of [['Sharp', { chip: '0px', control: '2px', surface: '4px', check: '0px' }],
+                               ['Round', { chip: '999px', control: '10px', surface: '16px', check: '4px' }],
+                               ['Soft', { chip: '2px', control: '4px', surface: '8px', check: '2px' }]]) {
+  await p.locator('.m-proto__body').getByText(label, { exact: true }).click();
+  await p.waitForTimeout(450);
+  const sh = await shapeOf();
+  check(`corners ${label}: the three roles are the three values`,
+    sh.tokens.chip === expect.chip && sh.tokens.control === expect.control && sh.tokens.surface === expect.surface,
+    JSON.stringify(sh.tokens));
+  /* The seam itself: antd's input, antd's button, our icon button and our nav
+     row are one shape, and it is the control token. */
+  check(`corners ${label}: every control is one shape, antd's and ours`,
+    [sh.searchInput, sh.button, sh.iconButton, sh.navRow, sh.segItem, sh.ownItem]
+      .every((v) => v === expect.control),
+    `input ${sh.searchInput}, btn ${sh.button}, iconbtn ${sh.iconButton}, nav ${sh.navRow}, seg items ${sh.ownItem}/${sh.segItem}`);
+  const trackPx = `${parseFloat(expect.control) + 2}px`;
+  /* Concentric, not merely "both rounded": the track's corner is the item's
+     corner plus the 2px between them. Anything else pinches or bulges, which is
+     what the Round shape showed first - a fully round item in a 10px track. */
+  check(`corners ${label}: a toggle is a control and its track wraps it exactly`,
+    sh.segItem === expect.control && sh.ownItem === expect.control &&
+      sh.segTrack === trackPx && sh.ownTrack === trackPx,
+    `item ${sh.ownItem}/${sh.segItem}, track ${sh.ownTrack}/${sh.segTrack}, expected ${expect.control} in ${trackPx}`);
+  /* The cap. A circle means one-of-these; a checkbox is any-of-these - and a
+     circle in a table row is an avatar, not a flag on that row. Both small
+     square marks read the capped value, which is why this asserts the FLAG as
+     well as the box: the cap is a rule about the shape, not about checkboxes. */
+  check(`corners ${label}: the checkbox is still a square`,
+    sh.checkbox === expect.check && parseFloat(expect.check) <= 4,
+    `${sh.checkbox}`);
+  check(`corners ${label}: nothing on screen is off the scale`,
+    sh.buckets.every((v) => [expect.chip, expect.control, expect.surface, expect.check, trackPx, '999px'].includes(v)),
+    sh.buckets.join(' '));
+}
+
+/* ── THE FILTER PILLS ───────────────────────────────────────────────────────
+   Three treatments of one thing, and the grey band went in all three: "the
+   background of this section shouldn't be gray, it gives a muted vibe". */
+/* Runs on the Tests page, where the corner checks left it - so the chip comes
+   from the tests filter menu rather than from the issue queue's categories. */
+await p.locator('[aria-label="Filter tests"]').click();
+await p.waitForTimeout(350);
+await p.locator('.m-fm__dim-row', { hasText: 'Environment' }).click();
+await p.waitForTimeout(250);
+await p.locator('.m-checkrow', { hasText: 'Production' }).click();
+await p.waitForTimeout(250);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(350);
+const pill = () => p.evaluate(() => {
+  const bar = document.querySelector('.m-af');
+  const chip = document.querySelector('.m-af__chip');
+  if (!bar || !chip) return null;
+  const cs = getComputedStyle(chip);
+  return {
+    band: getComputedStyle(bar).backgroundColor,
+    border: cs.borderTopWidth,
+    bg: cs.backgroundColor,
+    dim: getComputedStyle(document.querySelector('.m-af__dim')).color,
+  };
+});
+const outline = await pill();
+check('FILTERS: the grey band is gone', outline?.band === 'rgba(0, 0, 0, 0)', outline?.band);
+for (const [label, expect] of [['Tinted', 'tinted'], ['Text', 'text'], ['Outline', 'outline']]) {
+  await p.locator('.m-proto__body').getByText(label, { exact: true }).click();
+  await p.waitForTimeout(350);
+  const v = await pill();
+  const attr = await p.evaluate(() => document.documentElement.getAttribute('data-filters'));
+  const shaped =
+    expect === 'text' ? v?.border === '0px' : v?.border === '1px';
+  check(`FILTERS: ${label} is its own treatment`, attr === expect && shaped && v?.band === 'rgba(0, 0, 0, 0)',
+    `${attr} — border ${v?.border}, chip ${v?.bg}, band ${v?.band}`);
+}
+
 await p.locator('.m-proto__reset').click();
 await p.waitForTimeout(400);
 const reset = await read();
@@ -413,6 +751,28 @@ check('reset returns the shipped tokens',
   reset.accent === base.accent && reset.canvas === base.canvas && reset.font === base.font &&
     reset.titleFont === base.titleFont && reset.tag === base.tag
     && reset.antdFont === base.antdFont && reset.space6 === base.space6);
+
+/* THE CAP IS A RULE ABOUT THE SHAPE, NOT ABOUT CHECKBOXES. The critical flag is
+   a 20px SQUARE and it was on the chip radius, so the Round preset turned it
+   into a circle - and a circle in a table row is an avatar or a one-of-these,
+   never a mark on the row itself. Round is the only preset where the two
+   values differ, which is why this is one pass rather than three. */
+await p.locator('.m-proto__body').getByText('Round', { exact: true }).click();
+await p.waitForTimeout(300);
+await p.locator('.m-nav-item__label', { hasText: /^Issues$/ }).first().click();
+await p.locator('.m-issues__table, .ant-table').first().waitFor();
+await p.waitForTimeout(400);
+const critShape = await p.evaluate(() => {
+  const el = document.querySelector('.m-crit');
+  if (!el) return null;
+  const cs = getComputedStyle(el);
+  return { r: cs.borderTopLeftRadius, chip: getComputedStyle(document.documentElement).getPropertyValue('--m-radius-chip').trim(), w: Math.round(el.getBoundingClientRect().width) };
+});
+check('the critical flag stops climbing with the chip radius',
+  !!critShape && critShape.r === '4px' && critShape.chip === '999px',
+  critShape ? `flag ${critShape.r} on a ${critShape.w}px box while chips are ${critShape.chip}` : 'no flag on screen');
+await p.locator('.m-proto__reset').click();
+await p.waitForTimeout(300);
 
 check('no console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 

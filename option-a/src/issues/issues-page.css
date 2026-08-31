@@ -57,10 +57,18 @@
    antd has no grouping, so a group header rides in as a synthetic row that
    colSpans the table. It is a label, not a row: no hover, no caret, no cursor. */
 .m-issues__table .is-group-row > td {
-  padding: var(--m-space-5) var(--m-space-5) var(--m-space-3) !important;
+  /* A LABEL, so it is as tall as the label. It inherited the table's row height
+     minimum and sat in the top of a 39px band with the space under it, which
+     read as an empty row between the heading and the first issue - and the
+     heading is not a row, it is the name of the ones below it. Even padding,
+     centred, and the height comes off it rather than off the rhythm. */
+  height: auto !important;
+  padding: var(--m-space-3) var(--m-space-5) !important;
   background: var(--m-surface-sunken);
   border-bottom: 1px solid var(--m-border-subtle);
+  vertical-align: middle;
   cursor: default;
+  line-height: 1;
 }
 .m-issues__table .is-group-row:hover > td { background: var(--m-surface-sunken) !important; }
 

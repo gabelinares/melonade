@@ -1,0 +1,162 @@
+/* ── THE DRAWER ──────────────────────────────────────────────────────────────
+   antd's Drawer supplies the panel, the mask and the animation; everything that
+   makes it look like this app is here. All of it reads tokens, so the Corners
+   and Density controls reach the drawers too - a panel that ignored them would
+   be the one surface in the app that cannot be re-themed. */
+
+.m-drawer .ant-drawer-header {
+  align-items: flex-start;
+  gap: var(--m-space-4);
+  padding: var(--m-space-6) var(--m-space-6) var(--m-space-5);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+/* antd's own close is off - see EntityDrawer for why - so the header is just
+   the lead and one group of controls, and the lead starts on the panel's inset
+   like everything below it. */
+.m-drawer .ant-drawer-extra { align-self: flex-start; }
+
+/* ONE GROUP, TWO KINDS. Rerun and Pause act on the thing; the X dismisses the
+   surface it is in. The hairline between them is the whole difference, and it
+   is why the close is not simply a fourth button in a row of four - a dismiss
+   that looks like a sibling of "Pause" is a dismiss you press by accident. */
+.m-drawer__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+}
+
+.m-drawer__sep {
+  width: 1px;
+  height: 1rem;
+  background: var(--m-border-default);
+}
+
+/* The close sits on the title's cap line rather than on the middle of a
+   three-line header: it belongs to the corner, not to the writing. */
+.m-drawer__actions .m-iconbtn { margin-top: -3px; }
+
+.m-drawer__lead { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+/* The one line that says what you are looking at. Small caps rather than a
+   coloured tile: a word survives being read aloud and a tile does not. */
+.m-drawer__eyebrow {
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-wider);
+  text-transform: uppercase;
+  color: var(--m-content-muted);
+}
+
+.m-drawer__title {
+  font-size: var(--m-text-lg);
+  font-weight: var(--m-title-weight);
+  line-height: var(--m-leading-snug);
+  color: var(--m-content-primary);
+  overflow-wrap: anywhere;
+}
+
+/* The whole title is the rename target. The pencil is the only thing that
+   appears on hover: a control that is always visible on a heading reads as part
+   of the heading. */
+.m-drawer__title-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  /* Fits the name, not the header. A hover target that runs the full width of
+     the panel says the whole row is editable, and most of that row is empty. */
+  align-self: flex-start;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline: calc(var(--m-space-3) * -1);
+  padding: 1px var(--m-space-3);
+  border-radius: var(--m-radius-control);
+  text-align: left;
+  color: var(--m-content-decorative);
+  transition: background-color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-drawer__title-btn:hover { background: var(--m-surface-hover); }
+.m-drawer__title-btn svg { flex: none; opacity: 0; transition: opacity var(--m-duration-instant) var(--m-ease-out); }
+.m-drawer__title-btn:hover svg { opacity: 1; }
+
+/* Editing sits in the same row height as the title, so the header does not grow
+   under the cursor the moment you click it. */
+.m-drawer__rename {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  min-width: 0;
+  margin-right: var(--m-space-5);
+}
+.m-drawer__rename .ant-input { flex: 1; min-width: 0; }
+
+.m-drawer__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--m-space-3) var(--m-space-5);
+  margin-top: var(--m-space-3);
+  font-size: var(--m-text-sm);
+  font-weight: var(--m-weight-regular);
+  color: var(--m-content-secondary);
+}
+.m-drawer__meta > span { display: inline-flex; align-items: center; gap: var(--m-space-3); }
+.m-drawer__meta svg { color: var(--m-content-decorative); flex: none; }
+
+.m-drawer .ant-drawer-footer { border-top: 1px solid var(--m-border-subtle); }
+
+/* ── sections ─────────────────────────────────────────────────────────────── */
+.m-dsec {
+  padding: var(--m-space-5) var(--m-space-6);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+.m-dsec:last-child { border-bottom: none; }
+.m-dsec.is-flush { padding-bottom: 0; }
+
+.m-dsec__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-space-4);
+  min-height: 1.5rem;
+  margin-bottom: var(--m-space-4);
+}
+
+/* A section heading is a LABEL, not a title: the drawer already has one of
+   those and it is the object's name. */
+.m-dsec__title {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  font-size: var(--m-text-md);
+  font-weight: var(--m-title-weight);
+  color: var(--m-content-primary);
+}
+.m-dsec__title .m-dsec__count { color: var(--m-content-muted); font-weight: var(--m-weight-regular); }
+
+.m-dsec__hint {
+  margin-top: calc(var(--m-space-3) * -1);
+  margin-bottom: var(--m-space-4);
+  font-size: var(--m-text-sm);
+  color: var(--m-content-muted);
+}
+
+/* ── fields ───────────────────────────────────────────────────────────────── */
+.m-dfield { display: flex; flex-direction: column; gap: var(--m-space-2); min-width: 0; }
+.m-dfield__label {
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+}
+
+.m-dgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--m-space-4) var(--m-space-5);
+}
+.m-dgrid__cell { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.m-dgrid dt { font-size: var(--m-text-xs); color: var(--m-content-muted); }
+.m-dgrid dd { font-size: var(--m-text-sm); color: var(--m-content-primary); }
+
+/* ── footer ───────────────────────────────────────────────────────────────── */
+.m-dfoot { display: flex; align-items: center; justify-content: space-between; gap: var(--m-space-4); }
+.m-dfoot__left, .m-dfoot__right { display: flex; align-items: center; gap: var(--m-space-3); }

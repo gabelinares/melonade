@@ -57,16 +57,42 @@ const GREYS = [
     note: 'the same ladder rotated to a warm hue: paper rather than slate' },
 ];
 
+/* TWELVE HUES, EVENLY ROUND THE WHEEL from the shipped one, so the panel is a
+   palette rather than a pair. They are generated from a hue and nothing else -
+   the same OKLCH ramp, the same lightness ladder, the same chroma - so every
+   one of them lands with the same contrast against the same surfaces, and the
+   only thing that moves between them is the colour.
+
+   ⚠ The RED HALF IS STILL A REAL CONSTRAINT and the generator says so rather
+   than hiding it: an accent too close to danger or warning makes a selected row
+   read as an alarm. Rose, red and amber are in the list because Mehdi asked to
+   see more of the wheel, and each one carries the distance to the alarm colours
+   in its note so the trade is visible when it is picked, not after. */
+const ALARM_HUES = { danger: 27, warning: 70, success: 150 };
+const around = (a, b) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+const hueNote = (hue) => {
+  const d = Object.entries(ALARM_HUES).map(([k, v]) => [k, around(hue, v)]);
+  const [closest, dist] = d.sort((x, y) => x[1] - y[1])[0];
+  return dist < 40
+    ? `only ${Math.round(dist)}° from ${closest} - a selected row will read as an alarm`
+    : `${Math.round(dist)}° from ${closest}, the nearest alarm colour`;
+};
+
 const ACCENTS = [
-  { key: 'teal', label: 'Teal', hue: SHIPPED_ACCENT_HUE,
-    note: 'the shipped accent' },
-  { key: 'indigo', label: 'Indigo', hue: 275,
-    note: 'the suggestion, and quiet at these chromas. Measured AROUND the wheel '
-        + 'rather than by subtracting, it sits 112 degrees off danger, 160 off '
-        + 'warning and 123 off success, so a selected row can never be mistaken '
-        + 'for an alarm - which is the constraint that rules out the whole red '
-        + 'half of the wheel, watermelon included' },
-];
+  { key: 'teal', label: 'Teal', hue: SHIPPED_ACCENT_HUE },
+  { key: 'indigo', label: 'Indigo', hue: 275 },
+  { key: 'blue', label: 'Blue', hue: 250 },
+  { key: 'sky', label: 'Sky', hue: 230 },
+  { key: 'cyan', label: 'Cyan', hue: 195 },
+  { key: 'emerald', label: 'Emerald', hue: 165 },
+  { key: 'green', label: 'Green', hue: 140 },
+  { key: 'lime', label: 'Lime', hue: 120 },
+  { key: 'amber', label: 'Amber', hue: 75 },
+  { key: 'orange', label: 'Orange', hue: 50 },
+  { key: 'rose', label: 'Rose', hue: 15 },
+  { key: 'magenta', label: 'Magenta', hue: 340 },
+  { key: 'violet', label: 'Violet', hue: 300 },
+].map((a) => ({ ...a, note: hueNote(a.hue) }));
 
 /* ── the semantic mapping, read out of tokens.ts ───────────────────────────── */
 const src = readFileSync(resolve(app, 'src/tokens/tokens.ts'), 'utf8');
@@ -186,7 +212,17 @@ for (const a of ACCENTS) {
   if (onWhite < 4.5) warnings.push(`accent ${a.key}: a-600 ${onWhite.toFixed(2)}:1 on white`);
   out.push(`\n/* ── accent: ${a.label} ─ ${a.note} ── */`);
   out.push(variantBlock('accent', a.key, aLight, aDark, pal));
-  ts.accent[a.key] = { label: a.label, palette: pal, light: resolved(aLight, pal), dark: resolved(aDark, pal) };
+  /* THE MARK FOLLOWS THE ACCENT. It was on its own `brand-*` ramp, which was
+     right while the brand was a fixed thing and wrong the moment the accent
+     became a choice: a logo in one colour beside a UI in another reads as two
+     products. Same steps the accent uses for its own ink - 500 in light, 400 in
+     dark, where the surface is dark enough to need the lift. */
+  out.push(`:root[data-accent='${a.key}'] { --m-brand-mark: ${pal['a-500']}; }`);
+  out.push(`:root[data-accent='${a.key}'][data-theme='dark'] { --m-brand-mark: ${pal['a-400']}; }`);
+  out.push(
+    `@media (prefers-color-scheme: dark) {\n  :root[data-accent='${a.key}']:not([data-theme='light']) { --m-brand-mark: ${pal['a-400']}; }\n}`,
+  );
+  ts.accent[a.key] = { label: a.label, note: a.note, palette: pal, light: resolved(aLight, pal), dark: resolved(aDark, pal) };
 }
 
 /* ── density ───────────────────────────────────────────────────────────────
@@ -216,6 +252,49 @@ const SPACED = {
 out.push(`\n/* ── density: Spaced ── */`);
 out.push(`:root[data-density='spaced'] {\n${Object.entries(SPACED)
   .map(([k, v]) => `  --m-${k}: ${v};`).join('\n')}\n}`);
+
+/* ── corners ────────────────────────────────────────────────────────────────
+   THREE SHAPES, and each one moves all three roles together. Mehdi, on a screen
+   share: "the corners here are rounded, but if you look at the search bar the
+   corners are not rounded. Is that done on purpose?" It was not - the radius
+   was a size scale (xs/sm/md/lg) that every component picked from by eye, and
+   antd made it worse by giving a SMALL control a smaller radius than a big one.
+   It is a role scale now (chip / control / surface), so a shape is three
+   numbers and the whole app can be redrawn by swapping them.
+
+   The three are not one value scaled. The ratio between the roles changes too,
+   because that is what actually separates these looks: Sharp keeps the surface
+   only twice the control (an app drawn with a ruler), Soft doubles at each step,
+   and Round pushes chips to a full pill while keeping controls readable - go
+   round on everything equally and a 14px checkbox becomes a circle nobody can
+   tell from a radio.
+
+   antd is handed the same three numbers through ConfigProvider, because it
+   computes with them (the segmented thumb, inner corners) and cannot read a
+   custom property. See theme/antd.ts. */
+const CORNERS = [
+  { key: 'sharp', label: 'Sharp', note: 'drawn with a ruler', chip: 0, control: 2, surface: 4, check: 0 },
+  { key: 'soft',  label: 'Soft',  note: 'the shipped shape',  chip: 2, control: 4, surface: 8, check: 2 },
+  { key: 'round', label: 'Round', note: 'pills and soft boxes', chip: 999, control: 10, surface: 16, check: 4 },
+];
+
+/* `radius-track` is NOT listed: it is calc(control + 2px) in tokens.css and
+   therefore follows the control on its own. Two concentric rounded rectangles
+   only look nested when the outer radius is the inner one plus the gap.
+   `radius-check` IS listed, because it is the one value that has to stop
+   climbing: CSS clamps a radius to half the box, so a round checkbox is a
+   circle, and a circle means one-of-these. ⚠ Its ROLE is wider than its name -
+   it is every small SQUARE mark that must not become a circle, and the critical
+   flag is the second thing to need it. */
+for (const c of CORNERS) {
+  out.push(`\n/* ── corners: ${c.label} ─ ${c.note} ── */`);
+  out.push(`:root[data-corners='${c.key}'] {
+  --m-radius-chip: ${c.chip}px;
+  --m-radius-control: ${c.control}px;
+  --m-radius-surface: ${c.surface}px;
+  --m-radius-check: ${c.check}px;
+}`);
+}
 
 /* ── type systems ───────────────────────────────────────────────────────────
    FIVE SYSTEMS, each from software that handles type well - not five sets of
@@ -403,6 +482,9 @@ export interface ProtoFont {
 
 export interface ProtoVariant {
   label: string;
+  /** Greys have none; an accent carries how far it sits from the nearest alarm
+   *  colour, which is the one fact that can rule a hue out. */
+  note?: string;
   /** primitive ramp overrides, for the few places antd is handed a primitive */
   palette: Record<string, string>;
   /** semantic roles, already resolved, per theme */
@@ -416,19 +498,34 @@ export const ACCENTS: Record<string, ProtoVariant> = ${j(ts.accent)};
 
 export const FONTS: Record<string, ProtoFont> = ${j(Object.fromEntries(FONTS.map((f) => [f.key, { label: f.label, note: f.note, sans: f.sans, mono: f.mono, display: f.display, prose: f.prose, tag: f.tag, num: f.num, displayWeight: f.weight, displayTracking: f.tracking, tagCase: f.tagCase, tagTracking: f.tagTracking, tagSize: f.tagSize, tagWeight: f.tagWeight }])))};
 
-export const DEFAULTS = { grey: '${GREYS[0].key}', accent: '${ACCENTS[0].key}', font: '${FONTS[0].key}', density: 'compact' } as const;
+/** The three corner shapes, as antd needs them: numbers, because it computes
+ *  inner corners from them and cannot read a custom property. */
+export interface ProtoCorners {
+  label: string;
+  note: string;
+  chip: number;
+  control: number;
+  surface: number;
+  /** capped: a checkbox must never become a circle */
+  check: number;
+}
+
+export const CORNERS: Record<string, ProtoCorners> = ${j(Object.fromEntries(CORNERS.map((c) => [c.key, { label: c.label, note: c.note, chip: c.chip, control: c.control, surface: c.surface, check: c.check }])))};
+
+export const DEFAULTS = { grey: '${GREYS[0].key}', accent: '${ACCENTS[0].key}', font: '${FONTS[0].key}', density: 'compact', corners: 'soft', filters: 'outline' } as const;
 
 export type GreyKey = keyof typeof GREYS;
 export type AccentKey = keyof typeof ACCENTS;
 export type FontKey = keyof typeof FONTS;
 export type DensityKey = 'compact' | 'spaced';
+export type CornersKey = keyof typeof CORNERS;
 `;
 writeFileSync(resolve(app, 'src/tokens/proto-themes.ts'), tsFile);
 console.log('wrote option-a/src/tokens/proto-themes.ts');
 console.log(`wrote option-a/src/tokens/proto-themes.css`);
 console.log(`  ${GREYS.length} greys x ${nLight.length} light + ${nDark.length} dark roles`);
 console.log(`  ${ACCENTS.length} accents x ${aLight.length} light + ${aDark.length} dark roles`);
-console.log(`  ${FONTS.length} fonts, 1 density override (${Object.keys(SPACED).length} scale tokens)`);
+console.log(`  ${FONTS.length} fonts, 1 density override (${Object.keys(SPACED).length} scale tokens), ${CORNERS.length} corner shapes`);
 if (clippedAll.length) {
   console.log('  chroma clamped into gamut:');
   for (const c of [...new Set(clippedAll)]) console.log('    ' + c);

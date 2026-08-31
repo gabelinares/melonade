@@ -11,7 +11,7 @@
   min-width: 0;
   padding: var(--m-space-4);
   border: 1px solid var(--m-border-default);
-  border-radius: var(--m-radius-md);
+  border-radius: var(--m-radius-surface);
   background: var(--m-surface-default);
   text-align: left;
   cursor: pointer;
@@ -38,7 +38,7 @@
   right: var(--m-space-3);
   bottom: var(--m-space-3);
   padding: 1px var(--m-space-3);
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-chip);
   background: var(--m-surface-inverse);
   color: var(--m-content-inverse);
   font-size: var(--m-text-2xs);
@@ -51,7 +51,7 @@
   top: var(--m-space-3);
   max-width: calc(100% - var(--m-space-7));
   padding: 1px var(--m-space-3);
-  border-radius: var(--m-radius-xs);
+  border-radius: var(--m-radius-chip);
   background: var(--m-surface-inverse);
   color: var(--m-content-inverse);
   font-size: var(--m-text-2xs);

@@ -1,4 +1,5 @@
 import { Button, Pagination, Table, Tooltip } from 'antd';
+import { pagerItem } from '../components/Pager.tsx';
 import type { TableColumnsType } from 'antd';
 import { App } from 'antd';
 import { CalendarClock, Globe, MonitorSmartphone, RotateCw, Server, Tag as TagIcon } from 'lucide-react';
@@ -19,7 +20,7 @@ import { RelativeTime } from '../components/RelativeTime.tsx';
 import { RunResultChip } from '../components/RunResultChip.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { sortable } from '../components/SortIcon.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { RunDrawer } from './RunDrawer.tsx';
 import './runs-panel.css';
 
 const FILTER_ICONS: Partial<Record<RunFilterKey, typeof Server>> = {
@@ -278,31 +279,14 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
                 pageSize={model.pageSize}
                 onChange={model.setPage}
                 showSizeChanger={false}
+                itemRender={pagerItem}
               />
             )}
           </footer>
         </>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closeRun}
-        title={model.open?.testName ?? ''}
-        meta={
-          model.open && (
-            <>
-              <RunResultChip status={model.open.status} />
-              <span>{model.open.stepCount} steps</span>
-              <span>
-                {model.open.envName} · {resolutionLabel(model.open.resolution)} ·{' '}
-                {regionLabel(model.open.region)}
-              </span>
-              {model.open.duration != null && <span>{formatDuration(model.open.duration)}</span>}
-            </>
-          )
-        }
-        note="The run panel — every step with its screenshots, the console, and the network capture as a HAR viewer — is the next piece. This round is the log: the result tabs, the period, the filters and the rerun."
-      />
+      <RunDrawer run={model.open} onClose={model.closeRun} />
     </>
   );
 }

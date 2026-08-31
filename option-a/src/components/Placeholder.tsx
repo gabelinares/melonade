@@ -10,6 +10,7 @@ const LABEL: Record<string, string> = {
   preferences: 'Preferences',
   support: 'Support',
   notifications: 'Notifications',
+  search: 'Search',
 };
 
 export interface PlaceholderProps {

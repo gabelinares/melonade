@@ -36,6 +36,9 @@ export interface ProtoFont {
 
 export interface ProtoVariant {
   label: string;
+  /** Greys have none; an accent carries how far it sits from the nearest alarm
+   *  colour, which is the one fact that can rule a hue out. */
+  note?: string;
   /** primitive ramp overrides, for the few places antd is handed a primitive */
   palette: Record<string, string>;
   /** semantic roles, already resolved, per theme */
@@ -376,6 +379,7 @@ export const GREYS: Record<string, ProtoVariant> = {
 export const ACCENTS: Record<string, ProtoVariant> = {
     "teal": {
       "label": "Teal",
+      "note": "60° from success, the nearest alarm colour",
       "palette": {
         "a-50": "#e5f5f8",
         "a-100": "#cfedf2",
@@ -409,6 +413,7 @@ export const ACCENTS: Record<string, ProtoVariant> = {
     },
     "indigo": {
       "label": "Indigo",
+      "note": "112° from danger, the nearest alarm colour",
       "palette": {
         "a-50": "#eef1fe",
         "a-100": "#e0e5fc",
@@ -438,6 +443,380 @@ export const ACCENTS: Record<string, ProtoVariant> = {
         "status-info-border": "#292e4a",
         "status-info-fg": "#c7cff3",
         "focus-ring": "#7e89bb"
+      }
+    },
+    "blue": {
+      "label": "Blue",
+      "note": "100° from success, the nearest alarm colour",
+      "palette": {
+        "a-50": "#e9f3fe",
+        "a-100": "#d7e8fb",
+        "a-200": "#b9d4f1",
+        "a-300": "#95b8dd",
+        "a-400": "#6890b9",
+        "a-500": "#49729c",
+        "a-600": "#355b81",
+        "a-700": "#274562",
+        "a-800": "#1c3249",
+        "a-900": "#0e1e2e"
+      },
+      "light": {
+        "surface-selected": "#e9f3fe",
+        "content-accent": "#355b81",
+        "border-accent": "#49729c",
+        "status-info-bg": "#e9f3fe",
+        "status-info-border": "#b9d4f1",
+        "status-info-fg": "#274562",
+        "focus-ring": "#49729c"
+      },
+      "dark": {
+        "surface-selected": "#0e1e2e",
+        "content-accent": "#95b8dd",
+        "border-accent": "#49729c",
+        "status-info-bg": "#0e1e2e",
+        "status-info-border": "#1c3249",
+        "status-info-fg": "#b9d4f1",
+        "focus-ring": "#6890b9"
+      }
+    },
+    "sky": {
+      "label": "Sky",
+      "note": "80° from success, the nearest alarm colour",
+      "palette": {
+        "a-50": "#e6f4fc",
+        "a-100": "#d2ebf8",
+        "a-200": "#b0d8ec",
+        "a-300": "#88bdd7",
+        "a-400": "#5995b2",
+        "a-500": "#367794",
+        "a-600": "#21607a",
+        "a-700": "#18485d",
+        "a-800": "#103545",
+        "a-900": "#06202b"
+      },
+      "light": {
+        "surface-selected": "#e6f4fc",
+        "content-accent": "#21607a",
+        "border-accent": "#367794",
+        "status-info-bg": "#e6f4fc",
+        "status-info-border": "#b0d8ec",
+        "status-info-fg": "#18485d",
+        "focus-ring": "#367794"
+      },
+      "dark": {
+        "surface-selected": "#06202b",
+        "content-accent": "#88bdd7",
+        "border-accent": "#367794",
+        "status-info-bg": "#06202b",
+        "status-info-border": "#103545",
+        "status-info-fg": "#b0d8ec",
+        "focus-ring": "#5995b2"
+      }
+    },
+    "cyan": {
+      "label": "Cyan",
+      "note": "45° from success, the nearest alarm colour",
+      "palette": {
+        "a-50": "#e5f6f5",
+        "a-100": "#cfeded",
+        "a-200": "#acdcdb",
+        "a-300": "#81c2c1",
+        "a-400": "#4e9b9a",
+        "a-500": "#267d7d",
+        "a-600": "#0a6565",
+        "a-700": "#074c4d",
+        "a-800": "#053838",
+        "a-900": "#012222"
+      },
+      "light": {
+        "surface-selected": "#e5f6f5",
+        "content-accent": "#0a6565",
+        "border-accent": "#267d7d",
+        "status-info-bg": "#e5f6f5",
+        "status-info-border": "#acdcdb",
+        "status-info-fg": "#074c4d",
+        "focus-ring": "#267d7d"
+      },
+      "dark": {
+        "surface-selected": "#012222",
+        "content-accent": "#81c2c1",
+        "border-accent": "#267d7d",
+        "status-info-bg": "#012222",
+        "status-info-border": "#053838",
+        "status-info-fg": "#acdcdb",
+        "focus-ring": "#4e9b9a"
+      }
+    },
+    "emerald": {
+      "label": "Emerald",
+      "note": "only 15° from success - a selected row will read as an alarm",
+      "palette": {
+        "a-50": "#e7f6ef",
+        "a-100": "#d4ede1",
+        "a-200": "#b3dcc9",
+        "a-300": "#8dc2aa",
+        "a-400": "#5d9b81",
+        "a-500": "#3c7d63",
+        "a-600": "#27654d",
+        "a-700": "#1c4d3a",
+        "a-800": "#13382a",
+        "a-900": "#082218"
+      },
+      "light": {
+        "surface-selected": "#e7f6ef",
+        "content-accent": "#27654d",
+        "border-accent": "#3c7d63",
+        "status-info-bg": "#e7f6ef",
+        "status-info-border": "#b3dcc9",
+        "status-info-fg": "#1c4d3a",
+        "focus-ring": "#3c7d63"
+      },
+      "dark": {
+        "surface-selected": "#082218",
+        "content-accent": "#8dc2aa",
+        "border-accent": "#3c7d63",
+        "status-info-bg": "#082218",
+        "status-info-border": "#13382a",
+        "status-info-fg": "#b3dcc9",
+        "focus-ring": "#5d9b81"
+      }
+    },
+    "green": {
+      "label": "Green",
+      "note": "only 10° from success - a selected row will read as an alarm",
+      "palette": {
+        "a-50": "#ecf5ea",
+        "a-100": "#dbecd8",
+        "a-200": "#c0dabb",
+        "a-300": "#9ebf97",
+        "a-400": "#74986c",
+        "a-500": "#557a4d",
+        "a-600": "#406239",
+        "a-700": "#304a2a",
+        "a-800": "#22361e",
+        "a-900": "#132110"
+      },
+      "light": {
+        "surface-selected": "#ecf5ea",
+        "content-accent": "#406239",
+        "border-accent": "#557a4d",
+        "status-info-bg": "#ecf5ea",
+        "status-info-border": "#c0dabb",
+        "status-info-fg": "#304a2a",
+        "focus-ring": "#557a4d"
+      },
+      "dark": {
+        "surface-selected": "#132110",
+        "content-accent": "#9ebf97",
+        "border-accent": "#557a4d",
+        "status-info-bg": "#132110",
+        "status-info-border": "#22361e",
+        "status-info-fg": "#c0dabb",
+        "focus-ring": "#74986c"
+      }
+    },
+    "lime": {
+      "label": "Lime",
+      "note": "only 30° from success - a selected row will read as an alarm",
+      "palette": {
+        "a-50": "#f0f4e7",
+        "a-100": "#e3ead2",
+        "a-200": "#ccd6b2",
+        "a-300": "#aebb8c",
+        "a-400": "#86935e",
+        "a-500": "#69763e",
+        "a-600": "#535e2b",
+        "a-700": "#3e471f",
+        "a-800": "#2d3415",
+        "a-900": "#1b1f0a"
+      },
+      "light": {
+        "surface-selected": "#f0f4e7",
+        "content-accent": "#535e2b",
+        "border-accent": "#69763e",
+        "status-info-bg": "#f0f4e7",
+        "status-info-border": "#ccd6b2",
+        "status-info-fg": "#3e471f",
+        "focus-ring": "#69763e"
+      },
+      "dark": {
+        "surface-selected": "#1b1f0a",
+        "content-accent": "#aebb8c",
+        "border-accent": "#69763e",
+        "status-info-bg": "#1b1f0a",
+        "status-info-border": "#2d3415",
+        "status-info-fg": "#ccd6b2",
+        "focus-ring": "#86935e"
+      }
+    },
+    "amber": {
+      "label": "Amber",
+      "note": "only 5° from warning - a selected row will read as an alarm",
+      "palette": {
+        "a-50": "#f9f0e5",
+        "a-100": "#f3e4cf",
+        "a-200": "#e5cdad",
+        "a-300": "#cdaf85",
+        "a-400": "#a78657",
+        "a-500": "#8a6836",
+        "a-600": "#715122",
+        "a-700": "#563d19",
+        "a-800": "#3f2c10",
+        "a-900": "#271a07"
+      },
+      "light": {
+        "surface-selected": "#f9f0e5",
+        "content-accent": "#715122",
+        "border-accent": "#8a6836",
+        "status-info-bg": "#f9f0e5",
+        "status-info-border": "#e5cdad",
+        "status-info-fg": "#563d19",
+        "focus-ring": "#8a6836"
+      },
+      "dark": {
+        "surface-selected": "#271a07",
+        "content-accent": "#cdaf85",
+        "border-accent": "#8a6836",
+        "status-info-bg": "#271a07",
+        "status-info-border": "#3f2c10",
+        "status-info-fg": "#e5cdad",
+        "focus-ring": "#a78657"
+      }
+    },
+    "orange": {
+      "label": "Orange",
+      "note": "only 20° from warning - a selected row will read as an alarm",
+      "palette": {
+        "a-50": "#fdefe7",
+        "a-100": "#f9e1d4",
+        "a-200": "#edc8b4",
+        "a-300": "#d8a98f",
+        "a-400": "#b27f62",
+        "a-500": "#946043",
+        "a-600": "#7a4b2f",
+        "a-700": "#5d3823",
+        "a-800": "#452818",
+        "a-900": "#2b170c"
+      },
+      "light": {
+        "surface-selected": "#fdefe7",
+        "content-accent": "#7a4b2f",
+        "border-accent": "#946043",
+        "status-info-bg": "#fdefe7",
+        "status-info-border": "#edc8b4",
+        "status-info-fg": "#5d3823",
+        "focus-ring": "#946043"
+      },
+      "dark": {
+        "surface-selected": "#2b170c",
+        "content-accent": "#d8a98f",
+        "border-accent": "#946043",
+        "status-info-bg": "#2b170c",
+        "status-info-border": "#452818",
+        "status-info-fg": "#edc8b4",
+        "focus-ring": "#b27f62"
+      }
+    },
+    "rose": {
+      "label": "Rose",
+      "note": "only 12° from danger - a selected row will read as an alarm",
+      "palette": {
+        "a-50": "#feedee",
+        "a-100": "#fbdedf",
+        "a-200": "#f0c4c6",
+        "a-300": "#dba4a7",
+        "a-400": "#b6797d",
+        "a-500": "#975b60",
+        "a-600": "#7d454a",
+        "a-700": "#5f3438",
+        "a-800": "#462528",
+        "a-900": "#2c1517"
+      },
+      "light": {
+        "surface-selected": "#feedee",
+        "content-accent": "#7d454a",
+        "border-accent": "#975b60",
+        "status-info-bg": "#feedee",
+        "status-info-border": "#f0c4c6",
+        "status-info-fg": "#5f3438",
+        "focus-ring": "#975b60"
+      },
+      "dark": {
+        "surface-selected": "#2c1517",
+        "content-accent": "#dba4a7",
+        "border-accent": "#975b60",
+        "status-info-bg": "#2c1517",
+        "status-info-border": "#462528",
+        "status-info-fg": "#f0c4c6",
+        "focus-ring": "#b6797d"
+      }
+    },
+    "magenta": {
+      "label": "Magenta",
+      "note": "47° from danger, the nearest alarm colour",
+      "palette": {
+        "a-50": "#fbedf6",
+        "a-100": "#f6deed",
+        "a-200": "#e9c5db",
+        "a-300": "#d2a4c2",
+        "a-400": "#ac7a9b",
+        "a-500": "#8e5c7d",
+        "a-600": "#744765",
+        "a-700": "#58354d",
+        "a-800": "#412638",
+        "a-900": "#291622"
+      },
+      "light": {
+        "surface-selected": "#fbedf6",
+        "content-accent": "#744765",
+        "border-accent": "#8e5c7d",
+        "status-info-bg": "#fbedf6",
+        "status-info-border": "#e9c5db",
+        "status-info-fg": "#58354d",
+        "focus-ring": "#8e5c7d"
+      },
+      "dark": {
+        "surface-selected": "#291622",
+        "content-accent": "#d2a4c2",
+        "border-accent": "#8e5c7d",
+        "status-info-bg": "#291622",
+        "status-info-border": "#412638",
+        "status-info-fg": "#e9c5db",
+        "focus-ring": "#ac7a9b"
+      }
+    },
+    "violet": {
+      "label": "Violet",
+      "note": "87° from danger, the nearest alarm colour",
+      "palette": {
+        "a-50": "#f3effc",
+        "a-100": "#e9e2f9",
+        "a-200": "#d6caee",
+        "a-300": "#baabd9",
+        "a-400": "#9382b4",
+        "a-500": "#766496",
+        "a-600": "#5f4e7c",
+        "a-700": "#473a5f",
+        "a-800": "#342a46",
+        "a-900": "#20192c"
+      },
+      "light": {
+        "surface-selected": "#f3effc",
+        "content-accent": "#5f4e7c",
+        "border-accent": "#766496",
+        "status-info-bg": "#f3effc",
+        "status-info-border": "#d6caee",
+        "status-info-fg": "#473a5f",
+        "focus-ring": "#766496"
+      },
+      "dark": {
+        "surface-selected": "#20192c",
+        "content-accent": "#baabd9",
+        "border-accent": "#766496",
+        "status-info-bg": "#20192c",
+        "status-info-border": "#342a46",
+        "status-info-fg": "#d6caee",
+        "focus-ring": "#9382b4"
       }
     }
   };
@@ -525,9 +904,49 @@ export const FONTS: Record<string, ProtoFont> = {
     }
   };
 
-export const DEFAULTS = { grey: 'cool', accent: 'teal', font: 'plex', density: 'compact' } as const;
+/** The three corner shapes, as antd needs them: numbers, because it computes
+ *  inner corners from them and cannot read a custom property. */
+export interface ProtoCorners {
+  label: string;
+  note: string;
+  chip: number;
+  control: number;
+  surface: number;
+  /** capped: a checkbox must never become a circle */
+  check: number;
+}
+
+export const CORNERS: Record<string, ProtoCorners> = {
+    "sharp": {
+      "label": "Sharp",
+      "note": "drawn with a ruler",
+      "chip": 0,
+      "control": 2,
+      "surface": 4,
+      "check": 0
+    },
+    "soft": {
+      "label": "Soft",
+      "note": "the shipped shape",
+      "chip": 2,
+      "control": 4,
+      "surface": 8,
+      "check": 2
+    },
+    "round": {
+      "label": "Round",
+      "note": "pills and soft boxes",
+      "chip": 999,
+      "control": 10,
+      "surface": 16,
+      "check": 4
+    }
+  };
+
+export const DEFAULTS = { grey: 'cool', accent: 'teal', font: 'plex', density: 'compact', corners: 'soft', filters: 'outline' } as const;
 
 export type GreyKey = keyof typeof GREYS;
 export type AccentKey = keyof typeof ACCENTS;
 export type FontKey = keyof typeof FONTS;
 export type DensityKey = 'compact' | 'spaced';
+export type CornersKey = keyof typeof CORNERS;

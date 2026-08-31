@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
   ACCENTS,
+  CORNERS,
   DEFAULTS,
   FONTS,
   GREYS,
   type AccentKey,
+  type CornersKey,
   type DensityKey,
   type FontKey,
   type GreyKey,
@@ -39,10 +41,14 @@ export interface ProtoTokens {
   accent: AccentKey;
   font: FontKey;
   density: DensityKey;
+  corners: CornersKey;
+  filters: FiltersKey;
   setGrey: (k: GreyKey) => void;
   setAccent: (k: AccentKey) => void;
   setFont: (k: FontKey) => void;
   setDensity: (k: DensityKey) => void;
+  setCorners: (k: CornersKey) => void;
+  setFilters: (k: FiltersKey) => void;
   reset: () => void;
 }
 
@@ -55,7 +61,18 @@ interface Saved {
   accent: AccentKey;
   font: FontKey;
   density: DensityKey;
+  corners: CornersKey;
+  filters: FiltersKey;
 }
+
+/** How an applied filter is drawn. Pure CSS - antd draws none of this - so it
+ *  is the one switch that does not go through ConfigProvider. */
+export type FiltersKey = 'outline' | 'tinted' | 'text';
+export const FILTERS: Record<FiltersKey, { label: string; note: string }> = {
+  outline: { label: 'Outline', note: 'a control you can take off' },
+  tinted: { label: 'Tinted', note: 'a state the list is in' },
+  text: { label: 'Text', note: 'a sentence, and no chip at all' },
+};
 
 /* Persisted, because a reviewer who found a combination they liked should still
    have it after a reload. Anything unrecognised falls back to the shipped
@@ -72,6 +89,8 @@ function read(): Saved {
       accent: v.accent && ACCENTS[v.accent] ? v.accent : fallback.accent,
       font: v.font && FONTS[v.font as keyof typeof FONTS] ? v.font : fallback.font,
       density: v.density === 'spaced' ? 'spaced' : fallback.density,
+      corners: v.corners && CORNERS[v.corners] ? v.corners : fallback.corners,
+      filters: v.filters && FILTERS[v.filters] ? v.filters : fallback.filters,
     };
   } catch {
     return fallback;
@@ -100,6 +119,8 @@ export function ProtoTokensProvider({ children, frozen = false }: ProtoTokensPro
     root.setAttribute('data-accent', saved.accent);
     root.setAttribute('data-font', saved.font);
     root.setAttribute('data-density', saved.density);
+    root.setAttribute('data-corners', saved.corners);
+    root.setAttribute('data-filters', saved.filters);
   }, [saved]);
 
   /* WARM EVERY FACE THE PAIRINGS CAN ASK FOR. A <link> to Google Fonts only DECLARES the
@@ -143,6 +164,8 @@ export function ProtoTokensProvider({ children, frozen = false }: ProtoTokensPro
       setAccent: (accent) => setSaved((s) => ({ ...s, accent })),
       setFont: (font) => setSaved((s) => ({ ...s, font })),
       setDensity: (density) => setSaved((s) => ({ ...s, density })),
+      setCorners: (corners) => setSaved((s) => ({ ...s, corners })),
+      setFilters: (filters) => setSaved((s) => ({ ...s, filters })),
       reset: () => setSaved({ ...DEFAULTS }),
     }),
     [saved],
@@ -166,15 +189,23 @@ export function useProtoTokens(): ProtoTokens {
  *  the old face - and on this page that is nearly everything, which reads as the
  *  control being broken rather than as a partial switch. */
 export function useAntdOverrides(mode: Mode): ThemeOverrides {
-  const { grey, accent, font } = useProtoTokens();
+  const { grey, accent, font, corners } = useProtoTokens();
   return useMemo(() => {
     const g = GREYS[grey];
     const a = ACCENTS[accent];
     const f = FONTS[font];
+    /* THE CORNERS HAVE TO COME THROUGH HERE for the same reason the colours and
+       the font do: antd does not read our variables, and it does arithmetic on
+       the radius - the segmented thumb and every inner corner are computed from
+       it. Switch only the CSS and the buttons, inputs, checkboxes, popovers and
+       the pagination keep the old shape while everything we drew ourselves
+       changes, which is the exact inconsistency this control exists to end. */
+    const k = CORNERS[corners];
     return {
       palette: { ...g?.palette, ...a?.palette },
       roles: { ...(mode === 'dark' ? g?.dark : g?.light), ...(mode === 'dark' ? a?.dark : a?.light) },
       fonts: { sans: f?.sans, mono: f?.mono },
+      radii: k ? { chip: k.chip, control: k.control, surface: k.surface, check: k.check } : undefined,
     };
-  }, [grey, accent, font, mode]);
+  }, [grey, accent, font, corners, mode]);
 }

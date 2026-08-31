@@ -1,4 +1,5 @@
-import { App, Button, Dropdown, Pagination, Table, Tooltip } from 'antd';
+import { App, Button, Dropdown, Pagination, Select, Table, Tooltip } from 'antd';
+import { pagerItem } from '../components/Pager.tsx';
 import type { TableColumnsType } from 'antd';
 import {
   Calendar,
@@ -17,6 +18,11 @@ import {
 import type { DataState } from '@shared/issues-logic.ts';
 import { minutesSince, scheduleLabel, scheduleShort, type TestCase } from '@shared/tests-data.ts';
 import {
+  TEST_FIELD_CHOICES,
+  TEST_GROUP_CHOICES,
+  TEST_SORT_CHOICES,
+  type TestFieldKey,
+  type TestGroupKey,
   hasNoEnvironment,
   isScheduled,
   type StatusTab,
@@ -28,14 +34,16 @@ import { useTestDialogs } from '../dialogs/useTestDialogs.tsx';
 import { ActiveFilters } from '../components/ActiveFilters.tsx';
 import { Chip } from '../components/Chip.tsx';
 import { EmptyState } from '../components/EmptyState.tsx';
+import { DisplayShell, SortControl } from '../components/DisplayMenu.tsx';
 import { FilterMenu } from '../components/FilterMenu.tsx';
+import { noNativeTooltip } from '../components/selectOptions.ts';
 import { FilterStrip } from '../components/FilterStrip.tsx';
 import { MoreCount } from '../components/MoreCount.tsx';
 import { PageToolbar } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { sortable } from '../components/SortIcon.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { TestDrawer } from './TestDrawer.tsx';
 import { TestStatusChip } from '../components/TestStatusChip.tsx';
 import './tests-page.css';
 
@@ -77,6 +85,12 @@ export interface TestsListProps {
   /** Writing a test by hand. The button lives in the page header too, so the
    *  action belongs to the page and the empty state only asks for it. */
   onCreate: () => void;
+  /** The drawer about to open is a new test: its footer commits rather than
+   *  saves, and Discard removes the row again. */
+  creating?: boolean;
+  onCreated?: () => void;
+  /** "View all runs" from inside a test: the Runs section, filtered to it. */
+  onViewRuns?: (title: string) => void;
 }
 
 /**
@@ -101,7 +115,12 @@ export interface TestsListProps {
  *    production build offered both and somebody's test went with the draft.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function TestsList({ model, dataState, onCreate }: TestsListProps) {
+/** A table row is a test, or the header of a group of them. antd has no
+ *  grouping, so the header rides in as a synthetic row that colSpans the table -
+ *  the same mechanism the issue queue uses, so the two lists group identically. */
+type Row = { kind: 'group'; key: string; label: string; n: number } | { kind: 'test'; key: string; tc: TestCase };
+
+export function TestsList({ model, dataState, onCreate, onViewRuns, creating, onCreated }: TestsListProps) {
   const dialogs = useTestDialogs(model);
   const { message } = App.useApp();
   const { state, scope, selected } = model;
@@ -203,7 +222,7 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
   const sortOrder = (key: TestSortKey) =>
     state.sort?.key === key ? (state.sort.desc ? ('descend' as const) : ('ascend' as const)) : null;
 
-  const columns: TableColumnsType<TestCase> = [
+  const allColumns: TableColumnsType<TestCase> = [
     {
       title: 'Test',
       key: 'title',
@@ -221,6 +240,23 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
               : null;
         return (
           <div className="m-tests__title-cell">
+            {/* THE SAME MARK THE ISSUES LIST WEARS, IN THE SAME PLACE. It used
+                to be a 6px dot of its own trailing the row; it is the app's 5px
+                dot leading it now, because "something here is new and nobody
+                has read it" is one fact and this is the second list that has to
+                say it. What is different is the tooltip: an issue is only ever
+                unopened, a test can be a draft, a revision or a merge, and the
+                dot is worth hovering to find out which.
+
+                ⚠ The slot is on every row - see `.m-dot.is-slot` in base.css
+                for why an empty one still takes its space. */}
+            {dot ? (
+              <Tooltip title={dot}>
+                <span className="m-dot is-slot" role="img" aria-label={dot} />
+              </Tooltip>
+            ) : (
+              <span className="m-dot is-slot is-off" aria-hidden="true" />
+            )}
             <span className="m-tests__title m-truncate">{tc.title}</span>
             {/* From v2 up only. "v1" on every row would be noise: a version is
                 interesting once the steps have actually changed. */}
@@ -232,15 +268,6 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
                 <span className="m-tests__fx" aria-label="Has side effects">
                   <ShieldAlert size={13} aria-hidden="true" />
                 </span>
-              </Tooltip>
-            )}
-            {/* One dot for "something here is new and nobody has read it",
-                whether that is a draft, a revision or a merge. The row is NOT
-                also tinted: the dot already says it, and saying it twice on one
-                row still only says it once. */}
-            {dot && (
-              <Tooltip title={dot}>
-                <span className="m-tests__dot" role="img" aria-label={dot} />
               </Tooltip>
             )}
           </div>
@@ -393,6 +420,42 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
     />
   );
 
+  /* The rows, grouped. One group means no header at all: a header that says
+     "all" is a row of chrome saying nothing. */
+  const rows: Row[] = model.groups.flatMap((g) => [
+    ...(g.label ? [{ kind: 'group' as const, key: `g:${g.key}`, label: g.label, n: g.tests.length }] : []),
+    /* The key is GROUP-SCOPED. A test that runs on Production and Staging is a
+       row under both - that is the point of grouping by environment - and two
+       rows carrying one key is a duplicate-key warning and a table that drops
+       one of them. Selection maps back to the test underneath. */
+    ...g.tests.map((tc) => ({ kind: 'test' as const, key: `${g.key}::${tc.key}`, tc })),
+  ]);
+
+  /* The chosen columns, wrapped for the two row kinds: the first cell spans the
+     table on a group header and every other cell collapses to nothing. Wrapping
+     is done here rather than in each column so a new column cannot forget. */
+  const visible = allColumns.filter((c) => {
+    const key = String(c.key ?? '');
+    return key === 'title' || key === 'actions' || model.display.fields.includes(key as never);
+  });
+  const columns: TableColumnsType<Row> = visible.map((c, i) => ({
+    ...(c as object),
+    onCell: (r: Row) => (r.kind === 'group' ? { colSpan: i === 0 ? visible.length + 1 : 0 } : {}),
+    render: (_: unknown, r: Row, idx: number) => {
+      if (r.kind === 'group') {
+        return i === 0 ? (
+          <span className="m-tests__group">
+            {r.label}
+            <span className="m-tests__group-n">{r.n}</span>
+          </span>
+        ) : null;
+      }
+      const render = (c as { render?: (v: unknown, t: TestCase, i: number) => unknown }).render;
+      const value = (r.tc as unknown as Record<string, unknown>)[String((c as { dataIndex?: string }).dataIndex ?? '')];
+      return render ? (render(value, r.tc, idx) as never) : (value as never);
+    },
+  }));
+
   const empty = (() => {
     switch (model.emptyReason) {
       case 'none':
@@ -471,6 +534,48 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
               </Button>
             </>
           ) : (
+            <>
+            <DisplayShell
+              label="Display tests"
+              changeCount={model.displayCount}
+              onReset={model.resetDisplay}
+              fields={TEST_FIELD_CHOICES.map((f) => ({
+                value: f.value,
+                label: f.label,
+                on: model.display.fields.includes(f.value),
+              }))}
+              onToggleField={(v) => model.toggleField(v as TestFieldKey)}
+              rows={[
+                {
+                  id: 'td-group',
+                  label: 'Grouping',
+                  control: (
+                    <Select
+                      id="td-group"
+                      size="small"
+                      className="m-dm__select"
+                      value={model.display.group}
+                      onChange={(v) => model.setGroup(v as TestGroupKey)}
+                      options={noNativeTooltip(TEST_GROUP_CHOICES)}
+                    />
+                  ),
+                },
+                {
+                  id: 'td-sort',
+                  label: 'Ordering',
+                  control: (
+                    <SortControl
+                      id="td-sort"
+                      value={model.state.sort?.key ?? 'queue'}
+                      desc={model.state.sort?.desc ?? false}
+                      choices={TEST_SORT_CHOICES}
+                      onValue={(v) => model.setSort(v === 'queue' ? null : (v as TestSortKey), model.state.sort?.desc)}
+                      onDesc={(d) => model.state.sort && model.setSort(model.state.sort.key, d)}
+                    />
+                  ),
+                },
+              ]}
+            />
             <FilterMenu
               dimensions={model.dimensions}
               isActive={model.isFilterActive}
@@ -479,6 +584,7 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
               icons={FILTER_ICONS}
               label="Filter tests"
             />
+            </>
           )}
         </div>
       </PageToolbar>
@@ -499,18 +605,28 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
         empty
       ) : (
         <>
-          <Table<TestCase>
+          <Table<Row>
             className="m-tests__table"
             rowKey="key"
             columns={columns}
-            dataSource={model.rows}
+            dataSource={rows}
             pagination={false}
             rowSelection={{
-              selectedRowKeys: selected,
-              onChange: (keys) => model.setSelected(keys as string[]),
+              /* Selection is by TEST, so every row of a test that appears in
+                 two groups ticks together. */
+              selectedRowKeys: rows.filter((r) => r.kind === 'test' && selected.includes(r.tc.key)).map((r) => r.key),
+              onChange: (keys) =>
+                model.setSelected([
+                  ...new Set(
+                    (keys as string[]).filter((k) => k.includes('::')).map((k) => k.split('::')[1] as string),
+                  ),
+                ]),
               columnWidth: 40,
+              /* A group header is not selectable: it is a label, and a checkbox
+                 on it would promise a "select this group" that does not exist. */
+              getCheckboxProps: (r) => ({ style: r.kind === 'group' ? { display: 'none' } : undefined }),
             }}
-            rowClassName="m-tests__row"
+            rowClassName={(r) => (r.kind === 'group' ? 'is-group-row' : 'm-tests__row')}
             /* The header sorts the WHOLE filtered list, not the page in front of
                you: antd only ever sees twenty rows, so the ordering is done in
                the shared layer and the table is told what it decided. */
@@ -519,8 +635,9 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
               if (!s?.order) model.setSort(null);
               else model.setSort(s.columnKey as TestSortKey, s.order === 'descend');
             }}
-            onRow={(tc) => ({
+            onRow={(r) => ({
               onClick: (e) => {
+                if (r.kind !== 'test') return;
                 const el = e.target as HTMLElement;
                 if (
                   el.closest('button') ||
@@ -529,7 +646,7 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
                   el.closest('.ant-dropdown')
                 )
                   return;
-                model.openTest(tc);
+                model.openTest(r.tc);
               },
             })}
           />
@@ -547,28 +664,23 @@ export function TestsList({ model, dataState, onCreate }: TestsListProps) {
                 pageSize={model.pageSize}
                 onChange={model.setPage}
                 showSizeChanger={false}
+                itemRender={pagerItem}
               />
             )}
           </footer>
         </>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closeTest}
-        title={model.open?.title ?? ''}
-        meta={
-          model.open && (
-            <>
-              <TestStatusChip status={model.statusOf(model.open)} />
-              <span>
-                {model.open.stepCount} {model.open.stepCount === 1 ? 'step' : 'steps'}
-              </span>
-              {(model.open.version ?? 1) > 1 && <span>v{model.open.version}</span>}
-            </>
-          )
-        }
-        note="The test panel — the steps, the run settings, the schedule, the versions and the review of a proposed change — is the next piece. This round is the list: the queue order, the status tabs, the filters and every action that lives on a row."
+      {/* The real thing now. It was a stub for four days, which was the honest
+          state of it: a drawer that says what is missing beats a drawer that
+          pretends the steps are there. */}
+      <TestDrawer
+        model={model}
+        creating={creating}
+        onCreated={onCreated}
+        onViewRuns={onViewRuns ? (tc) => onViewRuns(tc.title) : undefined}
+        onDismiss={(tc) => dialogs.openDismiss(tc)}
+        onDelete={(tc) => dialogs.openDelete([tc.key])}
       />
       {dialogs.elements}
     </>

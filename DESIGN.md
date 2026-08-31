@@ -2353,3 +2353,670 @@ Three notes:
 
 The control is a **dropdown**: five whole systems are picked by name, not
 scrubbed along like a grey ramp.
+
+
+## 15. Corners, tokenized by role (2026-08-31)
+
+Mehdi, on a screen share, without opening a devtool:
+
+> "The corners here are rounded, but if you look at the search bar, the corners
+> are not rounded. **Is that done on purpose?**"
+
+It was not. He was looking at the Issues toolbar, where the icon buttons sat at
+4px and the search field beside them at 2px, ten pixels apart.
+
+### The cause was the scale itself
+
+The radius was **a size scale** — `xs / sm / md / lg` — so every component
+picked from it by eye, and there was nothing to be wrong against. antd made it
+worse in a way that looks deliberate until you read it: its `borderRadiusSM` was
+the chip value, and **antd hands SM to every `size="small"` control**. So a small
+button, a small input and a checkbox came out at 2px while our own `IconButton`
+and nav rows, which never asked antd anything, sat at 4px. Two shapes for one
+kind of object, produced by two systems that each looked internally consistent.
+
+Measured before the change, on one screen: **2px** on antd's buttons, the search
+input, the checkboxes and our chips; **4px** on our icon buttons, the nav rows,
+the pagination and the filter track; **6px** on popovers; **8px** on the plane.
+Four values, no rule.
+
+### A radius is a property of what a thing IS
+
+The scale is now four role tokens and nothing else:
+
+| token | what takes it | Sharp | Soft (shipped) | Round |
+| --- | --- | --- | --- | --- |
+| `--m-radius-chip` | marks inside a row — chips, tags, counts, badges | 0 | 2 | 999 |
+| `--m-radius-control` | anything you click or type in, **at any size** — including a toggle inside a strip | 2 | 4 | 10 |
+| `--m-radius-track` | a track that wraps controls | *control + 2* | *control + 2* | *control + 2* |
+| `--m-radius-surface` | anything that contains or floats — the plane, cards, popovers, drawers, the replay frame | 4 | 8 | 16 |
+| `--m-radius-check` | the checkbox, and the one value that stops climbing | 0 | 2 | 4 |
+| `--m-radius-full` | circles and pills — the avatar, the presence dot, progress bars | — | — | — |
+
+**A control is a control at every size**, so `borderRadiusSM` is no longer
+smaller than `borderRadius`; both are the control token, and `borderRadiusLG`
+became the surface token because that is what antd actually draws popovers,
+dropdowns, drawers and modals with — not because anything in this app is large.
+
+### Nesting is arithmetic, not a smaller role
+
+The first pass gave a control nested in another control the CHIP radius, on the
+reasoning that an inner corner should be tighter. That is the right instinct and
+the wrong number, and both ways it was wrong were visible immediately:
+
+- **Soft read as sharp.** A toggle at 2px sitting on a toolbar of 4px controls
+  is the same defect this section is about, one level down. Gabriel: "the tabs in
+  the soft version are really sharp and kind of in disaccordance with the rest."
+- **Round read as miscalculated.** A fully round item inside a 10px track is a
+  pill dropped into the wrong hole — the corners are not concentric, and the eye
+  reads it as a mistake before it can name it.
+
+**Two rounded rectangles look nested when the outer radius is the inner one PLUS
+the gap between them, and wrong at every other value.** So a toggle IS a control
+and takes the control radius, and its track takes `--m-radius-track`, which is
+`calc(var(--m-radius-control) + 2px)` — the 2px both tracks in this app pad their
+items by. It is the only radius in the system that is arithmetic rather than a
+choice, and it follows the control wherever the control goes.
+
+antd needed all three of its Segmented tokens spelled out to obey it: at
+`size="small"` it reads the TRACK from `borderRadiusSM` and the thumb from
+`borderRadiusXS`, which is how the prototype panel's own toggles ended up a
+different shape from the identical-looking strip on the toolbar.
+
+### One value has to stop climbing
+
+**A checkbox may never become a circle.** CSS clamps a radius to half the box, so
+any "round" value turns a 14px square into a circle — and a circle means *one of
+these*, not *any of these*. Gabriel, on seeing it: "checkboxes can't be circles,
+that's an insane decision." He is right, and it is not a rounding-off detail: it
+is a control changing what it claims to do because a theme moved.
+
+`--m-radius-check` is capped at 0 / 2 / 4 across the three shapes and the harness
+asserts both the value and the cap.
+
+59 call sites were converted, one at a time, by asking what the object is.
+
+### Three shapes in the prototype panel
+
+`Corners: Sharp / Soft / Round`, and the three are **not one value scaled** — the
+ratio between the roles changes too, because that is what separates the looks.
+Sharp keeps the surface only twice the control, so the app reads as drawn with a
+ruler. Soft doubles at each step. Round pushes chips to a full pill while keeping
+controls at 10px: go round on everything equally and a 14px checkbox becomes a
+circle nobody can tell from a radio button.
+
+Chips go to a full pill in Round and that is the point of it; the checkbox does
+not follow them, for the reason above.
+
+**The three numbers go to antd as numbers**, through `ThemeOverrides.radii`, for
+the same reason the colours and the fonts do: antd computes with the radius and
+cannot read a custom property. Switch only the CSS and every button, input,
+checkbox, popover and pager keeps the old shape while everything we drew
+ourselves changes — which is the exact inconsistency the control exists to end.
+
+### The check is "one shape per kind", not "the value changed"
+
+`proto-check` walks all three shapes and asserts five things each: the tokens
+hold the expected values; **antd's input, antd's button, our icon button, our nav
+row and both strips' items are all the control value**; **both tracks are exactly
+item + 2**, so the corners are concentric rather than merely both rounded; **the
+checkbox is still a square**; and **no element on screen carries a radius outside
+the scale** — a stray literal shows up as an extra bucket rather than hiding
+behind a spot check. Fifteen assertions, and the second is the one that would
+have caught the original defect.
+
+⚠ One selector trap, found while writing them: **antd v6 draws the checkbox on
+`.ant-checkbox` itself — there is no `.ant-checkbox-inner` any more**, and a
+check written against the old markup measures nothing and reports `null`.
+
+
+## 16. The drawers, brought over from production (2026-08-31)
+
+Mehdi, 08-28, after checking the pages were complete: *"You have to bring those
+in… bring in whatever slide-outs are missing there."* The list, the runs log and
+the environments had been real for three days and the three things they open
+were a stub that said so.
+
+This is the port of the production Kai drawers - `TestDrawer`, `RunDrawer` and
+the steps editor under them, about 3,900 lines - onto Graphite's design system.
+Not a copy: the lifecycle and the arguments come over intact, the components
+and the tokens are this app's.
+
+### The data had to become real first
+
+The list only ever needed `stepCount: number`. A drawer needs the steps, so:
+
+- **`steps: string[]` on every test**, written out as real sentences for all 31.
+  Placeholders would have proved nothing about row height, wrapping or the
+  inline editor. The fifty-step sweep is still generated - what that one is FOR
+  is the scroll.
+- **`stepCount` is derived** (`steps.length`) rather than stored. A count beside
+  a list is a second copy of the list's length, and they drift the first time
+  somebody edits one.
+- **A revision is a real diff.** `PendingRevision.changes` was a number; it is
+  now `StepChange[]`, authored against the current indices, with no "changed"
+  kind - a reworded step is a removal and an addition, the way a diff says it.
+- **`history: TestVersion[]`**, so the version switcher and the per-step history
+  popover have something to switch to.
+- **A merge holds GROUPS**, one per participant, not a flattened list. A merge is
+  a proposal about order; flattening first throws away the only decision in it.
+- **A run's detail is derived, not stored.** `runSteps` reads the test's own
+  steps and colours them from `failedStep`; the console and the network come
+  from a hash of the run's key. Eighty runs each carrying their own copy of four
+  steps is eighty chances to contradict the test they came from.
+
+`steps-logic.ts` is the pure layer under all of it - `buildReviewItems`,
+`resolveItems`, `isStruck`, `applyRevision`, `saveSteps`, `stepHistory`,
+`flattenMerge` - ported nearly verbatim, because it is the part of that feature
+nobody has ever complained about.
+
+### One shell, three objects
+
+`EntityDrawer` is the only way to open something in this app. Its rules:
+
+- **The eyebrow says what and in what state**: "Test · Needs review", "Run ·
+  Failed". Production distinguished the three types with a coloured icon tile,
+  which is decoration; a word survives being read aloud.
+- **The footer owns the commit, the header owns immediate state.** Save is
+  bottom right; Pause is top right. A primary button in the header would put two
+  accents on one surface.
+- **The body is `Section`s**, hairline-separated, and that is the only way to add
+  one - a drawer cannot grow a heading of its own size.
+
+### Edits buffer, and Save commits
+
+Nothing typed in the drawer reaches the list behind it until Save: closing
+changes nothing, which is what makes it safe to open a test just to read it. The
+footer says what THIS drawer commits - "Create test", "Combine 9 steps", "Save
+v3", "Approve steps", "Save" - and the destructive action is on the left in all
+five, so it is never where the primary was a moment ago.
+
+**A draft is a proposal, so its footer is about accepting it**, and approving is
+not scheduling: "I accept these steps" and "run this every morning" are two
+sentences. Production made that a three-step wizard inside the drawer; here the
+drawer's own sections already run Steps → Run settings → Tags, so the primary
+says "Approve steps" and the schedule field is right there. **The reject grammar
+survives**: you DISMISS a suggestion the agent made and you DELETE work a person
+did, and a footer never offers both.
+
+### A review is the ordinary list
+
+The single most important thing carried over. A proposed revision is not a
+read-only diff screen: it is the same editable list with the proposal's rows
+tinted, marked `+`/`−`, and carrying one accept/reject pair. Everything else
+still edits, drags and deletes, so you are never made to accept a wording you
+can see is wrong just because the agent wrote it.
+
+Two colours on one surface, which this app otherwise never does, and the
+exception is earned: an addition and a removal are opposites, and a diff that
+distinguishes them by position alone is not a diff. Both also carry a glyph.
+
+### Three defects the harness found, none of which a screenshot could
+
+1. **The chained insert ate the text.** Enter on a fresh step committed the text
+   and then inserted the next row - two updates reading the same `items`, so the
+   second overwrote the first and you got an empty step instead of the one you
+   had just typed. It is one update now. Every frame of the render was correct;
+   only the typing was wrong.
+2. **Escape closed the whole drawer.** The step editor and the rename field both
+   listen for Escape to abandon a line, and antd's Drawer listens for it to
+   close - so abandoning a misclick threw away every buffered edit on the panel.
+   The inner handler has to say it handled it.
+3. **A hook ran after an early return.** `if (!test) return null` sat above a
+   `useMemo`, so the render where the drawer closes ran a different number of
+   hooks. React says "rendered more hooks than during the previous render" and
+   the drawer never opens at all.
+
+`agents-check` is 66 checks now. The four new ones about the steps drive the
+keyboard and the mouse rather than reading the DOM: type into a step, chain the
+next one, press Escape, drag a row, then close without saving and assert the row
+behind is untouched.
+
+### What a run drawer says that the log cannot
+
+**Where it stopped.** Every step carries its own result, the failing one carries
+the error inline, and everything after it reads *skipped* - a run does not fail
+eleven times, it fails once and stops. **A run in flight reports progress and
+nothing more**: its steps are known because the test knows them, its results are
+not, and `unknown` is drawn as its own mark rather than as pending. There are no
+controls on it either, because a run cannot be paused or stopped once it has
+started - pausing belongs to the test, where it stops the next one.
+
+**Activity is the three things you would check on a session** - screenshots,
+network, console - and a passed run captured none of the last two, so those tabs
+are DISABLED with the reason on hover rather than hidden. A panel that appears
+and disappears between runs is a panel nobody trusts. The screenshots are
+labelled placeholders: a stock image would be a lie about what this build
+captures.
+
+### Not done
+
+The **audit report screen**, which is the third of the three slide-outs Mehdi
+asked for. The Tests half is finished.
+
+
+## 17. The batch off the drawers (2026-08-31)
+
+Everything here came from Gabriel driving the build, which is why most of it is
+a detail that only shows up under a cursor.
+
+**The tag's X was a sibling pulled over the chip's edge by a negative margin, so
+at a pill radius it sat on the border and read as broken.** `Chip` takes an
+`onRemove` now and draws the control INSIDE its own outline: a chip and the X
+that takes it away are one object.
+
+**The rename target ran the full width of the header.** It fits the name now -
+a hover tint across an empty row says the whole row is editable, and most of
+that row is nothing.
+
+**A decision is the only colour on a step row.** Undecided, accept and reject
+are the same muted glyph; hovering colours the side you are about to take;
+taking it lifts that side onto the page's own surface, green or red. The grey
+pressed chip that was there first said "pressed" and nothing about which way.
+
+**Tooltips had 4px of spare height under the text.** antd floors the box at
+`controlHeight`, 30px over 26px of content, and the block puts the slack at the
+bottom. ⚠ The fix needs TWO classes - antd's own rule is
+`.ant-tooltip .ant-tooltip-container`, and a single class ties and loses on
+order. The first attempt changed nothing and the computed value was still 30px.
+
+**Three filter-pill treatments, in the panel.** Mehdi's note was two notes: the
+pill's colours, and "the background of this section shouldn't be gray, it gives
+a muted vibe". The grey band went in all three. What is left is an argument
+about what an applied filter IS - `outline` a control you can take off, `tinted`
+a state the list is in, `text` a sentence with no chip at all. One set of markup;
+a treatment that needed its own JSX would be a fourth component pretending to be
+a variant.
+
+**Home left the menu** (it was going to carry the digest, which is backend work)
+and **the `+` became a search button** - the create-your-own-agent affordance sat
+against the product's own argument, and what you actually reach for from
+anywhere is finding something.
+
+**One chevron in the app.** antd draws its own on every Select; it is lucide's
+now, set on `ConfigProvider` rather than on seven call sites, so a new Select
+cannot arrive wearing the other one.
+
+**The screenshots expand.** Same three tabs, same components, one FIXED stage
+height so switching tabs - or landing on an empty console - never resizes the
+window under the cursor. The frame itself is the expand control: the thing you
+want bigger is the picture.
+
+**Thirteen accents, as a palette rather than a segmented control.** Thirteen
+hues in thirteen labelled cells is thirteen words nobody reads. They are
+generated from a hue and nothing else, so every one lands with the same contrast
+against the same surfaces. ⚠ The red half of the wheel is still a real
+constraint - an accent too near danger makes a selected row read as an alarm -
+so the generator computes the distance to the nearest alarm colour and each
+swatch carries it in its tooltip. The trade is visible when it is picked.
+
+**And the prose left the prototype panel.** Every control had a paragraph under
+it explaining itself. Nine paragraphs in a 264px column is a document, and the
+panel is a set of switches.
+
+Smaller, all measured: the count sits tighter to its label (at the strip's own
+spacing the number floats between two labels and belongs to neither); the
+ordering row's button and field are one control the width of the other two, with
+the field flexing rather than carrying a second hardcoded width; the filter
+menu's search is rounded on four corners like any text field; the insert `+` had
+been drawn into a box smaller than itself and came out clipped; an empty steps
+list offers a real "Write the first step" button, because a hairline that only
+appears on hover is invisible when there is nothing to hover; and an empty step
+editor has a placeholder, because a bare caret in white space reads as a
+rendering glitch rather than as a field waiting for you.
+
+
+## 18. Motion, and the tests list's own Display (2026-08-31)
+
+**The strip's selected surface MOVES.** One element that slides between tabs
+rather than a background that appears on one item and disappears from another.
+Two reasons, neither decorative: it says the tabs are views of one list, and it
+carries the eye to where the change happened. It is measured in JS - the items
+are as wide as their labels and the strip wraps, so there is no ratio to compute
+it from - and three states decide whether it reads as a nice touch or a glitch:
+it does not animate on first paint, it does not animate when the strip reflows
+under it, and it does not exist at all when the selection is multiple or empty,
+where one sliding surface would be a lie about what is on. 180ms on transform
+and width, off under `prefers-reduced-motion`.
+
+⚠ **And the modal's tabs stopped jumping.** antd takes `-selected` off the item
+for the length of its own thumb motion, so a border that exists only on the
+selected item vanished for those frames and the control lost 2px of height -
+which in a centred modal is a 2px jump and a 1px slide on every tab change.
+Measured per frame: 28 → 26 → 28. The border is on every item now, transparent
+until selected, and on the thumb as well.
+
+**The tests list has a Display menu**, and `DisplayMenu` became `DisplayShell`
+to give it one: the chrome (trigger, badge, popover, row rhythm, column pills,
+reset) belongs to the shell, the vocabulary to the caller. The issue queue groups
+by impact and hides issues; the tests list groups by **status, environment, tag,
+schedule or last result**, orders by the same keys its column headers write, and
+toggles seven columns. Two menus that looked identical and shared nothing would
+be the lookalike this system keeps deleting.
+
+Two rules make the grouping useful rather than decorative: a test appears in
+**every** group it belongs to when the axis is multi-valued (a test on Production
+and Staging is under both, because "what runs on Staging" has to be answerable by
+reading one block), and every axis has a group for the rows with nothing on it,
+named for what is missing, because those are usually the ones you are looking
+for. ⚠ Which forces a **group-scoped row key**: two rows carrying one test's key
+is a duplicate-key warning and a table that silently drops one of them.
+Selection maps back to the test underneath, so both rows tick together.
+
+**The mark follows the accent.** It was on its own `brand-*` ramp, which was
+right while the brand was fixed and wrong the moment the accent became a choice:
+a logo in one colour beside a UI in another reads as two products.
+
+Also: the group header is a label, not a row - it had inherited the table's row
+height and sat at the top of a 39px band, which read as an empty row between the
+heading and the first item.
+
+---
+
+## 19. The menu, narrow (2026-08-31)
+
+The one thing section 18 left open. The note there said a collapsed sidebar
+"wants more than a width transition — what a collapsed nav does with the agent
+counts, the sections, the credits meter and the project switcher is the whole
+design of it," and that turned out to be exactly right: the width was an hour
+and the four questions were the day.
+
+### One rule, and everything follows from it
+
+**The collapse takes the words. Everything else is a reduction of itself rather
+than a substitute for itself.** No row moves to a different part of the menu, no
+control disappears behind a "more", nothing is replaced by a different component
+that happens to fit. Applied four times:
+
+| open | narrow |
+| --- | --- |
+| project name + switcher + search on one row | the mark, with search folded under it |
+| glyph, label, count column | the glyph, with a dot where the count was |
+| "AGENTS" | a hairline the width of the glyph column |
+| five tool glyphs across | the same five, folded into one column |
+| Credits · bar · 12.4k / 50k | the bar, turned a quarter turn |
+
+52px: one 28px glyph with an equal 12px gutter either side. The left gutter
+drops from 16 to 12 to get that, which has a pleasant side effect — collapsed,
+the window's left margin finally matches the plane's other three, so the whole
+app is wrapped in one even 12.
+
+### The counts: three attempts, and the third is the design
+
+This is the question the open item named first, and the two wrong answers are
+worth keeping because they were both defensible when written.
+
+1. **A count COLUMN beside the glyphs** (76px: 16 + 28 glyph + 20 figure + 12).
+   The argument was that "the nav is the queue" is the menu's whole claim and a
+   collapse that drops the counts drops the claim. It read well and it was
+   wrong for a reason that has nothing to do with counts: *a second column puts
+   every glyph off the middle of the strip*, so a rail that was 76px wide looked
+   like a 56px rail shoved left. Gabriel, twice: "the numbers make all the icons
+   seem disaligned, when they should be aligned center."
+2. **A chip on the glyph's shoulder.** Centres the glyph and keeps the figure.
+   Also wrong, and the objection is the one that generalises: *the chip has to
+   grow with the number.* "What if I have 3 digits — I can barely see the icon."
+   A 28px tile has room for one thing, and that thing is the glyph.
+3. **A dot, and the figure in the tooltip.** What ships. The dot is the
+   notification bell's dot, in the bell's colour, meaning the bell's thing:
+   there is something here for you. The menu is still a queue, just one you read
+   in two steps instead of one — which agent has work at a glance, how much on
+   hover.
+
+⚠ **The dot is not red.** Red is the alarm colour and it is spoken for: a
+critical issue, a failed run, a destructive confirm. Work arriving is the normal
+state of a product whose whole proposition is that it works while nobody is
+watching, and marking that in the alarm colour tells you the product is broken
+every time it does its job. The bell was recoloured to match.
+
+**Only one of the two forms is ever on screen.** The figure is in the DOM at
+both widths and the dot is too; CSS shows the one the width has room for. There
+is no second row component and nothing to keep in agreement.
+
+### The sections: a flyout, and only where there is something inside
+
+Two shapes, decided by whether the row has anything in it.
+
+- **No sections → a plain tooltip with the name and the count in words**
+  ("Issues · 11 open"). Nothing else was taken from the row, so nothing else has
+  to be given back.
+- **Sections → a card**, because a nested list genuinely has nowhere to go at
+  52px. Its head is the row — same label, same figures — and under it the same
+  section rows the open menu draws, from the same `AgentEntry.sections`. An
+  agent that grows a fourth section grows it in both places or neither.
+
+This was one card for every row for about an hour. Gabriel: "the tooltip can be
+only the name, it doesn't need to have a number if it's well shown in the icon."
+The general rule that fell out: **a popup owes you what the width took, not a
+copy of what is in front of you.**
+
+The foot's tools keep their plain tooltips. The collapse took nothing from them
+— they were glyphs before it and glyphs after — so there is nothing for a card
+to give back.
+
+### The choreography is asymmetric, and that is the whole craft of it
+
+- **Collapsing:** the words leave first (80ms fade, no delay), the box closes
+  after them (180ms).
+- **Expanding:** the box opens first (180ms), the words arrive last (130ms fade,
+  delayed 130ms).
+
+Text is therefore never re-wrapping inside a box that is still moving, which is
+the single thing that makes a width transition look cheap. Both directions are
+declared once, on the elements that move, and the direction is chosen by which
+rule the browser is transitioning *to*.
+
+**The layout FOLDS rather than switching.** The brand pair is a `flex-wrap` with
+a minimum width on the switcher, so search drops underneath it on its own
+somewhere around 160px; the tool bar is a **grid of 28px tracks with
+`auto-fill`**, so it goes five across, then three, then one, on the same frames
+the width is already animating. A row flipped to a column by a class would
+arrive at the column while the menu was still 256px wide, which is the most
+obvious way to make a collapse look broken.
+
+**The glyphs drift; they do not travel.** Six pixels across the whole
+transition, all of it the gutter closing and the row losing its padding. The
+collapse reads as the labels leaving rather than as two different navs.
+
+### The credits meter turns instead of shrinking
+
+Laid flat in a 28px column the bar was 28×4 with a 7px fill in it: present in
+the DOM and invisible on screen, which is the worst of both. Gabriel: "you can't
+see anything, it's not well adapted." The narrow menu has no width and plenty of
+height, so the measure takes the axis that is free — the same track, the same
+fill, rotated a quarter turn and filling from the bottom. 6×40 instead of 4×28,
+and the rotation runs on the same 180ms as the width, so it reads as the object
+turning to fit rather than as a different component appearing.
+
+### Who decides, and the shortcut
+
+`matchMedia` on 1080px, and the rule is one sentence: **the window sets it when
+it CROSSES, and you override it until the next crossing.** That is what the
+`change` event already means — it fires on the crossing and never in between —
+so there is no resize handler fighting the person using it and no stored
+preference to go stale. `⌘\` / `Ctrl+\` toggles it, and the toggle sits in the
+foot's tool row with the other preferences about the chrome, in the same place
+at both widths.
+
+A CSS media query cannot do this: it would re-decide on every frame of a drag
+and could never be overridden.
+
+### Two defects the collapse exposed
+
+⚠ **Every nav row had an invisible hover in light mode.** `--m-surface-hover` is
+`#f0f3f4`, which is the exact colour of the ground the menu has been sitting on
+since the 08-28 wrap — the token was only ever measured against a white card.
+Nobody noticed while the labels were there to read; at 52px the hover is the
+only thing that says a tile is a control. Rows now take their two steps from
+`--m-nav-row-hover` / `--m-nav-row-on`, and **the same row inside a flyout takes
+a different pair**, because in there it is standing on a card and has to step
+the other way. One component, two grounds, two steps. The selected row is now
+the plane's own colour, so the row you are standing on and the card it opens are
+the same surface lifted off the same ground.
+
+⚠ **`.ant-popover-inner` does not exist in antd v6.** The chain is
+popover → container → content, and `antd-overrides.css` had been giving every
+popover in the app a hairline against a class that has not existed since the v6
+upgrade — so they have all been a shadow with no edge. A selector against a
+missing class is not an error; it is a rule that quietly stops applying. Third
+time in two weeks that antd's markup has moved under a rule (`:where()` ties,
+`.ant-checkbox-inner`, now this): **measure the chain before writing a selector
+against this library.**
+
+### The collapsed width is arithmetic, not a number
+
+`calc(var(--m-space-5) * 2 + 1.75rem)`. Frozen at a round value it was 4px short
+in the prototype's Spaced density and the row was silently clipped. Any measure
+built out of gutters has to be built out of the gutter *tokens*.
+
+---
+
+## 20. The batch alongside it (2026-08-31)
+
+Five things Gabriel caught while the menu was being built. They are here rather
+than in their own sections because each one is a paragraph.
+
+### A run in flight says nothing about individual steps, and that is the design
+
+The complaint was flat: "there was no way to know in a running test which step is
+being tested." **Three versions, and the third one is the only honest one.**
+
+1. **A turning arc on the step the runner was on.** Gabriel: "you even created a
+   different loader, it makes no sense." Right twice — a second loading
+   vocabulary in a build that already has one, and a single spinner answers "is
+   something happening" rather than "what is happening now".
+2. **The whole tail shimmering, loudest on the current step.** Better, still
+   wrong, and wrong at the root: "the runs with status running can't have check
+   or loading indicators in the steps, **because we don't know which step we're
+   at**."
+
+That last sentence is the whole section. `runSteps` had been *inferring* a
+position from elapsed time — so many seconds a step — and handing back "passed,
+passed, running, unknown". Every part of that was invented: the ticks were a
+guess dressed as a result, and the one "running" step was a guess about the only
+thing anybody wanted to know. **So while a run is running, every step is
+running.** They are all the same to us, so the drawer draws them all the same:
+same empty ring, same colour, same weight.
+
+What is left is the truth: **this is happening now**, said by the app's own
+loading language rather than a glyph of its own.
+
+- **The text sweeps horizontally, every row in phase.** The band is sized in
+  pixels rather than as a percentage of each line, so a two-word step and a
+  nine-word step are not sweeping at different speeds; every row starts on the
+  same left edge, so it reads as one wave crossing the panel.
+- **One pulse walks down the wires, one step at a time.** The band crosses a row
+  in the first eighth of the cycle and the wire rests for the other seven, with
+  each row starting 0.3s after the one above — so at any moment exactly one
+  connector is lit and the lit one is moving down. That is the one claim the
+  drawer can honestly make about a running test: it is going that way.
+
+⚠ **One wire per GAP — circle to circle — and it overflows its own row.** Two
+versions cut the gap in half before this one: first two segments meeting at a
+node, then one segment per *row*, which is the same mistake wearing a different
+name, because a row's box is centred on its node rather than spanning between
+two. Either way the pulse crossed half the gap, stopped, and the other half
+started later. The wire starts at this row's node and ends 18px into the next
+one — `top: 18px; bottom: -18px` — so it is one element over one gap. It works
+because a row is not a stacking context and every node carries `z-index: 1`, so
+the next circle paints over the far end of the wire exactly as its own does over
+the near end.
+
+### One mark for five outcomes
+
+It used to be a Check, an X, a SkipForward, a spinning Loader and a Circle: five
+shapes at three sizes, so the column had no rhythm. Now every step wears the same
+14px ring and the outcome is drawn inside it; running has no glyph at all.
+Colour marks the exception and nothing else — the chip in the section header
+already says the run passed, and eight green ticks say it eight more times.
+
+⚠ **The node sits on top of the wire.** "The line is on top of the red circle and
+it's ugly." The ring is filled with the panel's own surface and lifted one
+layer. The row rules went at the same time — a vertical rail crossing a
+horizontal rule at every step is two grids fighting, and the rail already
+separates.
+
+### The drawer's close button
+
+antd v6 renders its close as the first thing inside the header title, so the X
+landed on the eyebrow's line and pushed the whole lead block 30px right: a
+header whose left edge did not agree with the body's, and a dismiss control
+sitting in the middle of the writing. `closable` is off and the close is ours —
+an IconButton like every other icon-only control — as the last item in the
+header's own group, after a hairline. **The hairline is the whole point:** Rerun
+and Pause act on the thing, the X dismisses the surface it is in, and a dismiss
+that looks like a sibling of "Pause" is a dismiss you press by accident.
+
+### Synthetics, and its first section is Tests
+
+The agent is called **Synthetics** now, which is what this category is called
+everywhere else, and that frees the word "Tests" for the section that is a list
+of tests. It had to be "List" only for as long as the agent was also called
+Tests, because a child repeating its parent reads as a mistake.
+
+The menu's group label is **Agents**, not Products — they were products while
+the question was how the company sells them; the menu's question is what is
+working for you. **"Add agent" is hidden**, not redesigned: it answered "where
+does the next agent go", and nothing in this build creates one. Its two lines of
+CSS sit on top of `.m-nav-item`, so it comes back as a row rather than as a
+shape of its own.
+
+### The pager's arrows are lucide
+
+Same complaint and same answer as `SortIcon`: antd draws prev/next with its own
+filled, sharp-cornered icon set, and next to a page of 1.75px rounded strokes
+they were the two hardest shapes on screen — which is backwards, because
+"previous page" is the quietest control in the footer. `pagerItem` is spread as
+`itemRender` at all three pagers, so a fourth list cannot get antd's arrows back
+by forgetting.
+
+### The dot, in both widths and one level down
+
+Three follow-ons, all the same mark.
+
+**It rides the figure, not the row.** Given its own auto margin in the open
+menu it floated at the count column's left edge, a dozen pixels off a single
+digit — "the dot is in the middle of nowhere". It lives *inside* the count now,
+hard against the number, and the pair is what gets right-aligned. Narrow, the
+number is hidden and what is left climbs onto the glyph's shoulder: one element,
+two placements, no second mark to keep in agreement. **The figure caps at 99+**,
+because three digits is a different column width for one agent.
+
+**It is on both lists**, meaning the same thing one level down: the menu says an
+agent has found something, a list says which of the things it found you have not
+read. In Issues that is "not opened yet" — seeded from the three most recently
+seen and cleared the moment you open one, because opening *is* reading it and a
+"mark as read" control is one nobody uses. In Synthetics it is a draft, a
+revision or a merge waiting on you, which is why that one carries a tooltip and
+the issues one does not.
+
+The tests list had its own 6px dot trailing the row; it draws the app's 5px one
+leading it now. **`.m-dot` lives in `base.css`**, with the nav, the two lists
+and the notification bell all reading it — three call sites is where a local
+class becomes a system mark.
+
+⚠ **The slot is on every row, empty on most of them.** Rendered only where it
+applies, it pushed those three titles five pixels right of the other seven — and
+a column of titles that does not line up is the exact complaint the dot came out
+of in the menu.
+
+### The critical flag stops climbing with the chip radius
+
+It is a 20px **square** on `--m-radius-chip`, so the Round preset's 999 clamped
+to half the box and turned it into a circle — and a circle in a table row is an
+avatar or a one-of-these, never a mark on that row. It reads `--m-radius-check`
+now, which was capped at 0/2/4 for the checkbox. ⚠ **The token's role is wider
+than its name:** it is every small square mark that must not become a circle, and
+the checkbox was only the first thing to need it.
+
+### Not done
+
+**The search button is the loudest thing in the collapsed rail.** It kept the
+accent fill it earned as a `+` — "the one control that MAKES something rather
+than going somewhere" — and search makes nothing. At 256px it is a small square
+at the end of a row; at 52px it is a black tile under the mark and the first
+thing your eye lands on. Flagged, not changed: the fill is a deliberate decision
+from a previous round and reversing it is Gabriel's call.
+
+**No Storybook story for the flyout**, and the collapsed nav's stories cover the
+two states but not the transition.

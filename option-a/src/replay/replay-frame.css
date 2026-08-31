@@ -8,7 +8,7 @@
   position: relative;
   overflow: hidden;
   border: 1px solid var(--m-border-default);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-surface);
   background: var(--m-surface-default);
   /* Its own container, so everything inside can be sized in cqh and scale from
      a 1500px stage to a 280px thumbnail on one set of rules. This is also the

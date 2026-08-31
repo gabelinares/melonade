@@ -390,7 +390,7 @@
   }
 }
 
-/* ── accent: Teal ─ the shipped accent ── */
+/* ── accent: Teal ─ 60° from success, the nearest alarm colour ── */
 :root[data-accent='teal'] {
   --m-surface-selected: #e5f5f8;
   --m-content-accent: #0d636f;
@@ -422,8 +422,13 @@
     --m-focus-ring: #4f99a6;
   }
 }
+:root[data-accent='teal'] { --m-brand-mark: #287b88; }
+:root[data-accent='teal'][data-theme='dark'] { --m-brand-mark: #4f99a6; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='teal']:not([data-theme='light']) { --m-brand-mark: #4f99a6; }
+}
 
-/* ── accent: Indigo ─ the suggestion, and quiet at these chromas. Measured AROUND the wheel rather than by subtracting, it sits 112 degrees off danger, 160 off warning and 123 off success, so a selected row can never be mistaken for an alarm - which is the constraint that rules out the whole red half of the wheel, watermelon included ── */
+/* ── accent: Indigo ─ 112° from danger, the nearest alarm colour ── */
 :root[data-accent='indigo'] {
   --m-surface-selected: #eef1fe;
   --m-content-accent: #4c5482;
@@ -455,6 +460,429 @@
     --m-focus-ring: #7e89bb;
   }
 }
+:root[data-accent='indigo'] { --m-brand-mark: #616b9d; }
+:root[data-accent='indigo'][data-theme='dark'] { --m-brand-mark: #7e89bb; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='indigo']:not([data-theme='light']) { --m-brand-mark: #7e89bb; }
+}
+
+/* ── accent: Blue ─ 100° from success, the nearest alarm colour ── */
+:root[data-accent='blue'] {
+  --m-surface-selected: #e9f3fe;
+  --m-content-accent: #355b81;
+  --m-border-accent: #49729c;
+  --m-status-info-bg: #e9f3fe;
+  --m-status-info-border: #b9d4f1;
+  --m-status-info-fg: #274562;
+  --m-focus-ring: #49729c;
+}
+
+:root[data-accent='blue'][data-theme='dark'] {
+  --m-surface-selected: #0e1e2e;
+  --m-content-accent: #95b8dd;
+  --m-border-accent: #49729c;
+  --m-status-info-bg: #0e1e2e;
+  --m-status-info-border: #1c3249;
+  --m-status-info-fg: #b9d4f1;
+  --m-focus-ring: #6890b9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='blue']:not([data-theme='light']) {
+    --m-surface-selected: #0e1e2e;
+    --m-content-accent: #95b8dd;
+    --m-border-accent: #49729c;
+    --m-status-info-bg: #0e1e2e;
+    --m-status-info-border: #1c3249;
+    --m-status-info-fg: #b9d4f1;
+    --m-focus-ring: #6890b9;
+  }
+}
+:root[data-accent='blue'] { --m-brand-mark: #49729c; }
+:root[data-accent='blue'][data-theme='dark'] { --m-brand-mark: #6890b9; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='blue']:not([data-theme='light']) { --m-brand-mark: #6890b9; }
+}
+
+/* ── accent: Sky ─ 80° from success, the nearest alarm colour ── */
+:root[data-accent='sky'] {
+  --m-surface-selected: #e6f4fc;
+  --m-content-accent: #21607a;
+  --m-border-accent: #367794;
+  --m-status-info-bg: #e6f4fc;
+  --m-status-info-border: #b0d8ec;
+  --m-status-info-fg: #18485d;
+  --m-focus-ring: #367794;
+}
+
+:root[data-accent='sky'][data-theme='dark'] {
+  --m-surface-selected: #06202b;
+  --m-content-accent: #88bdd7;
+  --m-border-accent: #367794;
+  --m-status-info-bg: #06202b;
+  --m-status-info-border: #103545;
+  --m-status-info-fg: #b0d8ec;
+  --m-focus-ring: #5995b2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='sky']:not([data-theme='light']) {
+    --m-surface-selected: #06202b;
+    --m-content-accent: #88bdd7;
+    --m-border-accent: #367794;
+    --m-status-info-bg: #06202b;
+    --m-status-info-border: #103545;
+    --m-status-info-fg: #b0d8ec;
+    --m-focus-ring: #5995b2;
+  }
+}
+:root[data-accent='sky'] { --m-brand-mark: #367794; }
+:root[data-accent='sky'][data-theme='dark'] { --m-brand-mark: #5995b2; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='sky']:not([data-theme='light']) { --m-brand-mark: #5995b2; }
+}
+
+/* ── accent: Cyan ─ 45° from success, the nearest alarm colour ── */
+:root[data-accent='cyan'] {
+  --m-surface-selected: #e5f6f5;
+  --m-content-accent: #0a6565;
+  --m-border-accent: #267d7d;
+  --m-status-info-bg: #e5f6f5;
+  --m-status-info-border: #acdcdb;
+  --m-status-info-fg: #074c4d;
+  --m-focus-ring: #267d7d;
+}
+
+:root[data-accent='cyan'][data-theme='dark'] {
+  --m-surface-selected: #012222;
+  --m-content-accent: #81c2c1;
+  --m-border-accent: #267d7d;
+  --m-status-info-bg: #012222;
+  --m-status-info-border: #053838;
+  --m-status-info-fg: #acdcdb;
+  --m-focus-ring: #4e9b9a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='cyan']:not([data-theme='light']) {
+    --m-surface-selected: #012222;
+    --m-content-accent: #81c2c1;
+    --m-border-accent: #267d7d;
+    --m-status-info-bg: #012222;
+    --m-status-info-border: #053838;
+    --m-status-info-fg: #acdcdb;
+    --m-focus-ring: #4e9b9a;
+  }
+}
+:root[data-accent='cyan'] { --m-brand-mark: #267d7d; }
+:root[data-accent='cyan'][data-theme='dark'] { --m-brand-mark: #4e9b9a; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='cyan']:not([data-theme='light']) { --m-brand-mark: #4e9b9a; }
+}
+
+/* ── accent: Emerald ─ only 15° from success - a selected row will read as an alarm ── */
+:root[data-accent='emerald'] {
+  --m-surface-selected: #e7f6ef;
+  --m-content-accent: #27654d;
+  --m-border-accent: #3c7d63;
+  --m-status-info-bg: #e7f6ef;
+  --m-status-info-border: #b3dcc9;
+  --m-status-info-fg: #1c4d3a;
+  --m-focus-ring: #3c7d63;
+}
+
+:root[data-accent='emerald'][data-theme='dark'] {
+  --m-surface-selected: #082218;
+  --m-content-accent: #8dc2aa;
+  --m-border-accent: #3c7d63;
+  --m-status-info-bg: #082218;
+  --m-status-info-border: #13382a;
+  --m-status-info-fg: #b3dcc9;
+  --m-focus-ring: #5d9b81;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='emerald']:not([data-theme='light']) {
+    --m-surface-selected: #082218;
+    --m-content-accent: #8dc2aa;
+    --m-border-accent: #3c7d63;
+    --m-status-info-bg: #082218;
+    --m-status-info-border: #13382a;
+    --m-status-info-fg: #b3dcc9;
+    --m-focus-ring: #5d9b81;
+  }
+}
+:root[data-accent='emerald'] { --m-brand-mark: #3c7d63; }
+:root[data-accent='emerald'][data-theme='dark'] { --m-brand-mark: #5d9b81; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='emerald']:not([data-theme='light']) { --m-brand-mark: #5d9b81; }
+}
+
+/* ── accent: Green ─ only 10° from success - a selected row will read as an alarm ── */
+:root[data-accent='green'] {
+  --m-surface-selected: #ecf5ea;
+  --m-content-accent: #406239;
+  --m-border-accent: #557a4d;
+  --m-status-info-bg: #ecf5ea;
+  --m-status-info-border: #c0dabb;
+  --m-status-info-fg: #304a2a;
+  --m-focus-ring: #557a4d;
+}
+
+:root[data-accent='green'][data-theme='dark'] {
+  --m-surface-selected: #132110;
+  --m-content-accent: #9ebf97;
+  --m-border-accent: #557a4d;
+  --m-status-info-bg: #132110;
+  --m-status-info-border: #22361e;
+  --m-status-info-fg: #c0dabb;
+  --m-focus-ring: #74986c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='green']:not([data-theme='light']) {
+    --m-surface-selected: #132110;
+    --m-content-accent: #9ebf97;
+    --m-border-accent: #557a4d;
+    --m-status-info-bg: #132110;
+    --m-status-info-border: #22361e;
+    --m-status-info-fg: #c0dabb;
+    --m-focus-ring: #74986c;
+  }
+}
+:root[data-accent='green'] { --m-brand-mark: #557a4d; }
+:root[data-accent='green'][data-theme='dark'] { --m-brand-mark: #74986c; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='green']:not([data-theme='light']) { --m-brand-mark: #74986c; }
+}
+
+/* ── accent: Lime ─ only 30° from success - a selected row will read as an alarm ── */
+:root[data-accent='lime'] {
+  --m-surface-selected: #f0f4e7;
+  --m-content-accent: #535e2b;
+  --m-border-accent: #69763e;
+  --m-status-info-bg: #f0f4e7;
+  --m-status-info-border: #ccd6b2;
+  --m-status-info-fg: #3e471f;
+  --m-focus-ring: #69763e;
+}
+
+:root[data-accent='lime'][data-theme='dark'] {
+  --m-surface-selected: #1b1f0a;
+  --m-content-accent: #aebb8c;
+  --m-border-accent: #69763e;
+  --m-status-info-bg: #1b1f0a;
+  --m-status-info-border: #2d3415;
+  --m-status-info-fg: #ccd6b2;
+  --m-focus-ring: #86935e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='lime']:not([data-theme='light']) {
+    --m-surface-selected: #1b1f0a;
+    --m-content-accent: #aebb8c;
+    --m-border-accent: #69763e;
+    --m-status-info-bg: #1b1f0a;
+    --m-status-info-border: #2d3415;
+    --m-status-info-fg: #ccd6b2;
+    --m-focus-ring: #86935e;
+  }
+}
+:root[data-accent='lime'] { --m-brand-mark: #69763e; }
+:root[data-accent='lime'][data-theme='dark'] { --m-brand-mark: #86935e; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='lime']:not([data-theme='light']) { --m-brand-mark: #86935e; }
+}
+
+/* ── accent: Amber ─ only 5° from warning - a selected row will read as an alarm ── */
+:root[data-accent='amber'] {
+  --m-surface-selected: #f9f0e5;
+  --m-content-accent: #715122;
+  --m-border-accent: #8a6836;
+  --m-status-info-bg: #f9f0e5;
+  --m-status-info-border: #e5cdad;
+  --m-status-info-fg: #563d19;
+  --m-focus-ring: #8a6836;
+}
+
+:root[data-accent='amber'][data-theme='dark'] {
+  --m-surface-selected: #271a07;
+  --m-content-accent: #cdaf85;
+  --m-border-accent: #8a6836;
+  --m-status-info-bg: #271a07;
+  --m-status-info-border: #3f2c10;
+  --m-status-info-fg: #e5cdad;
+  --m-focus-ring: #a78657;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='amber']:not([data-theme='light']) {
+    --m-surface-selected: #271a07;
+    --m-content-accent: #cdaf85;
+    --m-border-accent: #8a6836;
+    --m-status-info-bg: #271a07;
+    --m-status-info-border: #3f2c10;
+    --m-status-info-fg: #e5cdad;
+    --m-focus-ring: #a78657;
+  }
+}
+:root[data-accent='amber'] { --m-brand-mark: #8a6836; }
+:root[data-accent='amber'][data-theme='dark'] { --m-brand-mark: #a78657; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='amber']:not([data-theme='light']) { --m-brand-mark: #a78657; }
+}
+
+/* ── accent: Orange ─ only 20° from warning - a selected row will read as an alarm ── */
+:root[data-accent='orange'] {
+  --m-surface-selected: #fdefe7;
+  --m-content-accent: #7a4b2f;
+  --m-border-accent: #946043;
+  --m-status-info-bg: #fdefe7;
+  --m-status-info-border: #edc8b4;
+  --m-status-info-fg: #5d3823;
+  --m-focus-ring: #946043;
+}
+
+:root[data-accent='orange'][data-theme='dark'] {
+  --m-surface-selected: #2b170c;
+  --m-content-accent: #d8a98f;
+  --m-border-accent: #946043;
+  --m-status-info-bg: #2b170c;
+  --m-status-info-border: #452818;
+  --m-status-info-fg: #edc8b4;
+  --m-focus-ring: #b27f62;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='orange']:not([data-theme='light']) {
+    --m-surface-selected: #2b170c;
+    --m-content-accent: #d8a98f;
+    --m-border-accent: #946043;
+    --m-status-info-bg: #2b170c;
+    --m-status-info-border: #452818;
+    --m-status-info-fg: #edc8b4;
+    --m-focus-ring: #b27f62;
+  }
+}
+:root[data-accent='orange'] { --m-brand-mark: #946043; }
+:root[data-accent='orange'][data-theme='dark'] { --m-brand-mark: #b27f62; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='orange']:not([data-theme='light']) { --m-brand-mark: #b27f62; }
+}
+
+/* ── accent: Rose ─ only 12° from danger - a selected row will read as an alarm ── */
+:root[data-accent='rose'] {
+  --m-surface-selected: #feedee;
+  --m-content-accent: #7d454a;
+  --m-border-accent: #975b60;
+  --m-status-info-bg: #feedee;
+  --m-status-info-border: #f0c4c6;
+  --m-status-info-fg: #5f3438;
+  --m-focus-ring: #975b60;
+}
+
+:root[data-accent='rose'][data-theme='dark'] {
+  --m-surface-selected: #2c1517;
+  --m-content-accent: #dba4a7;
+  --m-border-accent: #975b60;
+  --m-status-info-bg: #2c1517;
+  --m-status-info-border: #462528;
+  --m-status-info-fg: #f0c4c6;
+  --m-focus-ring: #b6797d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='rose']:not([data-theme='light']) {
+    --m-surface-selected: #2c1517;
+    --m-content-accent: #dba4a7;
+    --m-border-accent: #975b60;
+    --m-status-info-bg: #2c1517;
+    --m-status-info-border: #462528;
+    --m-status-info-fg: #f0c4c6;
+    --m-focus-ring: #b6797d;
+  }
+}
+:root[data-accent='rose'] { --m-brand-mark: #975b60; }
+:root[data-accent='rose'][data-theme='dark'] { --m-brand-mark: #b6797d; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='rose']:not([data-theme='light']) { --m-brand-mark: #b6797d; }
+}
+
+/* ── accent: Magenta ─ 47° from danger, the nearest alarm colour ── */
+:root[data-accent='magenta'] {
+  --m-surface-selected: #fbedf6;
+  --m-content-accent: #744765;
+  --m-border-accent: #8e5c7d;
+  --m-status-info-bg: #fbedf6;
+  --m-status-info-border: #e9c5db;
+  --m-status-info-fg: #58354d;
+  --m-focus-ring: #8e5c7d;
+}
+
+:root[data-accent='magenta'][data-theme='dark'] {
+  --m-surface-selected: #291622;
+  --m-content-accent: #d2a4c2;
+  --m-border-accent: #8e5c7d;
+  --m-status-info-bg: #291622;
+  --m-status-info-border: #412638;
+  --m-status-info-fg: #e9c5db;
+  --m-focus-ring: #ac7a9b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='magenta']:not([data-theme='light']) {
+    --m-surface-selected: #291622;
+    --m-content-accent: #d2a4c2;
+    --m-border-accent: #8e5c7d;
+    --m-status-info-bg: #291622;
+    --m-status-info-border: #412638;
+    --m-status-info-fg: #e9c5db;
+    --m-focus-ring: #ac7a9b;
+  }
+}
+:root[data-accent='magenta'] { --m-brand-mark: #8e5c7d; }
+:root[data-accent='magenta'][data-theme='dark'] { --m-brand-mark: #ac7a9b; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='magenta']:not([data-theme='light']) { --m-brand-mark: #ac7a9b; }
+}
+
+/* ── accent: Violet ─ 87° from danger, the nearest alarm colour ── */
+:root[data-accent='violet'] {
+  --m-surface-selected: #f3effc;
+  --m-content-accent: #5f4e7c;
+  --m-border-accent: #766496;
+  --m-status-info-bg: #f3effc;
+  --m-status-info-border: #d6caee;
+  --m-status-info-fg: #473a5f;
+  --m-focus-ring: #766496;
+}
+
+:root[data-accent='violet'][data-theme='dark'] {
+  --m-surface-selected: #20192c;
+  --m-content-accent: #baabd9;
+  --m-border-accent: #766496;
+  --m-status-info-bg: #20192c;
+  --m-status-info-border: #342a46;
+  --m-status-info-fg: #d6caee;
+  --m-focus-ring: #9382b4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='violet']:not([data-theme='light']) {
+    --m-surface-selected: #20192c;
+    --m-content-accent: #baabd9;
+    --m-border-accent: #766496;
+    --m-status-info-bg: #20192c;
+    --m-status-info-border: #342a46;
+    --m-status-info-fg: #d6caee;
+    --m-focus-ring: #9382b4;
+  }
+}
+:root[data-accent='violet'] { --m-brand-mark: #766496; }
+:root[data-accent='violet'][data-theme='dark'] { --m-brand-mark: #9382b4; }
+@media (prefers-color-scheme: dark) {
+  :root[data-accent='violet']:not([data-theme='light']) { --m-brand-mark: #9382b4; }
+}
 
 /* ── density: Spaced ── */
 :root[data-density='spaced'] {
@@ -472,6 +900,30 @@
   --m-control-height-lg: 2.5rem;
   --m-row-height: 2.875rem;
   --m-header-height: 3.25rem;
+}
+
+/* ── corners: Sharp ─ drawn with a ruler ── */
+:root[data-corners='sharp'] {
+  --m-radius-chip: 0px;
+  --m-radius-control: 2px;
+  --m-radius-surface: 4px;
+  --m-radius-check: 0px;
+}
+
+/* ── corners: Soft ─ the shipped shape ── */
+:root[data-corners='soft'] {
+  --m-radius-chip: 2px;
+  --m-radius-control: 4px;
+  --m-radius-surface: 8px;
+  --m-radius-check: 2px;
+}
+
+/* ── corners: Round ─ pills and soft boxes ── */
+:root[data-corners='round'] {
+  --m-radius-chip: 999px;
+  --m-radius-control: 10px;
+  --m-radius-surface: 16px;
+  --m-radius-check: 4px;
 }
 
 /* ── type: Graphite ─ the shipped voice: one family doing every job, no contrast anywhere ── */

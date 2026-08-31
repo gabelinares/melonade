@@ -43,4 +43,5 @@ export const PAGE_ICONS: Record<string, LucideIcon> = {
   preferences: Settings2,
   support: CircleHelp,
   notifications: Bell,
+  search: Search,
 };

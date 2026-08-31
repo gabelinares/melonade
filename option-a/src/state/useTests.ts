@@ -6,7 +6,13 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { ENVIRONMENTS, TESTS, type Environment, type Resolution, type TestCase } from '@shared/tests-data.ts';
+import { applyRevision, keepCurrentVersion, saveSteps } from '@shared/steps-logic.ts';
 import {
+  DEFAULT_TESTS_DISPLAY,
+  groupTests,
+  testsDisplayCount,
+  type TestFieldKey,
+  type TestsDisplay,
   INITIAL_TESTS_STATE,
   NO_TEST_FILTERS,
   PAGE_SIZE,
@@ -53,6 +59,10 @@ export function useTests() {
   const [environments, setEnvironments] = useState<Environment[]>(() => [...ENVIRONMENTS]);
   const [defaults, setDefaultsState] = useState<RunDefaults>({ envName: 'Production', resolution: 'desktop', region: 'paris' });
   const [selected, setSelected] = useState<string[]>([]);
+  /* How the list is DRAWN - grouping and which columns - as distinct from which
+     rows are in it. It lives beside the filters rather than inside them for the
+     same reason the issue queue keeps them apart: none of it narrows anything. */
+  const [display, setDisplay] = useState<TestsDisplay>(DEFAULT_TESTS_DISPLAY);
   const [page, setPage] = useState(1);
   /** The row whose panel is open. One key, because two panels cannot share the
    *  one drawer slot and a boolean per row could claim they do. */
@@ -168,6 +178,21 @@ export function useTests() {
     clearSelection: () => setSelected([]),
     selectAlso: (key: string) => setSelected((prev) => (prev.includes(key) ? prev : [...prev, key])),
 
+    /* how it is drawn */
+    display,
+    groups: groupTests(rows, display, state.pauseOnRevision),
+    displayCount: testsDisplayCount(display, state.sort),
+    setGroup: (group: TestsDisplay['group']) => setDisplay((d) => ({ ...d, group })),
+    toggleField: (f: TestFieldKey) =>
+      setDisplay((d) => ({
+        ...d,
+        fields: d.fields.includes(f) ? d.fields.filter((x) => x !== f) : [...d.fields, f],
+      })),
+    resetDisplay: () => {
+      setDisplay(DEFAULT_TESTS_DISPLAY);
+      patch((s) => ({ ...s, sort: null }));
+    },
+
     /* the drawer */
     openTest,
     closeTest: () => setOpenKey(null),
@@ -176,6 +201,24 @@ export function useTests() {
     pause: (key: string) => setTests((t) => patchTests(t, [key], () => ({ status: 'paused' }))),
     resume: (key: string) => setTests((t) => patchTests(t, [key], () => ({ status: 'active' }))),
     unschedule: (key: string) => setTests((t) => patchTests(t, [key], () => UNSCHEDULED)),
+    /** Writing one by hand. It lands as a real row immediately and the drawer
+     *  opens on it in creation mode - Discard removes it again. A test that
+     *  exists only inside a drawer would need a second code path for saving,
+     *  and the two would drift the first time either changed. */
+    createTest: () => {
+      const draft: TestCase = {
+        key: nextKey('tc-new'),
+        title: 'Untitled test',
+        status: 'approved',
+        steps: [],
+        createdAt: Date.now(),
+        origin: 'user',
+      };
+      setTests((t) => [draft, ...t]);
+      setOpenKey(draft.key);
+      return draft;
+    },
+
     duplicate: (tc: TestCase) => {
       const copy = duplicateOf(tc, nextKey('tc-copy'));
       setTests((t) => [copy, ...t]);
@@ -223,6 +266,45 @@ export function useTests() {
       setOpenKey(base);
     },
     cancelMerge: (key: string) => setTests((t) => cancelMerge(t, key)),
+
+    /* ── what the drawer commits ───────────────────────────────────────────
+       The drawer buffers edits locally and calls one of these on Save, so a
+       half-typed step never reaches the list behind it and closing without
+       saving changes nothing. */
+
+    /** An ordinary edit: title, steps, run settings, tags. Steps go through
+     *  `saveSteps`, which snapshots the old wording and bumps the version -
+     *  the history is a record of what this test used to run, and it does not
+     *  care whether a person or the agent wrote the change. */
+    saveTest: (key: string, patchTest: Partial<TestCase>) =>
+      setTests((t) =>
+        t.map((tc) => {
+          if (tc.key !== key) return tc;
+          const { steps, ...rest } = patchTest;
+          const next = { ...tc, ...rest };
+          return steps ? saveSteps(next, steps, Date.now()) : next;
+        }),
+      ),
+
+    /** Accept a proposed revision, as reviewed: the resolved steps become the
+     *  new version and the pending proposal clears. */
+    applyRevision: (key: string, resolved: string[]) =>
+      setTests((t) => t.map((tc) => (tc.key === key ? applyRevision(tc, resolved, Date.now()) : tc))),
+
+    /** Turn the proposal down. The test stays on the version it is running. */
+    keepVersion: (key: string) =>
+      setTests((t) => t.map((tc) => (tc.key === key ? keepCurrentVersion(tc) : tc))),
+
+    /** Accept a merge: the arranged groups flatten into one list, the version
+     *  bumps, and the test goes back to the status the merge parked. */
+    acceptMerge: (key: string, steps: string[]) =>
+      setTests((t) =>
+        t.map((tc) => {
+          if (tc.key !== key || !tc.pendingMerge) return tc;
+          const restored = { ...tc, status: tc.pendingMerge.prevStatus, pendingMerge: undefined };
+          return saveSteps(restored, steps, Date.now());
+        }),
+      ),
   };
 }
 

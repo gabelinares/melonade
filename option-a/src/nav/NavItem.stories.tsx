@@ -48,7 +48,7 @@ export const WithSections: Story = {
       <div style={{ display: 'grid', gap: 1 }}>
         <NavItem
           icon={<FlaskConical size={15} />}
-          label="Tests"
+          label="Synthetics"
           count={7}
           expandable
           expanded={open}
@@ -67,7 +67,7 @@ export const WithSections: Story = {
             }}
           >
             {[
-              { key: 'tests', label: 'List' },
+              { key: 'tests', label: 'Tests' },
               { key: 'tests/runs', label: 'Runs' },
               { key: 'tests/environments', label: 'Environments' },
             ].map((s) => (

@@ -514,11 +514,22 @@ export function mergeTests(tests: TestCase[], baseKey: string, others: readonly 
   if (!base) return tests;
   const sources = tests.filter((tc) => others.includes(tc.key));
   const dropped = new Set(sources.map((s) => s.key));
+  /* The steps are held as GROUPS, one per participant, and the base's own steps
+     are a group too: a merge is a proposal about ORDER, and flattening it here
+     would throw away the only thing there is to decide. The base's steps stay
+     in place until then, so a cancel is a deletion of the pendingMerge and
+     nothing else. */
   const merged: TestCase = {
     ...base,
     status: base.status === 'draft' ? 'draft' : 'paused',
-    stepCount: base.stepCount + sources.reduce((n, s) => n + s.stepCount, 0),
-    pendingMerge: { sources, prevStatus: base.status },
+    pendingMerge: {
+      groups: [
+        { title: base.title, steps: [...base.steps] },
+        ...sources.map((s) => ({ title: s.title, steps: [...s.steps] })),
+      ],
+      sources,
+      prevStatus: base.status,
+    },
   };
   return tests.filter((tc) => !dropped.has(tc.key)).map((tc) => (tc.key === baseKey ? merged : tc));
 }
@@ -529,12 +540,7 @@ export function cancelMerge(tests: TestCase[], key: string): TestCase[] {
   const tc = tests.find((x) => x.key === key);
   const pm = tc?.pendingMerge;
   if (!tc || !pm) return tests;
-  const restored: TestCase = {
-    ...tc,
-    status: pm.prevStatus,
-    stepCount: tc.stepCount - pm.sources.reduce((n, s) => n + s.stepCount, 0),
-    pendingMerge: undefined,
-  };
+  const restored: TestCase = { ...tc, status: pm.prevStatus, pendingMerge: undefined };
   return [...pm.sources, ...tests.map((x) => (x.key === key ? restored : x))];
 }
 
@@ -545,7 +551,7 @@ export function duplicateOf(tc: TestCase, id: string): TestCase {
     key: id,
     title: `${tc.title} (copy)`,
     status: 'draft',
-    stepCount: tc.stepCount,
+    steps: [...tc.steps],
     createdAt: Date.now(),
     origin: 'user',
     isNew: true,
@@ -595,3 +601,156 @@ export const isRunnable = (tc: TestCase, pauseOnRevision: boolean): boolean =>
   tc.status !== 'draft' && !tc.pendingMerge && !(pauseOnRevision && needsReview(tc));
 
 export { isScheduled };
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOW THE TESTS LIST IS DRAWN, which is a different question from which rows
+   are in it.
+
+   The queue already answers "what needs me" and the filters answer "which
+   ones". What was missing is "show me this list the way I need to read it
+   today" - by environment before a deploy, by last result during an incident,
+   by tag when you are dividing work up. Same three questions as the issue
+   queue's display menu, in this list's own vocabulary.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export type TestGroupKey = 'none' | 'status' | 'env' | 'tag' | 'schedule' | 'result';
+/** Every column the table can draw except the two it always draws: the test's
+ *  name, and the row's actions. */
+export type TestFieldKey = 'tags' | 'env' | 'schedule' | 'created' | 'lastRun' | 'status' | 'steps';
+
+export interface TestsDisplay {
+  group: TestGroupKey;
+  fields: TestFieldKey[];
+}
+
+/** The shipped list: what a team sees before anybody touches this. `steps` and
+ *  `lastRun` are off by default - the first is a number nobody sorts by and the
+ *  second is the column this list still owes (§16), so it is offered rather
+ *  than assumed. */
+export const DEFAULT_TESTS_DISPLAY: TestsDisplay = {
+  group: 'none',
+  fields: ['tags', 'env', 'schedule', 'created', 'status'],
+};
+
+export const TEST_GROUP_CHOICES: { value: TestGroupKey; label: string }[] = [
+  { value: 'none', label: 'No grouping' },
+  { value: 'status', label: 'Status' },
+  { value: 'env', label: 'Environment' },
+  { value: 'tag', label: 'Tag' },
+  { value: 'schedule', label: 'Schedule' },
+  { value: 'result', label: 'Last result' },
+];
+
+export const TEST_FIELD_CHOICES: { value: TestFieldKey; label: string }[] = [
+  { value: 'steps', label: 'Steps' },
+  { value: 'tags', label: 'Tags' },
+  { value: 'env', label: 'Environment' },
+  { value: 'schedule', label: 'Schedule' },
+  { value: 'lastRun', label: 'Last run' },
+  { value: 'created', label: 'Created' },
+  { value: 'status', label: 'Status' },
+];
+
+/** The ordering choices, which are the same keys the column headers write - one
+ *  sort, reachable two ways, rather than a menu and a header disagreeing.
+ *  "Queue" is the absence of a sort, and it is the default for a reason: it is
+ *  the order that puts what needs a person at the top. */
+export const TEST_SORT_CHOICES: { value: TestSortKey | 'queue'; label: string }[] = [
+  { value: 'queue', label: 'Queue order' },
+  { value: 'title', label: 'Name' },
+  { value: 'created', label: 'Created' },
+  { value: 'env', label: 'Environment' },
+  { value: 'schedule', label: 'Schedule' },
+  { value: 'status', label: 'Status' },
+];
+
+export interface TestGroup {
+  key: string;
+  /** Empty when there is one group, so the renderer draws no header rather than
+   *  a header that says nothing. */
+  label: string;
+  tests: TestCase[];
+}
+
+const SCHEDULE_GROUP_ORDER = ['daily', 'weekdays', 'weekly', 'monthly', 'custom', UNSET];
+const SCHEDULE_GROUP_LABEL: Record<string, string> = {
+  daily: 'Daily',
+  weekdays: 'Weekdays',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  custom: 'Custom days',
+  [UNSET]: 'Not scheduled',
+};
+
+/**
+ * The rows, in groups.
+ *
+ * Two rules that make this useful rather than decorative. A test can be in
+ * SEVERAL groups when the axis is multi-valued - a test that runs on Production
+ * and Staging appears under both, because the question "what runs on Staging"
+ * has to be answerable by reading one block. And every axis has a group for the
+ * rows that have nothing on it, named for what is missing, because those are
+ * usually the rows you are looking for.
+ */
+export function groupTests(tests: TestCase[], display: TestsDisplay, pauseOnRevision: boolean): TestGroup[] {
+  const some = (g: TestGroup[]) => g.filter((x) => x.tests.length > 0);
+
+  switch (display.group) {
+    case 'status': {
+      const order: DisplayStatus[] = ['draft', 'needs_review', 'approved', 'active', 'paused'];
+      const label: Record<DisplayStatus, string> = {
+        draft: 'Drafts',
+        needs_review: 'Needs review',
+        approved: 'Approved',
+        active: 'Active',
+        paused: 'Paused',
+      };
+      return some(
+        order.map((s) => ({
+          key: s,
+          label: label[s],
+          tests: tests.filter((tc) => displayStatus(tc, pauseOnRevision) === s),
+        })),
+      );
+    }
+    case 'env': {
+      const names = Array.from(new Set(tests.flatMap((tc) => tc.envNames ?? []))).sort();
+      return some([
+        ...names.map((n) => ({ key: n, label: n, tests: tests.filter((tc) => (tc.envNames ?? []).includes(n)) })),
+        { key: UNSET, label: 'No environment', tests: tests.filter(hasNoEnvironment) },
+      ]);
+    }
+    case 'tag': {
+      const names = Array.from(new Set(tests.flatMap((tc) => tc.tags ?? []))).sort();
+      return some([
+        ...names.map((n) => ({ key: n, label: n, tests: tests.filter((tc) => (tc.tags ?? []).includes(n)) })),
+        { key: UNSET, label: 'Untagged', tests: tests.filter((tc) => (tc.tags?.length ?? 0) === 0) },
+      ]);
+    }
+    case 'schedule':
+      return some(
+        SCHEDULE_GROUP_ORDER.map((f) => ({
+          key: f,
+          label: SCHEDULE_GROUP_LABEL[f] ?? f,
+          tests: tests.filter((tc) => scheduleKey(tc) === f),
+        })),
+      );
+    case 'result':
+      return some([
+        { key: 'failed', label: 'Failed last run', tests: tests.filter((tc) => resultKey(tc) === 'failed') },
+        { key: 'passed', label: 'Passed last run', tests: tests.filter((tc) => resultKey(tc) === 'passed') },
+        { key: 'never', label: 'Never run', tests: tests.filter((tc) => resultKey(tc) === 'never') },
+      ]);
+    case 'none':
+    default:
+      return tests.length ? [{ key: 'all', label: '', tests }] : [];
+  }
+}
+
+/** How far the display is from the shipped one, for the trigger's badge. */
+export function testsDisplayCount(d: TestsDisplay, sort: TestSort | null): number {
+  const fieldsSame =
+    d.fields.length === DEFAULT_TESTS_DISPLAY.fields.length &&
+    DEFAULT_TESTS_DISPLAY.fields.every((f) => d.fields.includes(f));
+  return (d.group !== 'none' ? 1 : 0) + (fieldsSame ? 0 : 1) + (sort ? 1 : 0);
+}

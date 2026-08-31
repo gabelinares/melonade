@@ -93,7 +93,7 @@ export function Swatch({ value, size = 20 }: { value: string; size?: number }) {
         display: 'inline-block',
         width: size,
         height: size,
-        borderRadius: 'var(--m-radius-xs)',
+        borderRadius: 'var(--m-radius-chip)',
         background: toCss(value),
         border: '1px solid var(--m-border-default)',
         verticalAlign: 'middle',
@@ -143,7 +143,7 @@ export function PrimitiveRamps() {
                   <span
                     style={{
                       height: 44,
-                      borderRadius: 'var(--m-radius-sm)',
+                      borderRadius: 'var(--m-radius-control)',
                       background: toCss(value),
                       border: '1px solid var(--m-border-subtle)',
                     }}
@@ -346,11 +346,12 @@ export function SpaceBars() {
 }
 
 const RADIUS_USE: Record<string, string> = {
-  'radius-xs': 'chips, checkboxes, the filter count badge',
-  'radius-sm': 'controls: buttons, inputs, nav rows, filter buttons',
-  'radius-md': 'cards, popovers, modals',
-  'radius-lg': 'reserved. Nothing in the app is this round yet',
-  'radius-full': 'the capture pill and the presence dot only',
+  'radius-chip': 'marks inside a row - chips, tags, counts, the checkbox - and a control nested in another control',
+  'radius-control': 'anything you click or type in, at every size: buttons, inputs, nav rows, toggle tracks, the focus ring',
+  'radius-surface': 'anything that contains or floats: the plane, cards, popovers, drawers, dialogs, the replay frame',
+  'radius-track': 'a track that wraps controls: control + the 2px it pads them by, so the two corners are concentric',
+  'radius-check': 'the checkbox, and the one value that stops climbing - a round square is a circle, and a circle means one of these',
+  'radius-full': 'circles and pills: the avatar, the presence dot, progress bars',
 };
 
 export function RadiusBoxes() {
@@ -417,7 +418,7 @@ export function ElevationCards() {
           <div
             style={{
               padding: 'var(--m-space-6)',
-              borderRadius: 'var(--m-radius-md)',
+              borderRadius: 'var(--m-radius-surface)',
               background: 'var(--m-surface-raised)',
               border: '1px solid var(--m-border-default)',
               boxShadow: value,
@@ -502,7 +503,7 @@ export function DurationLadder() {
         display: 'grid',
         gap: 'var(--m-space-5)',
         padding: 'var(--m-space-6)',
-        borderRadius: 'var(--m-radius-md)',
+        borderRadius: 'var(--m-radius-surface)',
         border: '1px dashed var(--m-border-default)',
         width: 'fit-content',
       }}
@@ -538,7 +539,7 @@ export function EasingCompare() {
           justifySelf: 'start',
           height: 'var(--m-control-height-md)',
           padding: '0 12px',
-          borderRadius: 'var(--m-radius-sm)',
+          borderRadius: 'var(--m-radius-control)',
           background: 'var(--m-action-primary-bg)',
           color: 'var(--m-action-primary-fg)',
           fontSize: 'var(--m-text-sm)',

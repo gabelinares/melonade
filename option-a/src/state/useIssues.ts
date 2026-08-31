@@ -40,6 +40,13 @@ import {
   type SessionFilterKey,
   type SessionFilters,
 } from '@shared/issues-logic.ts';
+import { ISSUES } from '@shared/issues-data.ts';
+
+/** The issues you have not opened yet, seeded: the three most recently seen.
+ *  Derived rather than listed, so it survives the fixtures changing under it. */
+const NEW_ISSUE_IDS: ReadonlySet<number> = new Set(
+  [...ISSUES].sort((a, b) => a.seenAgoMin - b.seenAgoMin).slice(0, 3).map((i) => i.id),
+);
 
 /**
  * The side panels the work pane can open on the right, one at a time.
@@ -69,6 +76,17 @@ export function useIssues() {
      DERIVED, never stored: one fact - has a session been opened - decides
      whether this is the write-up or a recording. A screen that says it is
      watching with nothing to watch cannot be represented. */
+  /* ── WHAT YOU HAVE NOT LOOKED AT YET ──────────────────────────────────────
+     The menu's dot says an agent has found something; this is the same fact one
+     level down - which of the things it found are new to you. Seeded from the
+     three most recently seen issues, because "newest arrivals you have not
+     opened" is what anybody means by new here, and cleared the moment you open
+     one. It is deliberately session-only: a prototype that remembered would
+     show a reviewer an empty list of new issues on their second visit. */
+  const [openedIds, setOpenedIds] = useState<ReadonlySet<number>>(
+    () => new Set(ISSUES.map((i) => i.id).filter((id) => !NEW_ISSUE_IDS.has(id))),
+  );
+
   const [openId, setOpenId] = useState<number | null>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [peek, setPeek] = useState(false);
@@ -161,6 +179,10 @@ export function useIssues() {
   );
 
   const openIssue = useCallback((id: number | null) => {
+    /* opening IS reading it: there is no second gesture to mark it seen, and a
+       "mark as read" control on a row nobody asked for is a control nobody
+       uses. */
+    if (id != null) setOpenedIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
     setOpenId(id);
     setOpenIndex(null);
     setPeek(false);
@@ -282,6 +304,7 @@ export function useIssues() {
     matchedRules: useCallback((id: number) => matchedRules(state, id), [state]),
     titleOf: useCallback((i: Issue) => titleOf(state, i), [state]),
     isHidden: useCallback((id: number) => state.hidden[id] != null, [state]),
+    isNew: useCallback((id: number) => !openedIds.has(id), [openedIds]),
     hiddenReason: useCallback((id: number) => state.hidden[id], [state]),
     hasField: useCallback((f: FieldKey) => state.display.fields.includes(f), [state.display]),
 

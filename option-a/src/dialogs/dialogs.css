@@ -60,7 +60,7 @@
   gap: var(--m-space-4);
   padding: var(--m-space-3) var(--m-space-4);
   border: 1px solid var(--m-border-subtle);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-control);
   background: var(--m-surface-sunken);
 }
 
@@ -81,7 +81,7 @@
 .m-dlg__none {
   padding: var(--m-space-4) var(--m-space-5);
   border: 1px solid var(--m-border-subtle);
-  border-radius: var(--m-radius-sm);
+  border-radius: var(--m-radius-surface);
   background: var(--m-surface-sunken);
   font-size: var(--m-text-sm);
   line-height: var(--m-leading-snug);

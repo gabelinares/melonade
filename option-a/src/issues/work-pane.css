@@ -27,7 +27,7 @@
   overflow: hidden;
   background: var(--m-surface-default);
   border: 1px solid var(--m-border-subtle);
-  border-radius: var(--m-radius-lg);
+  border-radius: var(--m-radius-surface);
 }
 
 .m-work__body {
