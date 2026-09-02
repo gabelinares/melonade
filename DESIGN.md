@@ -3296,3 +3296,238 @@ the avatar is somebody — and giving it the switcher's card would make an
 avatar open an organisation menu. Flagged rather than guessed: it is either its
 own small menu or it is the switcher's second trigger, and that is a call, not
 a detail.
+
+
+## 22. Sessions, rebuilt from the production page (2026-09-02)
+
+Gabriel: bring the sessions page over from the OpenReplay codebase, list
+everything it does, and redesign it **without changing anything on the backend**
+— and remember Mehdi's rule, that a frontend change has to be extremely easy to
+implement or not worth making. The core ask: **the event and filter buttons
+become one button, and the core functioning stays exactly the same.**
+
+The full inventory came first and it is its own document:
+`context/sessions-feature-inventory-2026-09-02.md` — 41 features across the
+shell, the search card, the list header, the session card and the list, with
+each one marked free, cheap or expensive to change. Everything below is
+downstream of that.
+
+### The constraint, stated once
+
+**Nothing here may need a field the list payload does not already carry.** That
+one line killed the two things a session list is always redesigned into: a
+per-session **journey strip** and a **thumbnail**. Neither is in the payload;
+both need an endpoint. They were considered and dropped, and they are dropped in
+writing so nobody re-derives them.
+
+What it did NOT kill is more interesting: `errorsCount`, `pagesCount`,
+`issueTypes` and `platform` are all in the payload today and **drawn nowhere**.
+Two of them are columns now. That is the cheapest win in the exercise.
+
+### One button, and why it is a small change
+
+Production has two `+ Add` buttons under two headings, Events and Filters. They
+open **the same** `FilterModal` with the same props, differing only in which
+half of the catalogue they were handed. And the store never split them:
+
+```
+searchStore.instance.filters   // ONE array, every item carrying `isEvent`
+searchStore.instance.eventsOrder  // ONE value: 'then' | 'and' | 'or'
+```
+
+So the unified search is **the existing control opened once with the filter on
+its input removed**. The picker still calls `addFilter` with one catalogue entry
+and the entry's own `isEvent` decides where the row lands. Nothing downstream
+changes — which is the whole reason this qualifies under Mehdi's rule.
+
+**What the two sections cost was concrete.** You had to know whether the thing
+you wanted was an event or a property *before you could start looking for it*.
+"Is duration an event?" is not a question anybody should have to answer to
+search their own sessions.
+
+**Everything load-bearing is kept**, and each of these is a fact about the data
+rather than a preference:
+
+- Events are an **ordered, numbered, draggable** sequence. Properties are an
+  unordered set.
+- `eventsOrder` is **one** THEN / AND / OR for the whole search. Not one per
+  gap — the backend takes one value.
+- An event carries its own properties under **"where … and/or"**, one
+  `propertyOrder` per event, changed by clicking the word.
+- A property already in the search **cannot be added twice**; an event can. Two
+  Clicks in a sequence is the normal case; two Country filters is a
+  contradiction.
+- An event row draws **no operator**, because production gates the operator
+  block on `!isEvent` and "Click" is not a comparison.
+
+**The two kinds are still obvious, and from the ROWS rather than a heading over
+them.** An event has a number, a handle and a property affordance; a property
+has an operator and a value. The one kept hairline separates the sequence from
+the constraints and is drawn only with something on both sides of it.
+
+> **The position slot is on every row** and filled only on events, which is the
+> trick that makes one list hold two grammars. Rendered only where it applies, a
+> property's subject would sit 28px left of the events' and the list would read
+> as two lists that failed to line up. Asserted: `1 edges at 295`.
+
+### A row is a clause, not three fields
+
+`Geography · Country  is  France` reads left to right in one line of type at one
+size. The **operator is drawn as the word it is** — a real Select, focusable and
+keyboard-operable, borderless until you hover or focus it, which is this app's
+existing rule for a control that lives inside prose. Production draws three
+bordered controls of three different widths and the sentence is something you
+assemble in your head.
+
+The order control got the same treatment: **"matching then"** instead of
+**"Events Order: THEN"**. The first is English; the second is the column name
+beside a wire value in caps. The three words carry their meaning in the dropdown
+and not on the closed control, because *then / and / or* is exactly the kind of
+vocabulary people get wrong once and then avoid.
+
+It appears at **two** events, not one. With a single event there is no gap for an
+operator to sit in, and a control that cannot change the result teaches you to
+ignore controls. Production shows it from the first event and only refetches
+above one.
+
+### The same field takes a sentence
+
+`aiFiltersStore` has existed in production for as long as the string
+*"Translating your query into search steps…"* has, and **nothing on the sessions
+bar ever opened it**. Gabriel's call: same single button.
+
+Type two or more words and the picker offers to read them. The offer **shows its
+work** — the steps it understood, numbered, in the same words the rows will use,
+and the words it could not use printed rather than dropped. It sits *above* the
+matches and never instead of them, because what you typed might be both a filter
+name and half a sentence and the picker does not get to decide which you meant.
+
+**What comes back is ordinary rows.** That is the point: you can see what it
+understood, correct the one clause it got wrong, and keep the rest. A translator
+whose output you cannot edit is a search box you cannot trust.
+
+`translate()` in `shared/sessions-logic.ts` is a deliberately dumb phrase
+matcher. Swapping it for the real endpoint is the whole integration.
+
+**And the empty search offers three examples**, which was asked for on the Issues
+search back on 06-29 and applies here for the same reason: a field that accepts
+prose has to show the shape of prose it accepts. All three actually translate —
+an example that came back empty would be worse than no examples, and
+`sessions-check` clicks all three.
+
+### The list is a table
+
+Production draws each session as an ~84px four-zone card. Every zone is a
+percentage width with its own two-line stack, so **no two rows put a figure in
+the same place** — "47 events" on one row sits a few pixels above "12 events" on
+the next, and you cannot scan a column that is not a column.
+
+| | production card | this table |
+| --- | --- | --- |
+| Figures | three zones, no shared edge | one face, right-aligned, tabular |
+| Sorting | a dropdown with four options | any column it shows |
+| `errorsCount` | in the payload, drawn nowhere | a column |
+| `pagesCount` | in the payload, drawn nowhere | a column, opt-in |
+| Rows per screen | ~7 | ~12 |
+
+Four smaller calls inside it:
+
+- **A zero error count is a dash.** A column of "0" is a column of noise; the
+  only question the column answers is *which of these went wrong*, which a
+  sparse column answers at a glance.
+- **No country flag.** 134 raster sprites in a monochrome interface, and "GB"
+  cannot be mistaken for "IE" at 16px the way the flags can.
+- **An anonymous session reads as one** — muted, in the figure face, because it
+  is an ID. Production colours *identified* users teal, which puts the accent on
+  the ordinary case.
+- **The metadata chips are clickable**, which is the best affordance on
+  production's card and the one thing from it that had to survive: it is the
+  shortest path from "this session is interesting" to "show me the others like
+  it", and the only place in the app where a list writes to a search.
+
+**Bookmarked is a tab, not a filter.** It is a different list of the same thing
+with its own route in production. A section replaces the body; a filter narrows
+it. The search, the columns and the date range all keep working inside it, which
+is what makes it a tab and not a second page.
+
+### The search stays at the top
+
+Mehdi, on seeing it: *"this should be stick to the top when scrolling."* Right,
+and for a reason worth writing down — it is the one control on this page you
+reach for **while** reading the list, and a control you have to scroll back up to
+is a control you use once.
+
+Three things make it work, and it is a **wrapper** rather than the card itself
+for the first of them:
+
+1. The sticky box has to be **opaque, in the plane's colour**, so rows disappear
+   into it. Put that on `.m-sc` and `.m-page__body > .m-sc` out-specifies
+   `.m-sc` — **the well loses its own fill and the whole card goes white**,
+   which is what happened for one build.
+2. **The gap belongs to the sticky box.** `padding-bottom` on the wrapper, never
+   a margin on the card: a margin sits outside the sticky box and rows slide up
+   through it.
+3. `z-index` above the table.
+
+### Three defects worth recording, because none of them errored
+
+1. **`.m-search` was already taken.** It is the page header's `SearchField`, and
+   it is a *width* — `13rem`. The new section borrowed it and came out **208px
+   wide inside a 1410px plane**, with the empty state stacked into a column.
+   Nothing in the stylesheet looked wrong. Renamed to `.m-sc`.
+2. **antd v6 renders `select > content > input` with the caret in
+   `.ant-select-suffix`.** There is no `.ant-select-selector`, no
+   `.ant-select-selection-item` and no `.ant-select-arrow` anywhere in the tree,
+   so every rule aimed at the operator matched nothing and failed silently — the
+   same trap `.ant-popover-inner` set on the hairline. Third time this library
+   has cost a silent stylesheet; it is now measured in `sessions-check` rather
+   than eyeballed.
+3. **`surface-sunken` is invisible on this plane.** #f6f9fa against #ffffff is a
+   1.5% step, so the search had no container on screen and three clauses read as
+   loose lines floating over the table. It is `surface-canvas` now — the ground
+   the whole app sits on, which is the honest colour for a hole in the plane, and
+   it steps properly in both themes.
+
+### What is mocked, and said out loud
+
+**`sessionEvents` is a stand-in.** The list payload carries no event stream —
+that is the boundary this whole redesign is drawn inside — but the SEARCH is
+evaluated by the backend, which does have the events. So the fixture models what
+the backend knows: a deterministic ordered event list per session, derived from
+the numbers the session already has.
+
+It has to satisfy two things that pull against each other. The order must
+*usually* be the catalogue's order, because that order is the shape of a normal
+journey (search, then cart, then checkout) and a THEN sequence anybody would
+actually type has to match something. And it must *sometimes* not be, or THEN
+and AND are the same question and the header control is decoration. So: the
+subset is chosen by hash and kept in catalogue order, and **a third of sessions
+did it backwards**. Asserted — `{then: 17, and: 22, or: 87}`.
+
+**An event's properties narrow nothing in the prototype.** The stand-in models
+which events a session contains, not what each one carried. That is the one
+place this knowingly under-filters, and it is under rather than over on purpose.
+
+### Where it lives
+
+```
+shared/sessions-data.ts     134 sessions + the catalogue, as the API shapes it
+shared/sessions-logic.ts    operators, the search model, evaluation, translate()
+option-a/src/state/useSessions.ts
+option-a/src/sessions/      SessionsPage · SearchCard · SearchRow · FilterPicker
+tools/sessions-check.mjs    37 assertions
+```
+
+18 Storybook stories across three files, every state reached through the real
+controller verbs so a story cannot show a state the app cannot produce.
+
+### Not done
+
+- **The replay is not wired.** A session row's cursor says it opens and it will;
+  it navigates nowhere today. Replay goes last, by the 08-27 decision.
+- **Notes** and the **live / Assist** variant are out of scope by Gabriel's call.
+- **No sticky table header.** Sensible under a sticky search, but the offset has
+  to equal the card's current height, which changes as rows are added — a
+  measured offset, not a constant. Flagged rather than half-built.
+- **Session settings** (timezone) and **Share this search** are menu rows that
+  open nothing yet.

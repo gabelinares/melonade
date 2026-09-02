@@ -1,0 +1,199 @@
+/* ── THE ONE PICKER ──────────────────────────────────────────────────────────
+   Same card as every other popover in this app - the 4px inset, the hairline
+   and the surface radius all come from antd's own tokens via
+   `antd-overrides.css`, so there is nothing here about depth.
+
+   ⚠ `.ant-popover-container`, NOT `.ant-popover-inner`. antd v6 renders
+   popover > container > content and ships no `-inner`, so a rule written
+   against the v5 name matches nothing and fails silently. */
+.m-pick-root .ant-popover-container { padding: var(--m-space-2); }
+
+/* 27rem: wide enough that a URL-shaped event name and its category fit on one
+   line, narrow enough to sit under the button rather than over the table.
+   Production's is 490px with a 144px rail; this is 432 with a 118 rail, because
+   Graphite's type is a size smaller and the rail holds one word. */
+.m-pick { display: flex; flex-direction: column; width: 27rem; max-width: 88vw; }
+
+/* The field, and the whole reason the two buttons became one. Its ring belongs
+   to the ROW rather than the input: the input is borderless and autofocuses, so
+   a ring drawn tight around it collides with the placeholder. Same treatment as
+   the filter menu's own search - one field, one ring, everywhere. */
+.m-pick__search {
+  display: flex;
+  align-items: center;
+  padding: var(--m-space-2) var(--m-space-3);
+  border-bottom: var(--m-border-width) solid var(--m-border-subtle);
+}
+.m-pick__search .ant-input { font-size: var(--m-text-sm); }
+.m-pick__search .ant-input:focus-visible,
+.m-pick__search .ant-input:focus { outline: none; box-shadow: none; }
+.m-pick__search:focus-within {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: -3px;
+  border-radius: var(--m-radius-control);
+}
+
+.m-pick__body { display: flex; min-height: 0; }
+
+/* ── the rail ──
+   A hairline between the two panes and not a gap: they are two columns of one
+   list, and 45 entries need the boundary to be unambiguous while you are
+   moving between them. */
+.m-pick__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: none;
+  width: 7.375rem; /* 118 */
+  max-height: 21rem;
+  overflow-y: auto;
+  padding: var(--m-space-2) var(--m-space-2) var(--m-space-2) 0;
+  border-right: var(--m-border-width) solid var(--m-border-subtle);
+}
+
+.m-pick__cat {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  width: 100%;
+  min-height: 1.75rem;
+  padding: var(--m-space-1) var(--m-space-3);
+  border-radius: var(--m-radius-control);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+  text-align: left;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-pick__cat span:first-child { flex: 1; min-width: 0; }
+.m-pick__cat:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
+/* Selection is a fill and primary ink, like every other selection in this
+   build: the nav's current row, the pager's current page, the segmented thumb. */
+.m-pick__cat.is-on {
+  background: var(--m-surface-active);
+  color: var(--m-content-primary);
+  font-weight: var(--m-weight-medium);
+}
+/* Emptied by the query rather than absent. It still says the category exists. */
+.m-pick__cat.is-empty { color: var(--m-content-disabled); }
+
+.m-pick__n {
+  flex: none;
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-muted);
+}
+.m-pick__cat.is-empty .m-pick__n { color: var(--m-content-disabled); }
+
+/* ── the list ── */
+.m-pick__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  max-height: 21rem;
+  overflow-y: auto;
+  padding: var(--m-space-2);
+}
+
+.m-pick__row {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  width: 100%;
+  min-height: 1.875rem;
+  padding: var(--m-space-1) var(--m-space-3);
+  border-radius: var(--m-radius-control);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+  text-align: left;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-pick__row:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
+.m-pick__row.is-taken { color: var(--m-content-disabled); cursor: not-allowed; }
+.m-pick__row.is-taken:hover { background: transparent; color: var(--m-content-disabled); }
+
+.m-pick__icon { display: inline-flex; flex: none; color: var(--m-content-decorative); }
+.m-pick__row:hover .m-pick__icon { color: var(--m-content-secondary); }
+.m-pick__row.is-taken .m-pick__icon { color: var(--m-content-disabled); }
+
+.m-pick__name { flex: 1; min-width: 0; }
+
+/* Where the row came from, which the flat list has to say and a category does
+   not. A chip and not a second column: it belongs to the name. */
+.m-pick__cat-tag {
+  flex: none;
+  padding-inline: var(--m-space-2);
+  border-radius: var(--m-radius-chip);
+  background: var(--m-surface-hover);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.m-pick__none {
+  padding: var(--m-space-6) var(--m-space-3);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-sm);
+  text-align: center;
+}
+
+/* ── THE SENTENCE ────────────────────────────────────────────────────────────
+   The one thing in this menu that is not a row, so it is drawn as the one thing
+   in this menu that is not a row: a tinted block with its own inset, above the
+   matches and separated from them by its own bottom margin rather than a rule -
+   a rule would make it look like a section of the list instead of an offer
+   about the whole query.
+
+   `surface-selected` and not the accent: it is the only tinted thing on screen
+   here, and Graphite rations colour. The block says "this is about what you
+   typed"; the button in it is the only primary action in the menu, because
+   accepting a translation is the one act here that creates several rows at
+   once. */
+.m-pick__nl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--m-space-3);
+  margin-bottom: var(--m-space-3);
+  padding: var(--m-space-4);
+  border-radius: var(--m-radius-control);
+  background: var(--m-surface-selected);
+}
+.m-pick__nl.is-blank { background: var(--m-surface-hover); }
+
+.m-pick__nl-head {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  font-size: var(--m-text-sm);
+  font-weight: var(--m-weight-medium);
+  color: var(--m-content-primary);
+}
+
+/* THE STEPS, numbered, because that is what the production string promises -
+   "translating your query into search steps" - and because a list of clauses
+   with no order is not inspectable. They are the rows you are about to get,
+   stated in the same words the rows will use. */
+.m-pick__steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-1);
+  margin: 0;
+  padding-left: var(--m-space-7);
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+}
+.m-pick__steps li { list-style: decimal; }
+
+/* What it could not use. Printed rather than dropped: a translator that
+   silently ignores half a sentence is one you stop trusting the first time you
+   notice, and you always notice. */
+.m-pick__ignored {
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+}

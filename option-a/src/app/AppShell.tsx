@@ -6,12 +6,14 @@ import { useNavCollapse } from '../nav/useNavCollapse.ts';
 import { SHIPPED_AGENT_COUNT } from '../nav/agents.ts';
 import { AuditsPage } from '../audits/AuditsPage.tsx';
 import { IssuesPage } from '../issues/IssuesPage.tsx';
+import { SessionsPage } from '../sessions/SessionsPage.tsx';
 import { TestsPage } from '../tests/TestsPage.tsx';
 import { PrototypePanel } from './PrototypePanel.tsx';
 import { Placeholder } from '../components/Placeholder.tsx';
 import { useAudits } from '../state/useAudits.ts';
 import { useRuns } from '../state/useRuns.ts';
 import { useIssues } from '../state/useIssues.ts';
+import { useSessions } from '../state/useSessions.ts';
 import { useTests } from '../state/useTests.ts';
 import './app-shell.css';
 
@@ -30,6 +32,10 @@ export function AppShell() {
   const model = useIssues();
   const tests = useTests();
   const runs = useRuns();
+  /* Sessions holds its own search at the shell for the same reason the agents
+     do: a search you built is worth more than a page you left, and coming back
+     to an empty card would make the whole thing feel disposable. */
+  const sessions = useSessions();
   /* The three agents' state lives at the shell, not inside their pages, so
      leaving a page and coming back does not reset it - a running audit keeps
      running while you are reading issues, which is the entire claim these
@@ -58,7 +64,9 @@ export function AppShell() {
         onToggleCollapsed={toggleNav}
       />
       <main className="m-shell__main">
-        {active === 'issues' ? (
+        {active === 'sessions' ? (
+          <SessionsPage model={sessions} />
+        ) : active === 'issues' ? (
           <IssuesPage model={model} />
         ) : active.startsWith('tests') ? (
           <TestsPage

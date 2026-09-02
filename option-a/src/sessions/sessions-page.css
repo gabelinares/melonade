@@ -1,0 +1,206 @@
+/* ── SESSIONS ────────────────────────────────────────────────────────────────
+   The table borrows the issues table wholesale - `.m-issues__table`'s rules are
+   the app's table rules, and they live in issues-page.css because that is where
+   the first table was. What is here is only what a SESSION row needs that an
+   issue row does not: figures that line up, an anonymous name that reads as
+   one, and a play affordance that is a cursor rather than a button.
+
+   ⚠ Anything in here that turns out to be a TABLE rule rather than a SESSIONS
+   rule belongs in a shared stylesheet, not copied. Two tables that drift by a
+   pixel is the thing this system keeps deleting. */
+
+.m-ss__controls { display: flex; align-items: center; gap: var(--m-space-3); margin-left: auto; }
+
+.m-ss .m-ss__range.ant-select,
+.m-ss__controls .m-ss__range.ant-select { min-width: 9rem; }
+
+/* ── THE SEARCH STAYS AT THE TOP (Mehdi, 2026-09-02) ────────────────────────
+   The plane's body is the scroll container, so the search holds still while a
+   hundred and thirty rows go past under it. It is the one control on this page
+   you reach for WHILE reading the list - "that one is interesting, show me the
+   others like it" - and a control you have to scroll back up to is a control
+   you use once.
+
+   THREE THINGS MAKE IT WORK, and it is a WRAPPER rather than the card itself
+   for the first of them:
+
+   1. The sticky box has to be OPAQUE, in the plane's own colour, so rows
+      disappear into it instead of showing through. Put that on `.m-sc` and it
+      out-specifies the card's own sunken fill and the well turns white - which
+      is exactly what happened for one build.
+   2. THE GAP BELONGS TO THE STICKY BOX. `padding-bottom` here, never a margin
+      on the card: a margin sits outside the sticky box, so rows would slide up
+      through that 16px strip while the card held still above it.
+   3. `z-index` above the table, or the header row of a sorted table paints
+      over it.
+
+   The search asks "which sessions". The toolbar above it - which does not
+   scroll at all, because PageCard puts it outside the body - asks "of those,
+   which kind, when, and drawn how". Two altitudes, and now both of them stay. */
+.m-ss__sticky {
+  position: sticky;
+  top: 0;
+  z-index: var(--m-z-sticky);
+  padding-bottom: var(--m-space-6);
+  background: var(--m-surface-default);
+}
+
+/* ── the who cell ───────────────────────────────────────────────────────────
+   The dot, the name, and two marks that only some rows carry. The dot's slot is
+   on every row (see SessionsPage) so every name shares one left edge - the same
+   rule the issues table follows for the same reason. */
+.m-ss__who {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  min-width: 0;
+}
+
+.m-ss__name {
+  min-width: 0;
+  color: var(--m-content-primary);
+  font-weight: var(--m-weight-medium);
+}
+
+/* AN ANONYMOUS SESSION READS AS ONE. Production colours identified users teal
+   and anonymous ones grey, which puts the accent on the ordinary case - most
+   sessions are identified - and makes the list two colours for a distinction
+   nobody is scanning for. Here the identified name is ordinary primary ink and
+   the anonymous id is muted and mono: it is an ID, and setting it in the figure
+   face says that without a colour. */
+.m-ss__name.is-anon {
+  font-family: var(--m-font-mono);
+  font-size: var(--m-text-xs);
+  font-weight: var(--m-weight-regular);
+  color: var(--m-content-muted);
+}
+
+/* Live. Not a colour and not a pulse: this list is not a monitor, and a
+   blinking row in a table you are trying to read is the loudest thing on the
+   page for the least reason. */
+.m-ss__live {
+  flex: none;
+  padding-inline: var(--m-space-2);
+  border-radius: var(--m-radius-chip);
+  background: var(--m-status-success-bg);
+  color: var(--m-status-success-fg);
+  font-size: var(--m-text-2xs);
+  line-height: 1.45;
+}
+
+.m-ss__mark { flex: none; color: var(--m-content-decorative); }
+
+/* ── the figures ─────────────────────────────────────────────────────────────
+   TABULAR, RIGHT-ALIGNED, ONE FACE. This is the whole argument for the table:
+   47 above 12 above 88 can be compared at a glance only if the digits share a
+   column and a width. Production's card stacks them inside percentage-width
+   zones, so no two rows put a number in the same place. */
+.m-ss__fig {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-secondary);
+}
+
+/* An error count is the one figure that is not neutral information, so it is
+   the one that carries content colour - not a fill, not a chip. */
+.m-ss__fig--bad { color: var(--m-content-danger); font-weight: var(--m-weight-medium); }
+
+/* A ZERO IS A DASH. A column of "0" is a column of noise, and the question
+   "which of these went wrong" is answered by a sparse column and hidden by a
+   dense one. */
+.m-ss__fig.is-zero { color: var(--m-content-disabled); }
+
+/* ── location and device ─────────────────────────────────────────────────────
+   No flag. Production draws a country flag image per row, which is 134 raster
+   sprites in a monochrome interface, and the two-letter code is both narrower
+   and unambiguous - "GB" cannot be mistaken for "IE" at 16px the way the flags
+   can. */
+.m-ss__where,
+.m-ss__device {
+  display: flex;
+  align-items: baseline;
+  gap: var(--m-space-3);
+  min-width: 0;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+}
+
+.m-ss__cc {
+  flex: none;
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: 0.03em;
+  color: var(--m-content-muted);
+}
+
+/* The second and third facts in a cell, one step quieter. Browser is what
+   people filter on; the OS and the device are context, and three columns for
+   them would be 300px of table saying almost nothing. */
+.m-ss__quiet { color: var(--m-content-muted); font-size: var(--m-text-xs); }
+
+/* ── metadata ────────────────────────────────────────────────────────────────
+   CLICKABLE, and that is the one thing from production's card that had to
+   survive: clicking a value searches for it. It is the shortest path there is
+   from "this session is interesting" to "show me the others like it", and it is
+   the only place in the app where the list writes to the search. */
+.m-ss__meta { display: flex; align-items: center; gap: var(--m-space-2); min-width: 0; }
+
+.m-ss__meta-chip {
+  max-width: 7rem;
+  overflow: hidden;
+  padding-inline: var(--m-space-2);
+  border-radius: var(--m-radius-chip);
+  background: var(--m-surface-hover);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-2xs);
+  line-height: 1.5;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-ss__meta-chip:hover { background: var(--m-surface-active); color: var(--m-content-primary); }
+
+/* ── the play affordance ─────────────────────────────────────────────────────
+   A glyph that appears on hover, not a button on every row. The ROW opens the
+   replay - it is the only thing a session row does - so a button repeating that
+   134 times is 134 invitations to do the thing the row already does. It sits in
+   its own column so the rows keep a right edge to end on. */
+.m-ss__play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: var(--m-radius-full);
+  color: var(--m-content-decorative);
+  opacity: 0;
+  transition: opacity var(--m-duration-instant) var(--m-ease-out);
+}
+.m-ss__row:hover .m-ss__play { opacity: 1; }
+
+/* A watched session is not dimmed, only its name gives up its weight. Dimming
+   the whole row makes half the table look disabled; the list is still the
+   list. */
+.m-ss__row.is-viewed .m-ss__name { font-weight: var(--m-weight-regular); }
+
+/* ── the foot ────────────────────────────────────────────────────────────────
+   Same object as the issues footer: the range on the left, the pager on the
+   right, pinned to the plane's bottom edge. */
+.m-ss__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-space-4);
+  margin-top: auto;
+  padding-top: var(--m-space-5);
+}
+
+.m-ss__range-label {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-muted);
+}

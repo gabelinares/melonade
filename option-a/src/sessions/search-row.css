@@ -1,0 +1,301 @@
+/* ── ONE ROW OF THE SEARCH ───────────────────────────────────────────────────
+   A CLAUSE, not a form. Everything on the line is the same 13px, the operator
+   is a word rather than a boxed select, and the only bordered thing is the
+   value — which is the one part you actually type into.
+
+   The row has no background of its own at rest. It takes the surface's own
+   hover step, so a list of six clauses reads as six lines of a paragraph until
+   you point at one. */
+.m-srow {
+  position: relative;
+  border-radius: var(--m-radius-control);
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    opacity var(--m-duration-fast) var(--m-ease-out);
+}
+.m-srow:hover { background: var(--m-srow-hover, var(--m-surface-hover)); }
+
+.m-srow__line {
+  display: flex;
+  align-items: center;
+  /* WRAP, and this is the one thing the production row gets right that a
+     single-line row would lose: a URL-shaped value on a narrow plane has to go
+     somewhere, and wrapping inside the clause keeps it in the clause. */
+  flex-wrap: wrap;
+  gap: var(--m-space-2) var(--m-space-3);
+  /* ⚠ NOT `--m-nav-row-height`. A search row is not a nav row - borrowing that
+     token would make this page's rhythm move whenever the menu's did, and the
+     two have nothing to do with each other. `control-height-md` is what a row
+     of controls is tall, and it answers the density control like everything
+     else here. */
+  min-height: var(--m-control-height-md);
+  padding: var(--m-space-2) var(--m-space-3);
+}
+
+/* ── the position slot ───────────────────────────────────────────────────────
+   Held open on EVERY row and filled only on events, so both kinds of subject
+   share one left edge. This is the whole trick that lets one list hold two
+   grammars: rendered only where it applies, the properties' names would sit
+   28px left of the events' and the list would read as two lists that failed to
+   line up.
+
+   The grip replaces the number on hover rather than sitting beside it. Both at
+   once is 34px of chrome in front of a clause, and you never need to read the
+   number at the moment you are reaching for the handle. */
+.m-srow__pos {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.25rem;
+  color: var(--m-content-muted);
+}
+
+.m-srow__num {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  font-variant-numeric: tabular-nums;
+  transition: opacity var(--m-duration-instant) var(--m-ease-out);
+}
+
+.m-srow__grip {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  cursor: grab;
+  color: var(--m-content-decorative);
+  transition: opacity var(--m-duration-instant) var(--m-ease-out);
+}
+.m-srow:hover .m-srow__grip { opacity: 1; }
+.m-srow:hover .m-srow__grip + .m-srow__num { opacity: 0; }
+.m-srow__grip:active { cursor: grabbing; }
+
+/* ── the subject ─────────────────────────────────────────────────────────────
+   The only bordered control on the line besides the value, because it is the
+   only one that opens something as big as the picker. `category · name` in two
+   weights: the category is context and the name is the thing, and production
+   already prints both in this order — it just prints them at one weight, which
+   is why a row of them reads as one long string. */
+.m-srow__subject {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--m-space-2);
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 20rem;
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-3);
+  border: var(--m-border-width) solid var(--m-border-default);
+  border-radius: var(--m-radius-control);
+  background: var(--m-surface-default);
+  font-size: var(--m-text-sm);
+  transition: border-color var(--m-duration-instant) var(--m-ease-out),
+    background-color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-srow__subject:hover { border-color: var(--m-border-strong); }
+
+.m-srow__cat { flex: none; color: var(--m-content-muted); }
+.m-srow__dot { flex: none; color: var(--m-content-decorative); }
+.m-srow__name {
+  min-width: 0;
+  color: var(--m-content-primary);
+  font-weight: var(--m-weight-medium);
+}
+
+/* ── the predicate ───────────────────────────────────────────────────────────
+   THE OPERATOR IS A WORD. It is a real Select — focusable, keyboard-operable,
+   the same one production uses — drawn without its box, because "is not" is a
+   word in a sentence and a 92px bordered field around it turns the clause into
+   three fields you have to assemble in your head.
+
+   It takes its box back on hover and focus, which is this app's existing rule
+   for a control that lives inside prose. Nothing is hidden: the affordance
+   arrives exactly when you go looking for it. */
+/* ⚠ THE v6 CLASS NAMES. antd v6 renders select > content > input with the
+   caret in `.ant-select-suffix`; there is no `.ant-select-selector`, no
+   `.ant-select-selection-item` and no `.ant-select-arrow` anywhere in the tree.
+   A rule written against the v5 names matches nothing and fails silently, so
+   the operator kept its box and its caret and none of this stylesheet applied.
+   Measured in `sessions-check`, not eyeballed. */
+.m-srow .m-srow__op.ant-select { flex: none; }
+
+.m-srow .m-srow__op .ant-select-content {
+  padding-inline: var(--m-space-2);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+  border-radius: var(--m-radius-control);
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    box-shadow var(--m-duration-instant) var(--m-ease-out);
+}
+
+.m-srow .m-srow__op .ant-select-suffix { opacity: 0; transition: opacity var(--m-duration-instant); }
+.m-srow:hover .m-srow__op .ant-select-suffix,
+.m-srow .m-srow__op.ant-select-focused .ant-select-suffix,
+.m-srow .m-srow__op.ant-select-open .ant-select-suffix { opacity: 1; }
+
+.m-srow:hover .m-srow__op .ant-select-content,
+.m-srow .m-srow__op.ant-select-focused .ant-select-content {
+  background: var(--m-surface-default);
+  box-shadow: inset 0 0 0 var(--m-border-width) var(--m-border-default);
+}
+
+/* ── the value ───────────────────────────────────────────────────────────────
+   ⚠ `flex-wrap: nowrap` ON THE SELECTOR. antd v6's multiple/tags Select wraps
+   its tags onto a second line and the control grows taller, which shifts every
+   row under it while you are still typing. `maxTagCount="responsive"` collapses
+   the overflow into a "+2" instead — but only if the selector is told not to
+   wrap first, which is the trap. Same fix as the segments multi-select. */
+/* ⚠ NOT `flex: 1`. The line is the only flex row on it and the remove is
+   pushed right by `margin-left: auto`, so a growing value absorbed every spare
+   pixel on the plane - a 370px empty select beside a three-word clause, with
+   the "needs a value" note stranded at the far end of it. A clause is as wide
+   as what it says. */
+.m-srow .m-srow__value.ant-select { flex: 0 1 auto; width: 13rem; min-width: 7rem; }
+
+.m-srow .m-srow__value .ant-select-content {
+  flex-wrap: nowrap !important;
+  overflow: hidden;
+}
+
+.m-srow .m-srow__num-input.ant-input-number { flex: none; width: 6rem; }
+
+/* A duration is a pair with a word between it, so it is one object on the line
+   and not three. */
+.m-srow__pair {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+}
+.m-srow__pair .ant-input-number { width: 5.25rem; }
+
+/* The words the clause needs that are not controls: "is matched", "to",
+   "seconds". Same size and colour as the operator, so the sentence has one
+   voice whether a given word happens to be editable. */
+.m-srow__said,
+.m-srow__unit {
+  flex: none;
+  color: var(--m-content-muted);
+  font-size: var(--m-text-sm);
+}
+
+/* ── the two trailing controls ───────────────────────────────────────────────
+   Both go quiet until the row is pointed at. They are per-row actions on a list
+   you mostly read, and six visible minus-circles down the right edge of a
+   search is six invitations to break it. They stay reachable by keyboard at all
+   times — `:focus-visible` brings them back — so this is a visual quieting and
+   not a hidden control. */
+.m-srow__prop-add,
+.m-srow__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: var(--m-radius-control);
+  color: var(--m-content-decorative);
+  opacity: 0;
+  transition: opacity var(--m-duration-instant) var(--m-ease-out),
+    background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-srow:hover .m-srow__prop-add,
+.m-srow:hover .m-srow__remove,
+.m-srow__prop-add:focus-visible,
+.m-srow__remove:focus-visible { opacity: 1; }
+
+.m-srow__prop-add:hover,
+.m-srow__remove:hover { background: var(--m-surface-active); color: var(--m-content-secondary); }
+
+/* The remove sits at the row's own right edge rather than after the value, so
+   the removes form a column instead of a ragged edge. */
+.m-srow__remove { margin-left: auto; }
+
+/* A row whose operator wants a value and has none. A word, not a red dot: the
+   row is unfinished rather than wrong, and it is still narrowing nothing, which
+   is the fact worth printing. */
+.m-srow__pending {
+  flex: none;
+  padding-inline: var(--m-space-2);
+  border-radius: var(--m-radius-chip);
+  background: var(--m-status-warning-bg);
+  color: var(--m-status-warning-fg);
+  font-size: var(--m-text-2xs);
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+/* ── an event's own properties ───────────────────────────────────────────────
+   Production's grammar exactly — indented on a dashed rail, "where" then a
+   clickable and/or — because it is good and because somebody already learned
+   it. The rail is dashed to say these belong to the row above rather than
+   being siblings of it; the solid rules in this app all separate peers. */
+.m-srow__props {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-1);
+  margin: 0 0 var(--m-space-2) var(--m-space-6);
+  padding-left: var(--m-space-5);
+  border-left: var(--m-border-width) dashed var(--m-border-strong);
+}
+
+.m-srow__prop {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--m-space-2) var(--m-space-3);
+  min-height: 1.75rem;
+}
+
+/* "where" is a fact and "and / or" is a choice, so only one of them is a
+   button — and the one that is looks like a word you can change: dotted
+   underline, and it takes a fill on hover. Production makes it a plain
+   Typography.Text with a colour change, which is the one thing here worth
+   improving: nothing about it says it is clickable until you hover it. */
+.m-srow__joint {
+  flex: none;
+  width: 2.5rem;
+  padding-inline: var(--m-space-1);
+  border-radius: var(--m-radius-chip);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-xs);
+  text-align: right;
+  text-decoration: underline dotted var(--m-border-strong);
+  text-underline-offset: 3px;
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-srow__joint:hover { background: var(--m-surface-active); color: var(--m-content-primary); }
+.m-srow__joint.is-fixed { text-decoration: none; cursor: default; }
+.m-srow__joint.is-fixed:hover { background: transparent; color: var(--m-content-muted); }
+
+.m-srow__prop-name {
+  flex: none;
+  max-width: 11rem;
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+}
+
+/* ── dragging ────────────────────────────────────────────────────────────────
+   The row being carried fades; the gap it will land in is a solid accent rule
+   drawn on the row's own edge. Production draws a dashed teal border and shifts
+   the row half a pixel to make room, which flickers between two neighbours. A
+   1px line on one edge cannot flicker, because there is only ever one of it. */
+.m-srow.is-dragging { opacity: 0.4; }
+
+.m-srow.is-drop-top::before,
+.m-srow.is-drop-bottom::after {
+  content: '';
+  position: absolute;
+  left: var(--m-space-3);
+  right: var(--m-space-3);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--m-border-accent);
+}
+.m-srow.is-drop-top::before { top: -1px; }
+.m-srow.is-drop-bottom::after { bottom: -1px; }

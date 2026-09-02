@@ -1,0 +1,185 @@
+/* ── THE SEARCH ──────────────────────────────────────────────────────────────
+   ONE SURFACE, and it is a WELL cut into the plane rather than a card placed on
+   it. The page IS the plane since 08-28, so a card on a card would be a second
+   surface floating on the first - the exact seam that change removed. A well
+   steps DOWN instead: it reads as a field you fill, which is what a search is.
+
+   Production draws it as a raised antd Card with a white body on a grey canvas,
+   which was right when the canvas was grey.
+
+   ⚠ `surface-canvas` AND NOT `surface-sunken`. Sunken is #f6f9fa against a
+   #ffffff plane - a 1.5% step, which is to say invisible: the first build of
+   this had no container at all on screen and the three clauses read as loose
+   lines floating over the table. Canvas is the GROUND the whole app sits on,
+   which is also the honest colour for a hole in the plane, and it steps
+   properly in both themes (#f0f3f4 on white, #030506 under #1a2023).
+
+   NO BORDER. The fill is the edge. A hairline as well would be an outline
+   around a hole. */
+/* ⚠ NOT `.m-search`. That class already exists - it is the page header's
+   SearchField, and it is a WIDTH (`13rem`). A section that borrowed it came out
+   208px wide inside a 1410px plane, with the empty state stacked into a column,
+   and nothing in the stylesheet looked wrong. Prefix collisions in a flat class
+   namespace do not error, they just quietly resize something. */
+.m-sc {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--m-radius-surface);
+  background: var(--m-surface-canvas);
+}
+
+/* THE STICKY IS A WRAPPER, NOT THIS. See `.m-ss__sticky` in sessions-page.css.
+   ⚠ It was on `.m-sc` for one build, together with the plane's background so
+   rows would not show through - and `.m-page__body > .m-sc` out-specifies
+   `.m-sc`, so the well lost its own sunken fill and the whole card went white.
+   A sticky element that has to be opaque cannot also be the element whose
+   colour means something. */
+
+/* ── the bar ─────────────────────────────────────────────────────────────────
+   The button, and the two things that act on the whole search. No headings:
+   the rows say which kind they are, and "Events" over a numbered draggable row
+   is a label on a thing that has already said it.
+
+   ⚠ ITS INSET IS THE ROWS' INSET. `space-5` here is the list's `space-3` plus
+   the row's own `space-3`, so the button that MAKES a row sits in the same
+   column as the numbers of the rows it made. It was `space-4` and landed 4px
+   left of them - which is the kind of gap nobody can name and everybody can
+   see.
+
+   A HAIRLINE UNDER IT, because the well needs a head and a body to read as a
+   container at all: it is a 6% step off the plane, and 6% plus three loose
+   lines is not a container. Same grammar as the picker (a field, a rule, a
+   body) and the account card (a head, a rule, its groups) - one convention,
+   three uses. */
+.m-sc__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex-wrap: wrap;
+  padding: var(--m-space-4) var(--m-space-5);
+  border-bottom: var(--m-border-width) solid var(--m-border-default);
+}
+
+/* ── the order control ───────────────────────────────────────────────────────
+   A SENTENCE, not a labelled field: "matching then". Production says "Events
+   Order" beside a dropdown reading "THEN", which is the database's name for the
+   column and the wire value in caps - two pieces of vocabulary for one idea,
+   neither of them English.
+
+   The word is the whole control, so the Select is borderless and takes its box
+   on hover, the same rule the row's operator follows. One convention for "a
+   control that lives inside prose", used twice on this page. */
+.m-sc__order {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  flex: none;
+}
+
+.m-sc__order-label {
+  color: var(--m-content-muted);
+  font-size: var(--m-text-sm);
+  cursor: default;
+}
+
+/* ⚠ `.ant-select-content`, NOT `.ant-select-selector`, and
+   `.ant-select-suffix`, NOT `.ant-select-arrow`. antd v6 renders
+   select > content > input with the caret in a `-suffix`; there is no
+   `-selector` and no `-arrow` in the tree at all. The v5 names match nothing
+   and fail silently - which is the same trap the popover's `-inner` set, and
+   the reason this is measured in `sessions-check` rather than eyeballed. */
+.m-sc .m-sc__order-select.ant-select { flex: none; min-width: 4.25rem; }
+
+.m-sc .m-sc__order-select .ant-select-content {
+  padding-inline: var(--m-space-2);
+  color: var(--m-content-primary);
+  font-size: var(--m-text-sm);
+  font-weight: var(--m-weight-medium);
+  border-radius: var(--m-radius-control);
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    box-shadow var(--m-duration-instant) var(--m-ease-out);
+}
+
+.m-sc__order-select:hover .ant-select-content,
+.m-sc__order-select.ant-select-focused .ant-select-content {
+  background: var(--m-surface-default);
+  box-shadow: inset 0 0 0 var(--m-border-width) var(--m-border-default);
+}
+
+/* The option list carries the meaning; the closed control carries the word.
+   Three words with no explanation is a quiz, and "then / and / or" is exactly
+   the kind of vocabulary people get wrong once and then avoid. */
+.m-sc__order-option { display: flex; flex-direction: column; gap: 1px; padding-block: 2px; }
+.m-sc__order-hint { font-size: var(--m-text-2xs); color: var(--m-content-muted); }
+
+/* Clear sits at the far right of the bar, away from Add: they are the two ends
+   of the same action and putting them side by side is how a search gets wiped
+   by somebody aiming for the picker. */
+.m-sc__clear { margin-left: auto; }
+
+/* ── the rows ────────────────────────────────────────────────────────────────
+   Inset from the well's edge by less than the bar, because a row's own hover
+   fill is what marks its bounds and a wide gutter would leave that fill
+   floating in the middle of the surface.
+
+   ⚠ A ROW IN HERE IS STANDING ON THE WELL, so it steps UP towards the plane on
+   hover - the opposite direction from a row on a white card. Exactly the bug
+   the nav rows hit when the 08-28 shell moved the ground under them: hover was
+   `surface-hover`, which IS the well's colour, so pointing at a row did
+   nothing at all. */
+.m-sc__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-1);
+  padding: 0 var(--m-space-3) var(--m-space-3);
+}
+
+/* THE ONE RULE, and only with something on both sides of it: it separates the
+   sequence from the constraints. Full-bleed to the well's edges rather than
+   inset with the rows, so it reads as a division of the surface rather than as
+   a row that happens to be a line. */
+.m-sc__rule {
+  height: var(--m-border-width);
+  margin: var(--m-space-2) calc(var(--m-space-3) * -1);
+  border: 0;
+  background: var(--m-border-default);
+}
+
+/* ── the empty search ────────────────────────────────────────────────────────
+   NOT an empty state - nothing is wrong and nothing is missing. One line about
+   what the field takes, and three sentences that demonstrate the half of it
+   nobody expects. */
+.m-sc__empty {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--m-space-3) var(--m-space-5);
+  padding: 0 var(--m-space-4) var(--m-space-5);
+}
+
+.m-sc__hint {
+  color: var(--m-content-muted);
+  font-size: var(--m-text-sm);
+}
+
+.m-sc__examples { display: flex; flex-wrap: wrap; gap: var(--m-space-2); }
+
+/* An example is a quotation, so it is set as one: quiet, in the plane's own
+   surface, and it fills the search rather than running it - you should be able
+   to see what a sentence became before you trust the next one you write. */
+.m-sc__example {
+  padding: 3px var(--m-space-3);
+  border: var(--m-border-width) solid var(--m-border-subtle);
+  border-radius: var(--m-radius-chip);
+  background: var(--m-surface-default);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-xs);
+  transition: border-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-sc__example:hover { border-color: var(--m-border-strong); color: var(--m-content-primary); }
+.m-sc__example::before { content: '“'; }
+.m-sc__example::after { content: '”'; }
+
+/* the two steps a search row takes off the well it is standing on */
+.m-sc { --m-srow-hover: var(--m-surface-default); }
