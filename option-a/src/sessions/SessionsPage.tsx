@@ -291,7 +291,7 @@ export function SessionsPage({ model }: SessionsPageProps) {
   return (
     <PageCard
       title="Sessions"
-      subtitle="Every session the tracker recorded on this project. Search by what people did, then watch the ones that matter."
+      subtitle="Every session the tracker recorded on this project. Say what you are looking for, then watch the ones that matter."
       /* ⚠ antd `Tabs`, NOT `FilterStrip`. The `tabs` slot is text tabs with an
          ink bar, and PageCard says so in as many words: "deliberately a
          different shape from the pill toolbar below, because a section replaces

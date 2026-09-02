@@ -3677,3 +3677,57 @@ table below is edge to edge and its cells carry their own inset — so the searc
 is a **band across the plane** rather than a card floating in it, which is also
 what it is: a region of the page, not an object on it. One hairline closes the
 bottom; the fill does the rest.
+
+### It is not a search bar, and it is not called search (2026-09-02)
+
+> *"It's still really looking like a search bar, and that's something else, and
+> I don't even like to call it search — maybe it's just a field with a very nice
+> objective concise placeholder, maybe we can rotate examples. Remove the
+> examples pill and row, make the field the most important part."*
+
+Right about the word. **You are not searching a corpus, you are saying which
+sessions you want** — and what comes back is a description you can edit, not a
+result set. Every word a reader sees now says filter or describe: the section's
+accessible name, the picker's placeholder, the translation offer ("read this as
+a filter"), and the page's own subtitle.
+
+Three things made it read as a search bar, and all three are gone:
+
+1. **The magnifier.** A magnifier *is* the search signal. It is a `ListFilter`
+   glyph now, which says "this narrows a list" — what the control does.
+2. **The "reads plain English" badge.** A label on a field, explaining the
+   field.
+3. **The row of example pills** under it, saying the same thing a third time.
+
+**The placeholder does all three jobs instead**, which is why they could go. A
+fixed **lead** that never changes, so the field always says what it is for, and
+one **example that rotates**, so it teaches the half nobody expects:
+
+```
+Describe the sessions you want, like “paid users who hit an error”
+                                     ↑ rotates, every 4.2s
+```
+
+Only the example crossfades — it is keyed on its own text, so React remounts it
+and the fade runs once per example. A line where the whole thing changed every
+four seconds would be a page with a pulse. **It pauses while you are hovering or
+focused**, because text that changes under a cursor aiming at it is the most
+irritating thing a placeholder can do and somebody hovering is somebody reading.
+And it does not rotate at all under `prefers-reduced-motion`: a cycling line of
+text is motion in every sense that matters.
+
+All five examples really translate — `sessions-check` runs each one through the
+picker and asserts it comes back with steps. A placeholder promising something
+the field cannot do is worse than one promising nothing.
+
+**And it is now measurably the most important thing on the page:** four pixels
+taller than the tallest control in the app's own scale, and the only type here
+at 14px while everything else is 13. That is the whole of its prominence — no
+fill, no shadow, no accent at rest. Being the largest object in a column of
+small ones is enough in a monochrome interface, and it does not spend the one
+accent this view gets, which the ring already has.
+
+**The `m-sc` prefix and the `SearchCard` / `search-row` filenames predate the
+rename and are left alone deliberately.** Renaming a prefix across four
+stylesheets, five components and a check suite to change a word nobody sees is
+churn, and a half-done rename is worse than an old one.

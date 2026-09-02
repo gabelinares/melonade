@@ -59,15 +59,18 @@
 }
 
 /* ── THE FIELD ───────────────────────────────────────────────────────────────
-   A FIELD and not a button. "+ Add filter" was 90px of control that gave no
-   sign it took a sentence, so the half of this search nobody expects was
-   invisible until you opened it. Something the width of the plane says "type
-   here" without a word, and the note on its right says what typing gets you.
+   THE MOST IMPORTANT THING ON THE PAGE (Gabriel, 2026-09-02: "make the field
+   the most important part"), so it is the biggest control on it - four pixels
+   taller than the tallest thing in the app's own scale, and the only type here
+   at 14px while everything else is 13.
 
-   It is still a `<button>` - it opens a menu, it does not hold text - so it
-   gets a real focus ring and real keyboard behaviour, and it is DRAWN as a
-   field. The placeholder is the picker's own placeholder, so the two never
-   disagree about what the field accepts. */
+   That is the whole of its prominence. No fill, no shadow, no accent at rest:
+   it is the largest object in a column of small ones, which in a monochrome
+   interface is more than enough and does not spend the one accent this view
+   gets.
+
+   Still a `<button>` - it opens a menu and holds no text - so it keeps real
+   keyboard behaviour and a real focus indicator, and it is DRAWN as a field. */
 .m-sc__field {
   position: relative;
   isolation: isolate;
@@ -76,7 +79,8 @@
   gap: var(--m-space-4);
   flex: 1;
   min-width: 0;
-  height: var(--m-control-height-lg);
+  /* the tallest control in the app, plus four: this one outranks them */
+  height: calc(var(--m-control-height-lg) + var(--m-space-2));
   padding-inline: var(--m-space-5);
   border: var(--m-border-width) solid var(--m-border-default);
   border-radius: var(--m-radius-control);
@@ -96,32 +100,55 @@
 }
 .m-sc__field:hover .m-sc__field-glyph { color: var(--m-content-secondary); }
 
+/* ── THE PLACEHOLDER ─────────────────────────────────────────────────────────
+   TWO PARTS, and the split is what lets one line do three jobs. The LEAD never
+   changes, so the field always says what it is for. The EXAMPLE rotates, so it
+   teaches the half nobody expects - which is what the badge and the row of
+   pills were for, and both are gone.
+
+   The example is a shade quieter than the lead: it is an illustration of the
+   instruction, not a second instruction. */
 .m-sc__field-text {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: var(--m-text-sm);
+  /* 14px, and it is the only 14px on this page. See the note on the height. */
+  font-size: var(--m-text-md);
+}
+
+.m-sc__lead {
   color: var(--m-content-placeholder);
   transition: color var(--m-duration-fast) var(--m-ease-out);
 }
-.m-sc__field:hover .m-sc__field-text { color: var(--m-content-secondary); }
+.m-sc__field:hover .m-sc__lead { color: var(--m-content-secondary); }
 
-/* WHAT TYPING GETS YOU, stated as a fact about the field rather than as a
-   decoration on it. A bare sparkle would be the templated version of this and
-   it would say nothing; four words say the whole feature. It is the quietest
-   type on the page, because it is a note and not a control. */
-.m-sc__field-note {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--m-space-2);
-  flex: none;
-  color: var(--m-content-muted);
-  font-size: var(--m-text-2xs);
-  transition: color var(--m-duration-fast) var(--m-ease-out);
+/* ONLY THIS CROSSFADES. It is keyed on its own text in SearchCard, so React
+   remounts it and the animation runs once per example - a line where the whole
+   thing changed every four seconds would be a page with a pulse.
+
+   `animation` and not `transition`, because there is nothing to transition
+   FROM: the element is new each time. And it fades in only, with no fade out,
+   so the swap reads as the next example arriving rather than as the field
+   blinking. */
+.m-sc__eg {
+  color: var(--m-content-disabled);
+  animation: m-sc-eg var(--m-duration-slow) var(--m-ease-out);
 }
-.m-sc__field:hover .m-sc__field-note { color: var(--m-content-accent); }
+.m-sc__field:hover .m-sc__eg { color: var(--m-content-muted); }
+
+@keyframes m-sc-eg {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* A placeholder that rotates is motion, whatever the spec counts. The hook
+   stops the rotation outright under reduced motion; this stops the fade on the
+   one example that does get drawn. */
+@media (prefers-reduced-motion: reduce) {
+  .m-sc__eg { animation: none; }
+}
 
 /* ── THE RING ────────────────────────────────────────────────────────────────
    The one piece of expression on this page, and it is here rather than
@@ -310,42 +337,11 @@
   background: var(--m-border-default);
 }
 
-/* ── the empty search ────────────────────────────────────────────────────────
-   NOT an empty state - nothing is wrong and nothing is missing. The field above
-   already says what it takes, so all that is left is three sentences
-   demonstrating the half of it nobody expects. */
-.m-sc__empty {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--m-space-3) var(--m-space-5);
-  padding: 0 var(--m-space-4) var(--m-space-5);
-}
+/* ⚠ THE EMPTY-SEARCH BLOCK AND THE EXAMPLE PILLS ARE GONE, 2026-09-02. They
+   said the same thing the placeholder says, in a second place, and twice the
+   surface for one idea is what made the field read as one control among several
+   rather than as the control. `git show` has them. */
 
-.m-sc__hint {
-  flex: none;
-  color: var(--m-content-muted);
-  font-size: var(--m-text-xs);
-}
-
-.m-sc__examples { display: flex; flex-wrap: wrap; gap: var(--m-space-2); }
-
-/* An example is a quotation, so it is set as one: quiet, in the plane's own
-   surface, and it fills the search rather than running it - you should be able
-   to see what a sentence became before you trust the next one you write. */
-.m-sc__example {
-  padding: 3px var(--m-space-3);
-  border: var(--m-border-width) solid var(--m-border-subtle);
-  border-radius: var(--m-radius-chip);
-  background: var(--m-surface-default);
-  color: var(--m-content-secondary);
-  font-size: var(--m-text-xs);
-  transition: border-color var(--m-duration-instant) var(--m-ease-out),
-    color var(--m-duration-instant) var(--m-ease-out);
-}
-.m-sc__example:hover { border-color: var(--m-border-strong); color: var(--m-content-primary); }
-.m-sc__example::before { content: '“'; }
-.m-sc__example::after { content: '”'; }
 
 /* the two steps a search row takes off the well it is standing on */
 .m-sc { --m-srow-hover: var(--m-surface-default); }

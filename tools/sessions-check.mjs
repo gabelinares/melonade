@@ -95,13 +95,32 @@ check('every figure in a column shares one right edge and one face',
 /* ── 2. ONE BUTTON ───────────────────────────────────────────────────────────
    The claim, and the whole reason this is a cheap change: one picker holds both
    kinds, so nobody has to know which kind a thing is before looking for it. */
-check('there is exactly ONE way into the search, and it is a field',
+check('there is exactly ONE way into the filter, and it is a field',
   (await p.locator('.m-sc__field').count()) === 1
-    && /describe a session/.test((await p.locator('.m-sc__field-text').textContent()) ?? ''),
+    && /Describe the sessions you want/.test((await p.locator('.m-sc__lead').textContent()) ?? ''),
   (await p.locator('.m-sc__field-text').textContent()) ?? 'no field');
-/* WHAT TYPING GETS YOU, said on the field rather than discovered inside it. */
-check('and the field says it takes plain English',
-  /plain English/.test((await p.locator('.m-sc__field-note').textContent()) ?? ''));
+/* THE PLACEHOLDER DOES THREE JOBS AT ONCE, which is why the badge and the row
+   of example pills could go: a fixed lead that says what the field is for, and
+   one rotating example that teaches the half nobody expects. */
+check('and its placeholder carries a live example',
+  /, like “.+”/.test((await p.locator('.m-sc__eg').textContent()) ?? ''),
+  (await p.locator('.m-sc__eg').textContent()) ?? 'no example');
+/* ⚠ NOT A SEARCH BAR AND NOT CALLED SEARCH (Gabriel, 2026-09-02). The magnifier
+   is the search signal, so it is a filter glyph; and no word a reader sees says
+   "search". */
+const words = await p.evaluate(() => {
+  const nav = document.querySelector('.m-sc');
+  const glyph = nav.querySelector('.m-sc__field-glyph');
+  return {
+    glyph: glyph?.classList.contains('lucide-list-filter') || glyph?.getAttribute('class') || '',
+    saysSearch: /search/i.test(nav.textContent ?? ''),
+    labels: [...nav.querySelectorAll('[aria-label]')].map((e) => e.getAttribute('label') ?? e.getAttribute('aria-label')).join(' | '),
+  };
+});
+check('nothing a reader sees calls it search', !words.saysSearch && !/search/i.test(words.labels),
+  words.saysSearch ? 'the card prints the word' : words.labels.slice(0, 90));
+check('and the glyph is a filter, not a magnifier',
+  !/magnif|search/i.test(String(words.glyph)), String(words.glyph).slice(0, 60));
 
 await p.locator('.m-sc__field').click();
 await p.waitForTimeout(400);
@@ -334,24 +353,57 @@ if (await p.locator('.m-sc__clear').count()) {
   await p.locator('.m-sc__clear').click();
   await p.waitForTimeout(350);
 }
-const emptySearch = await p.evaluate(() => ({
-  hint: document.querySelector('.m-sc__hint')?.textContent?.trim(),
-  examples: [...document.querySelectorAll('.m-sc__example')].map((e) => e.textContent.trim()),
+const emptyFilter = await p.evaluate(() => ({
   rows: document.querySelectorAll('.m-srow').length,
+  /* ⚠ NO EMPTY STATE AND NO EXAMPLE PILLS. They said what the placeholder says,
+     in a second place - and twice the surface for one idea is what made the
+     field read as one control among several rather than as THE control. */
+  pills: document.querySelectorAll('.m-sc__example, .m-sc__empty, .m-sc__hint').length,
+  strip: !!document.querySelector('.m-sc__strip'),
 }));
-check('an empty search offers examples rather than an empty state',
-  emptySearch.rows === 0 && emptySearch.examples.length === 3,
-  emptySearch.examples.join(' / '));
+check('an empty filter is simply a field, with no empty state under it',
+  emptyFilter.rows === 0 && emptyFilter.pills === 0 && !emptyFilter.strip,
+  `${emptyFilter.pills} leftover example elements`);
 
-/* AND THE EXAMPLES TRANSLATE. An example that came back empty would be worse
-   than no examples. */
-for (const i of [0, 1, 2]) {
-  await p.locator('.m-sc__example').nth(i).click();
-  await p.waitForTimeout(350);
-  const got = await p.evaluate(() => document.querySelectorAll('.m-srow').length);
-  check(`example ${i + 1} actually becomes a search`, got > 0, `${got} rows`);
-  await p.locator('.m-sc__clear').click();
+/* THE FIELD IS THE MOST IMPORTANT THING ON THE PAGE, so it is measurably the
+   biggest control on it and the only type at 14px. */
+const weight = await p.evaluate(() => {
+  const f = document.querySelector('.m-sc__field');
+  const others = [...document.querySelectorAll('.m-sc__bar .ant-select, .m-sc__bar button')]
+    .filter((e) => !e.classList.contains('m-sc__field'));
+  return {
+    h: Math.round(f.getBoundingClientRect().height),
+    tallestOther: Math.max(0, ...others.map((e) => Math.round(e.getBoundingClientRect().height))),
+    size: getComputedStyle(f.querySelector('.m-sc__field-text')).fontSize,
+    rowSize: getComputedStyle(document.querySelector('.m-vp__trigger, .m-srow__subject') ?? f).fontSize,
+  };
+});
+check('the field is the biggest control on the page and the only one at 14px',
+  weight.h > weight.tallestOther && weight.size === '14px',
+  `${weight.h}px vs ${weight.tallestOther}px, type ${weight.size}`);
+
+/* AND EVERY EXAMPLE IT SHOWS REALLY TRANSLATES. A placeholder promising
+   something the field cannot do is worse than one promising nothing. */
+const EXAMPLES = [
+  'paid users who hit an error',
+  'mobile sessions with rage clicks',
+  'trials that reached checkout',
+  'anyone who bounced off the cart',
+  'long sessions on Safari',
+];
+for (const ex of EXAMPLES) {
+  await p.locator('.m-sc__field').click();
   await p.waitForTimeout(250);
+  await p.fill('.m-pick__search input', ex);
+  await p.waitForTimeout(300);
+  const offered = await p.evaluate(() => ({
+    has: !!document.querySelector('.m-pick__nl button'),
+    steps: document.querySelectorAll('.m-pick__steps li').length,
+  }));
+  check(`the placeholder's “${ex}” really translates`, offered.has && offered.steps > 0,
+    `${offered.steps} steps`);
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(200);
 }
 
 /* ── 9. IT STICKS ────────────────────────────────────────────────────────────
@@ -397,6 +449,9 @@ check('and the well still steps off the plane rather than matching it',
    is not on at rest, its animation is PAUSED rather than merely invisible while
    nobody is pointing at it, and it stops moving when it is a focus ring. */
 await p.setViewportSize({ width: 1560, height: 940 });
+/* Park the cursor away from the field: "at rest" means nobody is pointing at
+   it, and a previous step left the pointer on it. */
+await p.mouse.move(900, 760);
 await p.waitForTimeout(400);
 const ringState = async () =>
   p.evaluate(() => {

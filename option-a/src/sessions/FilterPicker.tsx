@@ -116,7 +116,7 @@ export function FilterPicker({
   onPick,
   onTranslate,
   initialCategory,
-  placeholder = 'Search events and filters, or describe a session',
+  placeholder = 'An event, a property, or a sentence',
   children,
 }: FilterPickerProps) {
   const [open, setOpen] = useState(false);
@@ -174,7 +174,7 @@ export function FilterPicker({
             if (offerNL && nl!.filters.length) return accept();
             if (shown.length) pick(shown[0]!);
           }}
-          aria-label="Search events and filters"
+          aria-label="Events, properties and sentences"
         />
       </div>
 
@@ -227,7 +227,7 @@ export function FilterPicker({
             <div className={`m-pick__nl${nl!.filters.length === 0 ? ' is-blank' : ''}`}>
               <p className="m-pick__nl-head">
                 <Wand2 size={13} aria-hidden="true" />
-                {nl!.filters.length ? 'Read this as a search' : 'Could not read that as a search'}
+                {nl!.filters.length ? 'Read this as a filter' : 'Could not read that as a filter'}
               </p>
               {nl!.filters.length > 0 ? (
                 <>

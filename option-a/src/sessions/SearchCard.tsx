@@ -1,9 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Select, Tooltip } from 'antd';
-import { Search, Sparkles } from 'lucide-react';
+import { ListFilter } from 'lucide-react';
 import {
   describeFilter,
-  translate,
   type CatalogueEntry,
   type EventsOrder,
   type SearchFilter,
@@ -14,14 +13,62 @@ import { FilterPicker } from './FilterPicker.tsx';
 import { SearchRow } from './SearchRow.tsx';
 import './search-card.css';
 
-/** Three sentences that actually translate, so the examples are not a promise
- *  the field cannot keep. Offered only on an empty search: once there is a row
- *  in the card, examples are in the way of the thing you are building. */
+/* ── THE PLACEHOLDER ─────────────────────────────────────────────────────────
+   IT IS NOT A SEARCH BAR AND IT IS NOT CALLED SEARCH (Gabriel, 2026-09-02:
+   "it's still really looking like a search bar, and that's something else, and
+   I don't even like to call it search - maybe it's just a field with a very
+   nice objective concise placeholder, maybe we can rotate examples").
+
+   He is right about the word. You are not searching a corpus, you are SAYING
+   WHICH SESSIONS YOU WANT - a description that then becomes rows you can edit.
+   So the magnifier went, because a magnifier IS the search signal; the "reads
+   plain English" badge went; and the row of example pills went with them.
+
+   WHAT REPLACED ALL THREE IS THE PLACEHOLDER. A fixed lead that never changes,
+   so the field always says what it is for, and one example that rotates, so it
+   teaches the half nobody expects without a badge, a row of pills, or a word of
+   explanation. Everything those three were doing, done by the one thing you
+   were going to read anyway.
+
+   Every example really translates - `sessions-check` runs all of them - because
+   a placeholder promising something the field cannot do is worse than a
+   placeholder that promises nothing. */
+const LEAD = 'Describe the sessions you want';
+
 const EXAMPLES: readonly string[] = [
   'paid users who hit an error',
   'mobile sessions with rage clicks',
   'trials that reached checkout',
+  'anyone who bounced off the cart',
+  'long sessions on Safari',
 ];
+
+/** 4.2s: long enough to read a sentence and look away, short enough that a
+ *  second one arrives before you have stopped noticing the field. */
+const ROTATE_MS = 4200;
+
+/**
+ * The example the placeholder is currently showing.
+ *
+ * IT PAUSES WHILE YOU ARE THERE. Text that changes under a cursor aiming at it
+ * is the most irritating thing a placeholder can do, and somebody hovering is
+ * somebody reading.
+ *
+ * It does not rotate at all under `prefers-reduced-motion`. A cycling line of
+ * text is motion in every sense that matters, whatever the spec counts.
+ */
+function useRotatingExample(paused: boolean): string {
+  const [i, setI] = useState(0);
+
+  useEffect(() => {
+    if (paused) return undefined;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const id = window.setInterval(() => setI((n) => (n + 1) % EXAMPLES.length), ROTATE_MS);
+    return () => window.clearInterval(id);
+  }, [paused]);
+
+  return EXAMPLES[i]!;
+}
 
 const ORDER_OPTIONS: ReadonlyArray<{ value: EventsOrder; label: string; hint: string }> = [
   { value: 'then', label: 'then', hint: 'In this order, one after another' },
@@ -59,7 +106,17 @@ export interface SearchCardProps {
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
- * THE SEARCH — ONE BUTTON, ONE LIST.
+ * THE FILTER — ONE FIELD, ONE LIST.
+ *
+ * ⚠ IT IS NOT CALLED SEARCH. Gabriel, 2026-09-02: "I don't even like to call it
+ * search." He is right - you are not searching a corpus, you are saying which
+ * sessions you want, and what comes back is a description you can edit rather
+ * than a result set. Every word a reader sees says filter or describe.
+ *
+ * The `m-sc` prefix and this file's name predate that call and are left alone
+ * deliberately: renaming a prefix across four stylesheets, five components and
+ * a check suite to change a word nobody sees is churn, and a half-done rename
+ * is worse than an old one.
  *
  * Mehdi, 2026-09-02: "the core idea is to add the event and filter button as a
  * single button, but the core functioning should be exactly the same."
@@ -118,6 +175,11 @@ export function SearchCard({
     at: null,
   });
 
+  /* Hovered or focused: the placeholder stops rotating while you are reading
+     it. See useRotatingExample. */
+  const [here, setHere] = useState(false);
+  const example = useRotatingExample(here);
+
   const any = events.length > 0 || properties.length > 0;
   const takenProperties = properties.map((f) => f.entryId);
 
@@ -133,31 +195,49 @@ export function SearchCard({
   };
 
   return (
-    <section className="m-sc" aria-label="Session search">
+    <section className="m-sc" aria-label="Session filter">
       {/* ── THE FIELD ─────────────────────────────────────────────────────────
-          It is a FIELD, not a button, and that is the change: "+ Add filter"
-          was a 90px control that gave no sign it accepted a sentence, so the
-          half of this search nobody expects was invisible until you opened it.
-          A field the width of the plane says "type here" without a word, and
-          the note on its right says what typing gets you.
+          THE MOST IMPORTANT THING ON THE PAGE, and now drawn like it: the
+          tallest control here, the only one at 14px, and the only one that gets
+          the ring. Everything that was competing with it is gone - the
+          magnifier, the "reads plain English" badge, the row of example pills -
+          so what is left is a field and a sentence.
 
-          THE RING is the one piece of expression on this page. It sweeps once
-          around the field on hover and on focus - a slow conic pass, mostly the
-          border's own grey with a single accent arc in it - because this field
-          is where the search agent will live and a control that is about to
-          become an agent should look like it is listening. It is not on at
-          rest: a permanently animated border is a page you cannot read. */}
+          THE GLYPH IS A FILTER AND NOT A MAGNIFIER. That one swap is most of
+          what stopped this reading as a search bar: a magnifier IS the search
+          signal, and this control narrows a list rather than searching a
+          corpus.
+
+          THE RING is the one piece of expression here. It sweeps around the
+          field on hover and on focus - a slow conic pass, mostly the border's
+          own grey with a single accent arc in it - because this field is where
+          the agent will live, and a control that is about to start answering
+          questions should look like it is listening. Not on at rest: a
+          permanently animated border is a page you cannot read.
+
+          Still a `<button>`, because it opens a menu and holds no text of its
+          own. It is DRAWN as a field. */}
       <div className="m-sc__bar">
         <FilterPicker taken={takenProperties} onPick={onAdd} onTranslate={onAddMany}>
-          <button type="button" className="m-sc__field" aria-label="Search events and filters">
+          <button
+            type="button"
+            className="m-sc__field"
+            /* The rotating example goes in the accessible name too, or the
+               field says less to a screen reader than it does on screen. */
+            aria-label={`${LEAD}. For example, ${example}`}
+            onMouseEnter={() => setHere(true)}
+            onMouseLeave={() => setHere(false)}
+            onFocus={() => setHere(true)}
+            onBlur={() => setHere(false)}
+          >
             <span className="m-sc__ring" aria-hidden="true" />
-            <Search size={15} className="m-sc__field-glyph" aria-hidden="true" />
-            <span className="m-sc__field-text">
-              Search events and filters, or describe a session
-            </span>
-            <span className="m-sc__field-note">
-              <Sparkles size={12} aria-hidden="true" />
-              reads plain English
+            <ListFilter size={16} className="m-sc__field-glyph" aria-hidden="true" />
+            {/* The lead never moves and the example is keyed on itself, so only
+                the example crossfades. A placeholder whose whole line changed
+                every four seconds would be a page with a pulse. */}
+            <span className="m-sc__field-text" aria-hidden="true">
+              <span className="m-sc__lead">{LEAD}</span>
+              <span className="m-sc__eg" key={example}>, like “{example}”</span>
             </span>
           </button>
         </FilterPicker>
@@ -257,26 +337,16 @@ export function SearchCard({
             />
           ))}
         </div>
-      ) : (
-        /* ── the empty search ──────────────────────────────────────────────
-           Not an empty state: there is nothing wrong. One line saying what the
-           field takes, and three sentences that DO translate - examples that
-           came back empty would be worse than no examples. Requested for the
-           Issues search on 06-29 and it applies here for the same reason: a
-           field that accepts prose has to show you the shape of prose it
-           accepts. */
-        <div className="m-sc__empty">
-          <p className="m-sc__hint">Try</p>
-          <div className="m-sc__examples">
-            {EXAMPLES.map((ex) => (
-              <ExampleChip key={ex} text={ex} onUse={onAddMany} />
-            ))}
-          </div>
-        </div>
-      )}
+      ) : null}
+      {/* ⚠ NO EMPTY STATE, and no row of example pills (Gabriel, 2026-09-02:
+          "remove the examples pill and row, make the field the most important
+          part"). They were doing the placeholder's job in a second place, and
+          twice the surface for one idea is what made the field read as one
+          control among several rather than as THE control. An empty filter is
+          simply a field. */}
 
-      {/* THE SEARCH, IN WORDS. Off-screen, and live: the rows are the search,
-          so a change to them has to be announced as a change to the search
+      {/* THE FILTER, IN WORDS. Off-screen, and live: the rows ARE the filter, so
+          a change to them has to be announced as a change to the whole thing
           rather than as six unrelated control updates. Built from the same
           `describeFilter` the saved-segment list prints, so the sentence a
           screen reader hears and the sentence a segment shows are one
@@ -299,15 +369,4 @@ function sentence(
   if (events.length) parts.push(events.map(describeFilter).join(` ${order} `));
   if (properties.length) parts.push(properties.map(describeFilter).join(' and '));
   return parts.join(', ');
-}
-
-/** An example sentence. Clicking it runs the same translator the picker's field
- *  runs, so an example is a demonstration rather than a shortcut with its own
- *  code path. */
-function ExampleChip({ text, onUse }: { text: string; onUse: (f: SearchFilter[]) => void }) {
-  return (
-    <button type="button" className="m-sc__example" onClick={() => onUse(translate(text).filters)}>
-      {text}
-    </button>
-  );
 }
