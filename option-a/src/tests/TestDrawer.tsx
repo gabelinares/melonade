@@ -377,6 +377,7 @@ export function TestDrawer({ model, creating, onCreated, onViewRuns, onDismiss, 
       eyebrow={eyebrow}
       onTitleChange={(effectiveMode === 'edit' || effectiveMode === 'draft') && !snapshot ? (title) => edit({ title }) : undefined}
       autoEditTitle={creating}
+      namePlaceholder="Name this test"
       headerActions={
         effectiveMode === 'edit' && !creating && !snapshot && draft.status !== 'approved' && draft.status !== 'draft' ? (
           <Tooltip title={resumeBlocked ? 'Set an environment below to resume this test.' : undefined}>

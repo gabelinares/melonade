@@ -1,0 +1,47 @@
+/* ── THE SEGMENT DRAWER ──────────────────────────────────────────────────────
+   Almost nothing, and that is the point: the rules editor inside it is
+   `SearchCard`, which brings its own stylesheet, so what is left here is the
+   footer's two halves and the one line about sharing. A drawer that needed a
+   hundred lines of CSS would be a drawer holding a second design. */
+
+.m-sd__foot {
+  display: flex;
+  align-items: center;
+  /* Delete on the left, away from the commit. A destructive action beside the
+     primary one is a mis-click waiting for a tired afternoon. */
+  justify-content: space-between;
+  gap: var(--m-space-4);
+  width: 100%;
+}
+
+.m-sd__foot-right { display: inline-flex; align-items: center; gap: var(--m-space-3); }
+
+/* What the rules currently hold, in the section's own action slot. The figure
+   face, because it is a count and every other count in this app is. */
+.m-sd__count {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-muted);
+}
+
+.m-sd__row { display: inline-flex; align-items: center; gap: var(--m-space-3); font-size: var(--m-text-sm); }
+
+/* ── the editor, inside a panel ──────────────────────────────────────────────
+   THE ONLY DIFFERENCES ARE THE ONES A DRAWER FORCES. It has no plane to bleed
+   to, so the band becomes a bordered well again; and it does not stick, so it
+   has no reason to be opaque or to sit above anything. Every other rule in
+   search-card.css applies unchanged, which is what makes this a variant rather
+   than a second component. */
+.m-sc--panel {
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-surface);
+  overflow: hidden;
+}
+
+/* The field is the page's most important control and it is not that here: in a
+   drawer opened to edit rules, the rules are. Same control, one step quieter -
+   it keeps its ring, its placeholder and its size relationship to the rows. */
+.m-sc--panel .m-sc__bar { padding: var(--m-space-3) var(--m-space-4); }
+.m-sc--panel .m-sc__strip,
+.m-sc--panel .m-sc__list { padding-inline: var(--m-space-4); }

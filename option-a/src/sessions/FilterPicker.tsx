@@ -12,7 +12,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import {
-  CATALOGUE,
+  catalogueNow,
   categoryLabel,
   groupCatalogue,
   searchCatalogue,
@@ -111,7 +111,7 @@ export interface FilterPickerProps {
  * ════════════════════════════════════════════════════════════════════════════
  */
 export function FilterPicker({
-  entries = CATALOGUE,
+  entries = catalogueNow(),
   taken = [],
   onPick,
   onTranslate,

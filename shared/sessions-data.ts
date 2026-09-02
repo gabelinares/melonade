@@ -618,6 +618,176 @@ const prop = (
   ...extra,
 });
 
+/* ── THE STORE'S OWN SHAPES ───────────────────────────────────────────────────
+   ⚠ These three moved here from `sessions-logic.ts` on 2026-09-02, and logic
+   re-exports them so nothing else changed. They belong here for the same
+   reason `SessionRow` does: they are what `searchStore.instance` holds, and
+   this file's job is the API's shapes. What forced the move is a good sign
+   rather than a bad one - A SAVED SEGMENT NOW CARRIES ITS OWN RULES, and a
+   segment is a fixture, so the fixture file needs the type of a rule.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export type EventsOrder = 'then' | 'and' | 'or';
+export type PropertyOrder = 'and' | 'or';
+
+export interface SearchFilter {
+  /** A row's own identity. Two rows can sit on the same catalogue entry - two
+   *  Clicks in a sequence is the normal case - so the entry id cannot be the
+   *  key. */
+  key: string;
+  entryId: string;
+  isEvent: boolean;
+  operator: string;
+  /** Always an array, as in production, even for a single value. */
+  value: string[];
+  /** Duration only: seconds. Kept apart from `value` because the backend takes
+   *  a pair, not a list. */
+  min?: number;
+  max?: number;
+  /** An event's properties. Absent on properties themselves - the nesting is
+   *  one level deep in production and there is no reason to model two. */
+  properties?: SearchFilter[];
+  /** One value per event, as in production: the word between an event's own
+   *  properties, toggled by clicking it. */
+  propertyOrder?: PropertyOrder;
+}
+
+/* ── SAVED SEGMENTS ───────────────────────────────────────────────────────────
+   ⚠ A SEGMENT IS ONE SAVED SEARCH, and as of 2026-09-02 it says so in the
+   data (Mehdi: "remember, the segment is just one saved search so the design
+   should be really consistent").
+
+   It used to be a name and two booleans, and its RULES lived in a hardcoded
+   `inSegment()` switch in sessions-logic - four `case` arms saying, in
+   TypeScript, what a segment is supposed to hold as data. So the one thing a
+   segment IS was the one thing you could not read, edit or show. That switch is
+   gone: `filters` and `eventsOrder` here are the same two fields the live
+   search holds, they are evaluated by the same functions, and they are drawn by
+   the same rows.
+
+   THE RULES BELOW SAY WHAT EACH SEGMENT'S NAME SAYS, which the switch mostly
+   did not. "Paid users, checkout" tested `plan === 'paid'` and nothing about
+   checkout; it is a sequence and a plan now. That is a deliberate change and
+   the reason it is safe: the rules are the segment, so a segment that matched
+   something its name did not describe was the old model's bug, not a
+   behaviour worth preserving.
+
+   ⚠ KEYS ARE DETERMINISTIC (`seg-118/1`) rather than from `nextFilterKey()`.
+   A fixture that renumbered itself per load would make every React key in the
+   drawer unstable, and two loads of the same segment would not be equal.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export interface SavedSegment {
+  id: string;
+  name: string;
+  /** Somebody else's segment cannot be overwritten, only used - which is a real
+   *  rule in production and the reason Save is sometimes disabled. */
+  mine: boolean;
+  shared: boolean;
+  createdBy: string;
+  updatedAt: number;
+  /** THE SEARCH IT IS. One array, events and properties together, exactly as
+   *  the live search holds it. */
+  filters: SearchFilter[];
+  eventsOrder: EventsOrder;
+}
+
+/** One rule of a segment. `n` only has to be unique inside its own segment. */
+const rule = (
+  segId: string,
+  n: number,
+  entryId: string,
+  isEvent: boolean,
+  operator: string,
+  value: string[] = [],
+): SearchFilter => ({ key: `${segId}/${n}`, entryId, isEvent, operator, value });
+
+const SEG_DAY = 24 * 60 * 60 * 1000;
+
+export const SAVED_SEGMENTS: readonly SavedSegment[] = [
+  {
+    id: 'seg-118',
+    name: 'Paid users, checkout',
+    mine: true,
+    shared: true,
+    createdBy: 'You',
+    updatedAt: Date.now() - 2 * SEG_DAY,
+    eventsOrder: 'then',
+    filters: [
+      rule('seg-118', 1, 'add_to_cart', true, 'is'),
+      rule('seg-118', 2, 'checkout_start', true, 'is'),
+      rule('seg-118', 3, 'meta.plan', false, 'is', ['paid']),
+    ],
+  },
+  {
+    id: 'seg-204',
+    name: 'Mobile rage clicks',
+    mine: true,
+    shared: false,
+    createdBy: 'You',
+    updatedAt: Date.now() - 5 * SEG_DAY,
+    eventsOrder: 'and',
+    /* ⚠ THE EVENT, not the issue type. The switch tested `click_rage`, which
+       no mobile session in the fixture carries - so once the rules became real
+       this segment held nothing at every window, which reads as a broken
+       segment rather than as an empty one. On a phone the thing is a TAP, and
+       `taprage` is the event the catalogue already offers for it. */
+    filters: [
+      rule('seg-204', 1, 'taprage', true, 'is'),
+      rule('seg-204', 2, 'userDeviceType', false, 'is', ['mobile']),
+    ],
+  },
+  {
+    id: 'seg-311',
+    name: 'Trials, week one',
+    mine: false,
+    shared: true,
+    createdBy: 'Sarah K.',
+    updatedAt: Date.now() - 9 * SEG_DAY,
+    eventsOrder: 'and',
+    filters: [rule('seg-311', 1, 'meta.plan', false, 'is', ['trial'])],
+  },
+  {
+    id: 'seg-402',
+    name: 'Crashes, last 24h',
+    mine: false,
+    shared: true,
+    createdBy: 'Mehdi O.',
+    updatedAt: Date.now() - 14 * SEG_DAY,
+    eventsOrder: 'and',
+    filters: [rule('seg-402', 1, 'issueType', false, 'hasAny', ['crash'])],
+  },
+  /* Two more than the switch had, because a tab is a list and four rows cannot
+     show an ordering, a filter or an owner doing anything. Both are rules the
+     evaluator already supports. */
+  {
+    id: 'seg-503',
+    name: 'Slow sessions on Safari',
+    mine: true,
+    shared: false,
+    createdBy: 'You',
+    updatedAt: Date.now() - 1 * SEG_DAY,
+    eventsOrder: 'and',
+    filters: [
+      rule('seg-503', 1, 'userBrowser', false, 'is', ['Safari']),
+      rule('seg-503', 2, 'errorsCount', false, '>', ['0']),
+    ],
+  },
+  {
+    id: 'seg-604',
+    name: 'France, never watched',
+    mine: false,
+    shared: true,
+    createdBy: 'Nikita M.',
+    updatedAt: Date.now() - 21 * SEG_DAY,
+    eventsOrder: 'and',
+    filters: [
+      rule('seg-604', 1, 'userCountry', false, 'is', ['France']),
+      rule('seg-604', 2, 'viewed', false, 'isFalse'),
+    ],
+  },
+];
+
 export const CATALOGUE: readonly CatalogueEntry[] = [
   /* ── autocapture: what the tracker records without being told ── */
   ev('click', 'Click', 'auto_captured', { autoCaptured: true, hint: 'Any click the tracker saw' }),
@@ -667,13 +837,15 @@ export const CATALOGUE: readonly CatalogueEntry[] = [
   }),
 
   /* ── SEGMENTS. A saved search used as one event, which is why the search it
-        appears in cannot itself be saved. ── */
-  ev('seg-118', 'Paid users, checkout', 'segments', {
-    hasProperties: false,
-    hint: 'Saved segment',
-  }),
-  ev('seg-204', 'Mobile rage clicks', 'segments', { hasProperties: false, hint: 'Saved segment' }),
-  ev('seg-311', 'Trials, week one', 'segments', { hasProperties: false, hint: 'Saved segment' }),
+        appears in cannot itself be saved.
+
+        ⚠ DERIVED FROM `SAVED_SEGMENTS`, not listed again. There were two
+        hand-kept lists of segments in this file and they had already drifted:
+        the catalogue named three and the saved list held four, so one segment
+        was usable from the tab and invisible in the picker. One list. ── */
+  ...SAVED_SEGMENTS.map((seg) =>
+    ev(seg.id, seg.name, 'segments', { hasProperties: false, hint: 'Saved segment' }),
+  ),
 
   /* ── properties: user ── */
   prop('userId', 'User ID', 'user'),
@@ -730,25 +902,6 @@ export const EVENT_PROPERTIES: readonly CatalogueEntry[] = [
     options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   }),
   prop('durationMs', 'Duration (ms)', 'auto_captured', 'number'),
-];
-
-/* ── saved segments ───────────────────────────────────────────────────────────
-   The list behind "Saved Segments". Sharing writes `?sid=` to the clipboard in
-   production; here the id is what a share link would carry. */
-export interface SavedSegment {
-  id: string;
-  name: string;
-  /** Somebody else's segment cannot be overwritten, only used - which is a real
-   *  rule in production and the reason Save is sometimes disabled. */
-  mine: boolean;
-  shared: boolean;
-}
-
-export const SAVED_SEGMENTS: readonly SavedSegment[] = [
-  { id: 'seg-118', name: 'Paid users, checkout', mine: true, shared: true },
-  { id: 'seg-204', name: 'Mobile rage clicks', mine: true, shared: false },
-  { id: 'seg-311', name: 'Trials, week one', mine: false, shared: true },
-  { id: 'seg-402', name: 'Crashes, last 24h', mine: false, shared: true },
 ];
 
 /* ── CANDIDATE VALUES ─────────────────────────────────────────────────────────

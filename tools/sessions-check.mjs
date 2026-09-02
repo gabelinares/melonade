@@ -59,9 +59,14 @@ const shell = await p.evaluate(() => ({
   planeBg: getComputedStyle(document.querySelector('.m-page')).backgroundColor,
 }));
 check('the page renders with the shell every other page uses',
-  shell.title === 'Sessions' && shell.tabs.length === 2, `${shell.title}, tabs ${shell.tabs.join('/')}`);
-check('and the two sections are text tabs, not the pill strip',
-  !shell.tabsArePills && shell.tabs.join('/') === 'All sessions/Bookmarked', shell.tabs.join('/'));
+  shell.title === 'Sessions' && shell.tabs.length === 3, `${shell.title}, tabs ${shell.tabs.join('/')}`);
+/* ⚠ THREE SECTIONS SINCE 2026-09-02: Segments became a tab rather than a
+   dropdown at the top of the page. Same argument Bookmarked won on - a section
+   replaces the body, a filter narrows it, and a list of segments is a list of a
+   different thing. */
+check('and the three sections are text tabs, not the pill strip',
+  !shell.tabsArePills && shell.tabs.join('/') === 'All sessions/Bookmarked/Segments',
+  shell.tabs.join('/'));
 /* Mehdi, 2026-09-02: keep only the two tabs. The issue-type strip went and its
    toolbar row went with it - the date range and the display menu moved onto the
    search's own bar, which is the row that STICKS. */
@@ -338,7 +343,7 @@ const vault = await p.evaluate(() => ({
   foot: document.querySelector('.m-listfoot__range')?.textContent?.trim(),
   empty: document.querySelector('.m-empty__title')?.textContent?.trim(),
   searchStillThere: !!document.querySelector('.m-sc'),
-  tabsStillThere: document.querySelectorAll('.m-page__tabs .ant-tabs-tab').length === 2,
+  tabsStillThere: document.querySelectorAll('.m-page__tabs .ant-tabs-tab').length === 3,
   columnsStillThere: document.querySelectorAll('.m-ss__table th').length > 4,
 }));
 /* A TAB, not a page: the search, the tabs and the columns all keep working
@@ -930,6 +935,94 @@ await p.evaluate(async () => {
   tabs.find((t) => /All sessions/.test(t.textContent))?.click();
   await new Promise((r) => setTimeout(r, 300));
 });
+
+
+/* ── SEGMENTS ARE A SECTION, AND A SEGMENT IS A SAVED SEARCH ──────────────
+   Mehdi, 2026-09-02: "what if segments were a whole new tab in sessions,
+   instead of just a button on the top... we'll need to redesign and create a
+   segment drawer, where we can edit the segment rules - remember, the segment
+   is just one saved search so the design should be really consistent."
+
+   The claim worth asserting is the last one, because it is the one that decays:
+   the drawer's rules editor has to BE the sessions filter, not a component that
+   resembles it. */
+await p.evaluate(() => {
+  const tab = [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')].find((t) =>
+    /Segments/.test(t.textContent),
+  );
+  tab?.click();
+});
+await p.waitForTimeout(500);
+const seg = await p.evaluate(() => ({
+  rows: document.querySelectorAll('.m-seg__row').length,
+  /* the body is REPLACED, which is what makes it a section rather than a filter */
+  noSessions: !document.querySelector('.m-ss__table'),
+  noFilterCard: !document.querySelector('.m-sc'),
+  /* every row prints its own rules, in the same sentence the collapsed filter
+     prints, and a live count beside them */
+  rules: [...document.querySelectorAll('.m-seg__rules')].map((e) => e.textContent.trim()),
+  counts: [...document.querySelectorAll('.m-seg__n')].map((e) => e.textContent.trim()),
+}));
+check('segments is a section: it replaces the body rather than narrowing it',
+  seg.rows > 0 && seg.noSessions && seg.noFilterCard,
+  `${seg.rows} segments, sessions table gone ${seg.noSessions}, filter gone ${seg.noFilterCard}`);
+check('and every segment prints its own rules and what they currently hold',
+  seg.rules.length === seg.rows && seg.rules.every(Boolean) && seg.counts.filter((c) => c !== '—').length > 0,
+  `${seg.rules[0]} — counts ${seg.counts.join(', ')}`);
+
+/* ⚠ THE DRAWER'S EDITOR IS THE SEARCH, LITERALLY. `m-sc--panel` is SearchCard
+   in its panel variant; a lookalike would not carry that class, and the day it
+   became a lookalike is the day this check would catch it. */
+await p.locator('.m-seg__row').first().click();
+await p.locator('.ant-drawer').waitFor();
+await p.waitForTimeout(500);
+const drawer = await p.evaluate(() => ({
+  editorIsTheSearchCard: !!document.querySelector('.ant-drawer .m-sc--panel'),
+  sameRows: document.querySelectorAll('.ant-drawer .m-srow').length,
+  sameField: !!document.querySelector('.ant-drawer .m-sc__field'),
+  /* and it does not collapse, because a drawer has nothing to scroll past */
+  noCollapse: !document.querySelector('.ant-drawer .m-sc__toggle'),
+  count: document.querySelector('.m-sd__count')?.textContent?.trim(),
+}));
+check('the drawer edits the rules with the sessions filter itself, not a lookalike',
+  drawer.editorIsTheSearchCard && drawer.sameRows > 0 && drawer.sameField && drawer.noCollapse,
+  `panel ${drawer.editorIsTheSearchCard}, ${drawer.sameRows} rows, field ${drawer.sameField}, no collapse ${drawer.noCollapse}`);
+
+/* ⚠ AND THE VALUE PICKER IS FED THE WINDOW, NOT THE DRAFT'S OWN RESULT. Fed the
+   filtered list it can only offer values that survived the clause you are
+   editing: pick France and France is the only country it can still see. */
+const pickerPool = await p.evaluate(async () => {
+  document.querySelector('.ant-drawer .m-vp__trigger')?.click();
+  await new Promise((r) => setTimeout(r, 500));
+  const root = document.querySelector('.m-vp-root');
+  return { options: root?.querySelectorAll('.m-checkrow').length ?? 0, bars: root?.querySelectorAll('.m-vp__bar').length ?? 0 };
+});
+check('and its value picker offers the whole window, with a share on every value',
+  pickerPool.options > 1 && pickerPool.bars === pickerPool.options,
+  `${pickerPool.options} values, ${pickerPool.bars} bars`);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(200);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(400);
+
+/* USE loads the segment's OWN RULES into the live search - editable rows, not
+   an opaque row that says its name - and takes you back to the list. */
+await p.evaluate(() => {
+  const row = [...document.querySelectorAll('.m-seg__row')].find((r) => /Trials, week one/.test(r.textContent));
+  row?.querySelector('.m-seg__use')?.click();
+});
+await p.waitForTimeout(700);
+const applied = await p.evaluate(() => ({
+  tab: document.querySelector('.ant-tabs-tab-active')?.textContent?.trim(),
+  rows: [...document.querySelectorAll('.m-sc__list .m-srow')].length,
+  opaque: [...document.querySelectorAll('.m-sc__list .m-srow')].some((r) => /Trials, week one/.test(r.textContent)),
+  foot: document.querySelector('.m-listfoot__range')?.textContent?.trim(),
+}));
+check('using a segment loads its rules, not a row with its name on it',
+  applied.tab === 'All sessions' && applied.rows > 0 && !applied.opaque,
+  `${applied.tab}, ${applied.rows} editable rows, opaque ${applied.opaque} — ${applied.foot}`);
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(300);
 
 
 check('no console errors', errs.length === 0, errs.slice(0, 3).join(' | '));

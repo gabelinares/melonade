@@ -24,17 +24,32 @@ import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   EVENT_PROPERTIES,
+  SAVED_SEGMENTS,
   SESSIONS,
   VALUE_FIXTURES,
   type CatalogueEntry,
   type DataType,
   type IssueType,
   type SessionRow,
+  type EventsOrder,
+  type PropertyOrder,
+  type SavedSegment,
+  type SearchFilter,
   type ValueCandidate,
 } from './sessions-data.ts';
 import { DEFAULT_RANGE, minutesAgoWithin, type DateRangeValue } from './date-range.ts';
 
-export type { CatalogueEntry, DataType, IssueType, SessionRow, ValueCandidate };
+export type {
+  CatalogueEntry,
+  DataType,
+  EventsOrder,
+  IssueType,
+  PropertyOrder,
+  SavedSegment,
+  SearchFilter,
+  SessionRow,
+  ValueCandidate,
+};
 export {
   CATALOGUE,
   CATEGORY_LABELS,
@@ -114,30 +129,14 @@ export const defaultOperator = (t: DataType | undefined): string => operatorsFor
 
 /* ── THE SEARCH ───────────────────────────────────────────────────────────── */
 
-export type EventsOrder = 'then' | 'and' | 'or';
-export type PropertyOrder = 'and' | 'or';
-
-export interface SearchFilter {
-  /** A row's own identity. Two rows can sit on the same catalogue entry - two
-   *  Clicks in a sequence is the normal case - so the entry id cannot be the
-   *  key. */
-  key: string;
-  entryId: string;
-  isEvent: boolean;
-  operator: string;
-  /** Always an array, as in production, even for a single value. */
-  value: string[];
-  /** Duration only: seconds. Kept apart from `value` because the backend takes
-   *  a pair, not a list. */
-  min?: number;
-  max?: number;
-  /** An event's properties. Absent on properties themselves - the nesting is
-   *  one level deep in production and there is no reason to model two. */
-  properties?: SearchFilter[];
-  /** One value per event, as in production: the word between an event's own
-   *  properties, toggled by clicking it. */
-  propertyOrder?: PropertyOrder;
-}
+/* ⚠ `SearchFilter`, `EventsOrder` and `PropertyOrder` MOVED TO
+   `sessions-data.ts` on 2026-09-02, and are re-exported above so no callsite
+   changed. They are store shapes - they mirror `searchStore.instance` - and
+   data is the file whose job is "the API shapes". What forced it: a saved
+   segment now carries its own rules, and a segment is a fixture, so the
+   fixture file needs the type of a rule. The alternative was a second
+   structural copy of the same interface, which is the thing this whole page
+   was rebuilt to delete. */
 
 /* THE WINDOW LIVES IN `shared/date-range.ts` since 2026-09-02, because four
    lists ask it and only this one could answer. What was here was a list of
@@ -205,7 +204,12 @@ export const DEFAULT_DISPLAY: SessionDisplay = {
   viewed: 'show',
 };
 
-export type SessionTab = 'all' | 'bookmarks';
+/* ⚠ THREE SECTIONS SINCE 2026-09-02 (Mehdi: "what if segments were a whole
+   new tab in sessions, instead of just a button on the top"). It is the right
+   shape for the same reason Bookmarked is a tab and not a filter: a section
+   REPLACES the body, a filter narrows it. Segments is not a narrower list of
+   sessions - it is a list of a different thing. */
+export type SessionTab = 'all' | 'bookmarks' | 'segments';
 
 export interface SessionsState {
   tab: SessionTab;
@@ -235,13 +239,74 @@ export const INITIAL_SESSIONS_STATE: SessionsState = {
   dataState: 'ready',
 };
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SEGMENTS THE APP CURRENTLY HAS.
+
+   ⚠ ONE MUTABLE IN THIS FILE, and it is here on purpose. Segments became
+   editable on 2026-09-02 - created, re-ruled, renamed, deleted - and three
+   things have to see those edits: the evaluator (a search can filter BY a
+   segment), the catalogue (the picker offers segments as entries), and
+   `entryOf` (a row has to be able to name its own subject). Every one of them
+   is reached from a call that has no business taking a segments argument:
+   threading it would have changed five signatures - `filterSessions`,
+   `matchEvents`, `eventPosition`, `matchProperty`, `describeFilter` - so that
+   a leaf could look up a name.
+
+   This is also the shape production has: the evaluator reads a store. `SESSIONS`
+   is a fixture and `SAVED_SEGMENTS` is its seed; what the user has now is this.
+
+   ⚠ THE APP MUST KEEP IT CURRENT. `useSessions` calls `setLiveSegments` in an
+   effect whenever its list changes. Miss that and a new segment counts zero
+   sessions everywhere except in the drawer that made it, which is exactly the
+   bug this replaced.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+let liveSegments: readonly SavedSegment[] = SAVED_SEGMENTS;
+
+export function setLiveSegments(next: readonly SavedSegment[]): void {
+  liveSegments = next;
+}
+
+export const segmentById = (id: string): SavedSegment | undefined =>
+  liveSegments.find((x) => x.id === id);
+
+/** The catalogue as it stands, which is the fixed part plus whatever segments
+ *  exist right now. The picker's default list: a segment you just saved is a
+ *  thing you can filter by, and having to reload to see it would say the
+ *  opposite. */
+export const catalogueNow = (): readonly CatalogueEntry[] => [
+  ...CATALOGUE.filter((e) => e.category !== 'segments'),
+  ...liveSegments.map((seg) => segmentEntry(seg)),
+];
+
+/** ⚠ `name` is the SEGMENT'S OWN NAME, which is what the backend key is for a
+ *  segment - not a constant like `TAG_TRIGGER`. And `hasProperties: false`,
+ *  because a segment is a search and a search has no properties of its own;
+ *  that is production's rule rather than an omission. */
+const segmentEntry = (seg: SavedSegment): CatalogueEntry => ({
+  id: seg.id,
+  name: seg.name,
+  displayName: seg.name,
+  category: 'segments',
+  isEvent: true,
+  dataType: 'string',
+  hasProperties: false,
+  hint: 'Saved segment',
+});
+
 /* ── the catalogue, looked up and grouped ─────────────────────────────────── */
 
 const BY_ID = new Map(CATALOGUE.map((e) => [e.id, e]));
 const PROP_BY_ID = new Map(EVENT_PROPERTIES.map((e) => [e.id, e]));
 
-export const entryOf = (id: string): CatalogueEntry | undefined =>
-  BY_ID.get(id) ?? PROP_BY_ID.get(id);
+/** ⚠ Segments are resolved from the LIVE list first, so a renamed segment is
+ *  renamed in every row that names it and a new one resolves at all. The map
+ *  above is built once at load and cannot know about either. */
+export const entryOf = (id: string): CatalogueEntry | undefined => {
+  const seg = segmentById(id);
+  if (seg) return segmentEntry(seg);
+  return BY_ID.get(id) ?? PROP_BY_ID.get(id);
+};
 
 export const categoryLabel = (key: string): string =>
   CATEGORY_LABELS[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
@@ -374,22 +439,81 @@ export function sessionEvents(s: SessionRow): string[] {
   return out;
 }
 
-/** Which saved segment a session belongs to. Deterministic, and only so a
- *  segment used as an event narrows the list rather than emptying it. */
-function inSegment(s: SessionRow, segmentId: string): boolean {
-  switch (segmentId) {
-    case 'seg-118':
-      return s.metadata.plan === 'paid';
-    case 'seg-204':
-      return s.deviceType === 'mobile' && s.issueTypes.includes('click_rage');
-    case 'seg-311':
-      return s.metadata.plan === 'trial';
-    case 'seg-402':
-      return s.issueTypes.includes('crash');
-    default:
-      return false;
-  }
+/**
+ * Whether a session is in a saved segment - by RUNNING THE SEGMENT'S OWN RULES.
+ *
+ * ⚠ This used to be a switch with one `case` per segment, saying in TypeScript
+ * what a segment is supposed to hold as data. Two things were wrong with it and
+ * only one was obvious. The obvious one: a segment's rules could not be read,
+ * edited or shown, so the tab and the drawer Mehdi asked for had nothing to
+ * draw. The other: it was a SECOND definition of the same segment, so the day
+ * somebody edited "Mobile rage clicks" the list it produced would have gone on
+ * matching the old rule with no error anywhere.
+ *
+ * Now a segment is evaluated by the same two functions the live search is, so
+ * "what does this segment contain" and "what does this search contain" cannot
+ * give different answers.
+ *
+ * ⚠ `seen` guards the one thing rules-as-data allows that a switch did not: a
+ * segment whose rules name a segment. Production allows it too; what it must
+ * not do is recurse forever. A cycle matches nothing, which is the honest
+ * answer to "sessions in a segment that is defined as being in itself".
+ */
+function inSegment(s: SessionRow, segmentId: string, seen: ReadonlySet<string> = new Set()): boolean {
+  if (seen.has(segmentId)) return false;
+  const seg = segmentById(segmentId);
+  if (!seg) return false;
+  const { events, properties } = splitFilters(seg.filters);
+  const inner = new Set([...seen, segmentId]);
+  return (
+    properties.every((f) => matchProperty(s, f)) && matchEvents(s, events, seg.eventsOrder, inner)
+  );
 }
+
+/**
+ * THE FILTER, AS ONE LINE OF ENGLISH.
+ *
+ * It was a local `sentence()` inside SearchCard, which was fine while the card
+ * was the only thing that had to say what a search contains. It now has three
+ * callers - the collapsed strip, the live region a screen reader hears, and
+ * every row of the segments tab - and a segment IS a saved search, so the
+ * sentence a segment prints and the sentence the card prints have to be the
+ * same sentence or the two stop looking like one idea.
+ */
+export function describeRules(
+  events: readonly SearchFilter[],
+  properties: readonly SearchFilter[],
+  order: EventsOrder,
+): string {
+  if (!events.length && !properties.length) return 'Every session';
+  const parts: string[] = [];
+  if (events.length) parts.push(events.map(describeFilter).join(` ${order} `));
+  if (properties.length) parts.push(properties.map(describeFilter).join(' and '));
+  return parts.join(', ');
+}
+
+/** A segment's own rules as that sentence. */
+export const describeSegment = (seg: SavedSegment): string => {
+  const { events, properties } = splitFilters(seg.filters);
+  return describeRules(events, properties, seg.eventsOrder);
+};
+
+/**
+ * How many of `rows` a segment holds. The tab prints it beside every segment,
+ * and it is the same count the list would show if you applied it.
+ *
+ * ⚠ IT TAKES THE SEGMENT, not its id. Called with an id it resolved through the
+ * live registry, which is right for a row inside a search and wrong for the tab
+ * - the tab is drawing a segment it holds in its own state, sometimes one that
+ * has not been saved yet, and looking it up by id to count it meant a new
+ * segment reported zero sessions in the same list that had just created it.
+ */
+export const segmentCount = (seg: SavedSegment, rows: readonly SessionRow[]): number => {
+  const { events, properties } = splitFilters(seg.filters);
+  return rows.filter(
+    (s) => properties.every((f) => matchProperty(s, f)) && matchEvents(s, events, seg.eventsOrder),
+  ).length;
+};
 
 /* ── evaluating a filter ──────────────────────────────────────────────────── */
 
@@ -533,10 +657,10 @@ export function matchProperty(s: SessionRow, f: SearchFilter): boolean {
  *  property on an event narrows nothing here and says so in the row's own
  *  tooltip. That is the one place the prototype knowingly under-filters, and
  *  it is under rather than over on purpose. */
-export function eventPosition(s: SessionRow, f: SearchFilter): number {
+export function eventPosition(s: SessionRow, f: SearchFilter, seen?: ReadonlySet<string>): number {
   const entry = entryOf(f.entryId);
   if (!entry) return -1;
-  if (entry.category === 'segments') return inSegment(s, entry.id) ? 0 : -1;
+  if (entry.category === 'segments') return inSegment(s, entry.id, seen) ? 0 : -1;
   if (entry.category === 'features') {
     /* a flag is on for roughly a third of sessions, deterministically */
     return s.numericHash % 3 === 0 ? 0 : -1;
@@ -550,9 +674,14 @@ export function eventPosition(s: SessionRow, f: SearchFilter): number {
  *  AND is presence in any order. OR is any one of them. Which is exactly what
  *  `eventsOrder` means to the backend, and the reason it is one value for the
  *  whole search rather than one per gap. */
-export function matchEvents(s: SessionRow, events: SearchFilter[], order: EventsOrder): boolean {
+export function matchEvents(
+  s: SessionRow,
+  events: SearchFilter[],
+  order: EventsOrder,
+  seen?: ReadonlySet<string>,
+): boolean {
   if (events.length === 0) return true;
-  const positions = events.map((f) => eventPosition(s, f));
+  const positions = events.map((f) => eventPosition(s, f, seen));
   if (order === 'or') return positions.some((p) => p >= 0);
   if (positions.some((p) => p < 0)) return false;
   if (order === 'and') return true;
@@ -562,6 +691,122 @@ export function matchEvents(s: SessionRow, events: SearchFilter[], order: Events
   }
   return true;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE ELEVEN VERBS, AS ARRAY TRANSFORMS.
+
+   Every one of these lived inside `useSessions` as a `setState` updater, which
+   was fine while the live search was the only thing in the app holding a list
+   of filter rows. It is not, since 2026-09-02: A SEGMENT IS ONE SAVED SEARCH,
+   so the segment drawer edits the same rows with the same verbs, and the only
+   difference between the two is where the array is kept.
+
+   So the verbs are `SearchFilter[] -> SearchFilter[]` here, and React binds
+   them - twice, to two different owners. Copying them into the drawer would
+   have been eleven chances for "add an event" to mean something subtly
+   different in the two places you can do it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Events keep their sequence and properties follow them, so a new event lands
+ *  after the last event rather than at the end of everything. The array stays
+ *  ONE array; only the insertion point knows about kind. */
+export function addToRules(rules: readonly SearchFilter[], entry: CatalogueEntry): SearchFilter[] {
+  const f = makeFilter(entry);
+  const at = f.isEvent ? rules.filter((x) => x.isEvent).length : rules.length;
+  const next = [...rules];
+  next.splice(at, 0, f);
+  return next;
+}
+
+/** Several at once - what the sentence path hands back. Same rule about kind,
+ *  applied to the whole batch. */
+export const addManyToRules = (
+  rules: readonly SearchFilter[],
+  rows: readonly SearchFilter[],
+): SearchFilter[] => [
+  ...rules.filter((f) => f.isEvent),
+  ...rows.filter((f) => f.isEvent),
+  ...rules.filter((f) => !f.isEvent),
+  ...rows.filter((f) => !f.isEvent),
+];
+
+export const updateInRules = (
+  rules: readonly SearchFilter[],
+  key: string,
+  p: Partial<SearchFilter>,
+): SearchFilter[] => rules.map((f) => (f.key === key ? { ...f, ...p } : f));
+
+/** Replace a row's subject in place, keeping its position. This is production's
+ *  "click the name and pick another" path, and it has to keep the row where it
+ *  is: re-picking the second of three events must not send it to the bottom. */
+export const replaceInRules = (
+  rules: readonly SearchFilter[],
+  key: string,
+  entry: CatalogueEntry,
+): SearchFilter[] => rules.map((f) => (f.key === key ? { ...makeFilter(entry), key: f.key } : f));
+
+export const removeFromRules = (rules: readonly SearchFilter[], key: string): SearchFilter[] =>
+  rules.filter((f) => f.key !== key);
+
+/** Drag-to-reorder, over the EVENTS only. Both indices are event indices; this
+ *  maps them back into the one array so the properties never move. */
+export function moveEventInRules(
+  rules: readonly SearchFilter[],
+  from: number,
+  to: number,
+): SearchFilter[] {
+  const events = rules.filter((f) => f.isEvent);
+  if (from === to || from < 0 || to < 0 || from >= events.length || to >= events.length) {
+    return [...rules];
+  }
+  const reordered = [...events];
+  const [moved] = reordered.splice(from, 1);
+  reordered.splice(to, 0, moved!);
+  return [...reordered, ...rules.filter((f) => !f.isEvent)];
+}
+
+export const addPropertyInRules = (
+  rules: readonly SearchFilter[],
+  eventKey: string,
+  entry: CatalogueEntry,
+): SearchFilter[] =>
+  rules.map((f) =>
+    f.key === eventKey ? { ...f, properties: [...(f.properties ?? []), makeFilter(entry)] } : f,
+  );
+
+export const updatePropertyInRules = (
+  rules: readonly SearchFilter[],
+  eventKey: string,
+  propKey: string,
+  p: Partial<SearchFilter>,
+): SearchFilter[] =>
+  rules.map((f) =>
+    f.key === eventKey
+      ? { ...f, properties: (f.properties ?? []).map((x) => (x.key === propKey ? { ...x, ...p } : x)) }
+      : f,
+  );
+
+export const removePropertyInRules = (
+  rules: readonly SearchFilter[],
+  eventKey: string,
+  propKey: string,
+): SearchFilter[] =>
+  rules.map((f) =>
+    f.key === eventKey
+      ? { ...f, properties: (f.properties ?? []).filter((x) => x.key !== propKey) }
+      : f,
+  );
+
+/** The word between an event's own properties. One value per event, as in
+ *  production, and clicking it is the only way to change it. */
+export const togglePropertyOrderInRules = (
+  rules: readonly SearchFilter[],
+  eventKey: string,
+): SearchFilter[] =>
+  rules.map((f) =>
+    f.key === eventKey ? { ...f, propertyOrder: f.propertyOrder === 'or' ? 'and' : 'or' } : f,
+  );
+
 
 /* ── the list ─────────────────────────────────────────────────────────────── */
 
@@ -574,6 +819,9 @@ export function filterSessions(state: SessionsState, rows: readonly SessionRow[]
   const { events, properties } = splitFilters(state.filters);
   const out = rows.filter((s) => {
     if (state.tab === 'bookmarks' && !s.favorite) return false;
+    /* The segments tab draws segments, not sessions - but the sessions it
+       would have drawn are what every segment's count is measured against, so
+       the pipeline runs and only the body of the page changes. */
     if (!minutesAgoWithin(s.startedAgoMin, state.range)) return false;
     if (state.display.viewed === 'hide' && s.viewed) return false;
     if (state.display.viewed === 'only' && !s.viewed) return false;
@@ -633,13 +881,12 @@ export function describeFilter(f: SearchFilter): string {
   return vals.length ? `${name} ${op} ${vals.join(', ')}` : `${name} ${op}…`;
 }
 
+/** The live search's own sentence. One line, because `describeRules` above is
+ *  the implementation and this is the state that happens to hold a search -
+ *  there were two copies of this arithmetic for a day and they agreed by luck. */
 export function describeSearch(state: SessionsState): string {
   const { events, properties } = splitFilters(state.filters);
-  if (!events.length && !properties.length) return 'Every session';
-  const parts: string[] = [];
-  if (events.length) parts.push(events.map(describeFilter).join(` ${state.eventsOrder} `));
-  if (properties.length) parts.push(properties.map(describeFilter).join(' and '));
-  return parts.join(', ');
+  return describeRules(events, properties, state.eventsOrder);
 }
 
 /** A row is incomplete when its operator wants a value and it has none. The

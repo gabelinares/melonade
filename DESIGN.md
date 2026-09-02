@@ -4103,3 +4103,142 @@ that never finished inside a session, and surfaced the moment there were two
 running jobs. The updater is pure now, the announcement is queued out of the
 render phase, and a Set makes it once per audit however many times React replays
 the update.
+
+## 24. Segments become a section, and a segment becomes what it always was (2026-09-02)
+
+> *"What if segments were a whole new tab in sessions, instead of just a button
+> on the top. If you do that we'll need to redesign and create a segment drawer,
+> where we can edit the segment rules — remember, the segment is just one saved
+> search so the design should be really consistent."*
+
+### The thing the redesign found
+
+A segment was a name and two booleans, and **its rules lived in a hardcoded
+`inSegment()` switch** — four `case` arms saying, in TypeScript, what a segment
+is supposed to hold as data:
+
+```ts
+case 'seg-204': return s.deviceType === 'mobile' && s.issueTypes.includes('click_rage');
+```
+
+So the one thing a segment IS was the one thing you could not read, edit or
+show. That is why it could only ever be a dropdown of names: a dropdown was the
+most a name-and-two-booleans could support.
+
+Two things were wrong with the switch and only one was obvious. The obvious one:
+the tab and the drawer had nothing to draw. **The other is worse** — it was a
+second definition of the same segment, so the day somebody edited "Mobile rage
+clicks" the list it produced would have gone on matching the old rule, with no
+error anywhere.
+
+`SavedSegment` carries `filters` and `eventsOrder` now — the same two fields the
+live search holds — and `inSegment` runs them through the same evaluator.
+"What does this segment contain" and "what does this search contain" can no
+longer give different answers.
+
+⚠ One rule changed when it became real. **"Paid users, checkout" tested
+`plan === 'paid'` and nothing about checkout.** It is a sequence and a plan now.
+That is deliberate: the rules ARE the segment, so a segment matching something
+its name did not describe was the old model's bug, not a behaviour worth
+preserving.
+
+⚠ And **"Mobile rage clicks" matched nothing at all** once the rules were real —
+no mobile session in the fixture carries `click_rage`, because on a phone the
+thing is a *tap*. It is the `taprage` event now, which the catalogue already
+offered. A segment that holds zero sessions at every window reads as a broken
+segment rather than as an empty one, and the switch had hidden that for as long
+as it existed.
+
+### Why a tab and not a control
+
+The same argument Bookmarked won on: **a section replaces the body, a filter
+narrows it.** Segments is not a narrower list of sessions — it is a list of a
+different thing — so it cannot be a filter. It was a dropdown at the top of the
+page, which is where things go when nobody has decided what they are, and a
+dropdown could show their names and nothing else: not what they mean, not how
+many sessions they hold, not who made them, not when anybody last touched one.
+
+Every row prints **its own rules**, in the same sentence the collapsed filter
+prints, from the same function. "Paid users, checkout" is a name somebody chose;
+`add_to_cart then checkout_start, plan is paid` is what it does. And **the count
+is live**, measured against the same window the sessions list is in by the same
+evaluator, so the figure on the shelf is the figure you get when you open it.
+
+**Two verbs, and they are different.** The row opens the segment, because
+reading is what you came for; **Use** loads its rules into the sessions filter
+and takes you back to the list. One of these edits the saved thing and the other
+runs it — a dropdown of names had made them the same click.
+
+⚠ **Using a segment loads its RULES, not a row with its name on it.** Production
+inserts a segment as one opaque event, which is how you *compose* with one, and
+that path is unchanged — a segment is still an entry in the filter picker. This
+is the other verb: you are opening a saved search, so what lands in the field is
+the search, editable, and the rows are the ones the drawer just showed you.
+
+### The drawer edits it with the sessions filter itself
+
+Not a component that looks like the filter. `SearchCard` in a new `panel`
+variant, fed by `useFilterDraft`, which binds **the same eleven transforms**
+`useSessions` binds to the live search. The picker is the picker, a clause reads
+as a clause, the value fields carry their proportion bars, and the sentence at
+the bottom is written by the same function. **There is nothing in the drawer
+that could drift from the page, because there is nothing in it that is a copy.**
+
+That is what forced the one refactor underneath all of this: the eleven verbs —
+add, add-many, update, replace, remove, move an event, add/update/remove an
+event's property, toggle its order — were `setState` updaters inside
+`useSessions`. They are `SearchFilter[] → SearchFilter[]` transforms in the
+shared layer now, and React binds them twice. Copying them into the drawer would
+have been eleven chances for "add an event" to mean something subtly different
+in the two places you can do it.
+
+Four smaller calls in the drawer:
+
+- **It counts as you type.** The strip prints how many sessions the rules
+  currently hold, live. That is the one question a segment exists to answer and
+  the one thing a rules form usually makes you save and navigate to find out.
+- ⚠ **The pool and the result are two different numbers**, and they were one
+  prop for a day. Fed the filtered list, the value picker can only offer values
+  that survived the clause you are editing — **pick France and France is the
+  only country it can still see**, so a second country is unreachable. The pool
+  is the window; the result is its own number.
+- ⚠ **The draft is a draft.** Nothing reaches the saved segment until Save.
+  Editing rules and watching the list behind the drawer move under you would be
+  a preview nobody asked for, with no way back out of it.
+- **It will not save a half-written clause.** A row whose operator wants a value
+  and has none narrows nothing, and the row already says so — "needs a value".
+  Let it through and the segment quietly means something other than what it
+  prints, for as long as nobody reopens it.
+
+**Somebody else's segment opens, reads and applies.** It does not save, and the
+eyebrow names the owner rather than leaving a disabled button to be interpreted.
+
+### Two defects in the shared drawer, found by using it for a second thing
+
+**It said "Name this test" whatever it was naming.** `EntityDrawer` is the shell
+every object opens into and it had a noun hardcoded in it, so the segment drawer
+asked people to name a test. The caller brings its own word now.
+
+**And a name had to be committed before the footer could see it.** Renaming an
+existing thing is a commit — you can change your mind, so it takes Enter and
+offers Cancel. Creating one is not: the footer owns the only commit there is,
+and people typed a name and clicked a Create that stayed disabled with no way to
+see why. While creating, the name is live and the rename's own Save/Cancel pair
+is gone.
+
+### One mutable, and why
+
+Segments are editable now, and three things have to see an edit: the evaluator
+(a search can filter *by* a segment), the catalogue (the picker offers segments
+as entries), and `entryOf` (a row has to name its own subject). Every one is
+reached from a call with no business taking a segments argument — threading it
+would have changed five signatures so that a leaf could look up a name.
+
+So `shared/sessions-logic.ts` holds one module-level list and a setter, and
+`useSessions` keeps it current in an effect. It is also the shape production
+has: **the evaluator reads a store.** `SESSIONS` is a fixture and
+`SAVED_SEGMENTS` is a seed; what the user has now is the registry.
+
+⚠ Miss that effect and a new segment counts zero sessions everywhere except in
+the drawer that made it — which is exactly the bug it replaced, and exactly what
+`sessions-check` now watches.

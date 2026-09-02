@@ -10,19 +10,31 @@
  * straight rather than a new one. Every mutation below maps to a method that
  * already exists: addFilter, updateFilter, removeFilter, edit, clearSearch. */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DateRangeValue } from '@shared/date-range.ts';
 import {
   DEFAULT_DISPLAY,
   INITIAL_SESSIONS_STATE,
   PAGE_SIZE,
+  SAVED_SEGMENTS,
   SESSIONS,
   displayCount,
   emptyReason,
   filterSessions,
   incompleteCount,
+  addManyToRules,
+  addPropertyInRules,
+  addToRules,
   makeFilter,
+  moveEventInRules,
   pageOf,
+  setLiveSegments,
+  removeFromRules,
+  removePropertyInRules,
+  replaceInRules,
+  togglePropertyOrderInRules,
+  updateInRules,
+  updatePropertyInRules,
   splitFilters,
   toggleSessionField,
   translate,
@@ -31,6 +43,7 @@ import {
   type SearchFilter,
   type SessionDisplay,
   type SessionField,
+  type SavedSegment,
   type SessionRow,
   type SessionTab,
   type SessionsState,
@@ -48,111 +61,52 @@ export function useSessions() {
     [],
   );
 
-  /* ── the search: one array, four verbs ── */
+  /* ── THE SEARCH: ONE ARRAY, AND THE VERBS ARE NOT HERE ──────────────────
+     Every one of these was a `setState` updater written out longhand until
+     2026-09-02. They are `SearchFilter[] -> SearchFilter[]` transforms in the
+     shared layer now, and this file binds them to `state.filters` - because
+     THE SEGMENT DRAWER BINDS THE SAME ONES to a draft (see useFilterDraft). A
+     segment is one saved search, so there is one set of verbs for editing a
+     search and two places you can be standing while you use them. */
 
-  const addFilter = useCallback((entry: CatalogueEntry) => {
-    setState((s) => {
-      const f = makeFilter(entry);
-      /* Events keep their sequence and properties follow them, so a new event
-         lands after the last event rather than at the end of everything. The
-         array stays ONE array; only the insertion point knows about kind. */
-      const at = f.isEvent ? s.filters.filter((x) => x.isEvent).length : s.filters.length;
-      const next = [...s.filters];
-      next.splice(at, 0, f);
-      return { ...s, filters: next, page: 1 };
-    });
-  }, []);
+  const onRules = useCallback(
+    (fn: (rules: readonly SearchFilter[]) => SearchFilter[]) =>
+      setState((s) => ({ ...s, filters: fn(s.filters), page: 1 })),
+    [],
+  );
 
-  const addFilters = useCallback((rows: SearchFilter[]) => {
-    setState((s) => {
-      const events = [...s.filters.filter((f) => f.isEvent), ...rows.filter((f) => f.isEvent)];
-      const props = [...s.filters.filter((f) => !f.isEvent), ...rows.filter((f) => !f.isEvent)];
-      return { ...s, filters: [...events, ...props], page: 1 };
-    });
-  }, []);
-
-  const updateFilter = useCallback((key: string, p: Partial<SearchFilter>) => {
-    setState((s) => ({
-      ...s,
-      filters: s.filters.map((f) => (f.key === key ? { ...f, ...p } : f)),
-      page: 1,
-    }));
-  }, []);
-
-  /** Replace a row's subject in place, keeping its position. This is the
-   *  production "click the name button and pick another" path, and it has to
-   *  keep the row where it is: re-picking the second of three events must not
-   *  send it to the bottom. */
-  const replaceFilter = useCallback((key: string, entry: CatalogueEntry) => {
-    setState((s) => ({
-      ...s,
-      filters: s.filters.map((f) => (f.key === key ? { ...makeFilter(entry), key: f.key } : f)),
-      page: 1,
-    }));
-  }, []);
-
-  const removeFilter = useCallback((key: string) => {
-    setState((s) => ({ ...s, filters: s.filters.filter((f) => f.key !== key), page: 1 }));
-  }, []);
-
-  /** Drag-to-reorder, over the EVENTS only. Both indices are event indices;
-   *  this maps them back into the one array so the properties never move. */
-  const moveEvent = useCallback((from: number, to: number) => {
-    setState((s) => {
-      const events = s.filters.filter((f) => f.isEvent);
-      if (from === to || from < 0 || to < 0 || from >= events.length || to >= events.length) return s;
-      const reordered = [...events];
-      const [moved] = reordered.splice(from, 1);
-      reordered.splice(to, 0, moved!);
-      return { ...s, filters: [...reordered, ...s.filters.filter((f) => !f.isEvent)], page: 1 };
-    });
-  }, []);
-
-  /* ── an event's own properties ── */
-
-  const addProperty = useCallback((eventKey: string, entry: CatalogueEntry) => {
-    setState((s) => ({
-      ...s,
-      filters: s.filters.map((f) =>
-        f.key === eventKey ? { ...f, properties: [...(f.properties ?? []), makeFilter(entry)] } : f,
-      ),
-      page: 1,
-    }));
-  }, []);
-
-  const updateProperty = useCallback((eventKey: string, propKey: string, p: Partial<SearchFilter>) => {
-    setState((s) => ({
-      ...s,
-      filters: s.filters.map((f) =>
-        f.key === eventKey
-          ? { ...f, properties: (f.properties ?? []).map((x) => (x.key === propKey ? { ...x, ...p } : x)) }
-          : f,
-      ),
-      page: 1,
-    }));
-  }, []);
-
-  const removeProperty = useCallback((eventKey: string, propKey: string) => {
-    setState((s) => ({
-      ...s,
-      filters: s.filters.map((f) =>
-        f.key === eventKey ? { ...f, properties: (f.properties ?? []).filter((x) => x.key !== propKey) } : f,
-      ),
-      page: 1,
-    }));
-  }, []);
-
-  /** The word between an event's properties. One value per event, as in
-   *  production, and clicking it is the only way to change it. */
-  const togglePropertyOrder = useCallback((eventKey: string) => {
-    setState((s) => ({
-      ...s,
-      filters: s.filters.map((f) =>
-        f.key === eventKey ? { ...f, propertyOrder: f.propertyOrder === 'or' ? 'and' : 'or' } : f,
-      ),
-      page: 1,
-    }));
-  }, []);
+  const addFilter = useCallback((entry: CatalogueEntry) => onRules((r) => addToRules(r, entry)), [onRules]);
+  const addFilters = useCallback((rows: SearchFilter[]) => onRules((r) => addManyToRules(r, rows)), [onRules]);
+  const updateFilter = useCallback(
+    (key: string, p: Partial<SearchFilter>) => onRules((r) => updateInRules(r, key, p)),
+    [onRules],
+  );
+  const replaceFilter = useCallback(
+    (key: string, entry: CatalogueEntry) => onRules((r) => replaceInRules(r, key, entry)),
+    [onRules],
+  );
+  const removeFilter = useCallback((key: string) => onRules((r) => removeFromRules(r, key)), [onRules]);
+  const moveEvent = useCallback(
+    (from: number, to: number) => onRules((r) => moveEventInRules(r, from, to)),
+    [onRules],
+  );
+  const addProperty = useCallback(
+    (eventKey: string, entry: CatalogueEntry) => onRules((r) => addPropertyInRules(r, eventKey, entry)),
+    [onRules],
+  );
+  const updateProperty = useCallback(
+    (eventKey: string, propKey: string, p: Partial<SearchFilter>) =>
+      onRules((r) => updatePropertyInRules(r, eventKey, propKey, p)),
+    [onRules],
+  );
+  const removeProperty = useCallback(
+    (eventKey: string, propKey: string) => onRules((r) => removePropertyInRules(r, eventKey, propKey)),
+    [onRules],
+  );
+  const togglePropertyOrder = useCallback(
+    (eventKey: string) => onRules((r) => togglePropertyOrderInRules(r, eventKey)),
+    [onRules],
+  );
 
   /* ── everything else on the search instance ── */
 
@@ -198,6 +152,75 @@ export function useSessions() {
     [],
   );
 
+  /* ── SEGMENTS ────────────────────────────────────────────────────────────
+     A saved search, and now a section of this page rather than a dropdown at
+     the top of it (Mehdi, 2026-09-02). The list is state because it is edited:
+     a segment is created from the live search, renamed, re-ruled and deleted,
+     and none of that is a fixture read.
+
+     ⚠ `openId` is a SEGMENT ID or the sentinel 'new'. Not a boolean plus an id:
+     two pieces of state that have to agree is how a drawer ends up open with
+     nothing in it. */
+  const [segments, setSegments] = useState<SavedSegment[]>(() => SAVED_SEGMENTS.map((x) => ({ ...x })));
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  /* ⚠ THE EVALUATOR AND THE CATALOGUE READ THIS LIST, and neither is reachable
+     from React. A search can filter BY a segment and the picker offers segments
+     as entries, so both have to see a segment that was just created, renamed or
+     re-ruled. See `setLiveSegments`: the alternative was threading the list
+     through five call signatures so a leaf could look up a name. */
+  useEffect(() => setLiveSegments(segments), [segments]);
+
+  const openSegment = useCallback((id: string) => setOpenId(id), []);
+  const closeSegment = useCallback(() => setOpenId(null), []);
+
+  /** A new segment starts from WHAT IS ON SCREEN, not from nothing. The button
+   *  that opens it sits under a search you have just built, and an empty drawer
+   *  there would throw that away and ask you to type it again. */
+  const newSegment = useCallback(() => setOpenId('new'), []);
+
+  const saveSegment = useCallback((seg: SavedSegment) => {
+    setSegments((all) => {
+      const i = all.findIndex((x) => x.id === seg.id);
+      const next = { ...seg, updatedAt: Date.now() };
+      return i < 0 ? [next, ...all] : all.map((x) => (x.id === seg.id ? next : x));
+    });
+    setOpenId(null);
+  }, []);
+
+  const deleteSegment = useCallback((id: string) => {
+    setSegments((all) => all.filter((x) => x.id !== id));
+    setOpenId((cur) => (cur === id ? null : cur));
+  }, []);
+
+  /** ⚠ APPLYING A SEGMENT LOADS ITS RULES, not a row that says its name.
+   *
+   *  Production inserts the segment as one opaque event, which is what
+   *  `loadSegment` below still does and what the picker still offers - that is
+   *  how you COMPOSE with a segment, and it is a real thing to want.
+   *
+   *  This is the other verb, and the tab's own: you are opening the saved
+   *  search, so what lands in the field is the search. It is editable, you can
+   *  see why the list looks the way it does, and the rows are the same rows the
+   *  drawer just showed you. */
+  const applySegment = useCallback((id: string) => {
+    setSegments((all) => {
+      const seg = all.find((x) => x.id === id);
+      if (seg) {
+        setState((st) => ({
+          ...st,
+          tab: 'all',
+          filters: seg.filters.map((f) => ({ ...f })),
+          eventsOrder: seg.eventsOrder,
+          savedSegmentId: seg.id,
+          page: 1,
+        }));
+      }
+      return all;
+    });
+    setOpenId(null);
+  }, []);
+
   /* ── what the list is ── */
 
   /* ⚠ BOOKMARKING IS A REAL EDIT, so it is state rather than a fixture flag.
@@ -220,12 +243,38 @@ export function useSessions() {
     return SESSIONS.map((s) => (s.sessionId in bookmarks ? { ...s, favorite: bookmarks[s.sessionId]! } : s));
   }, [state.dataState, bookmarks]);
   const matched = useMemo(() => filterSessions(state, all), [state, all]);
+
+  /* ⚠ EVERY SESSION IN THE WINDOW, with no filter and no tab applied. It is
+     what a SEGMENT is counted against - a segment is its own search, so
+     counting one inside another search would answer a question nobody asked -
+     and it is what the drawer's value pickers offer their shares from. */
+  const inWindow = useMemo(
+    () =>
+      filterSessions(
+        { ...INITIAL_SESSIONS_STATE, range: state.range, dataState: state.dataState },
+        all,
+      ),
+    [state.range, state.dataState, all],
+  );
   const rows = useMemo(() => pageOf(matched, state.page), [matched, state.page]);
   const { events, properties } = useMemo(() => splitFilters(state.filters), [state.filters]);
+
+  const openSegmentValue =
+    openId === 'new' ? null : (segments.find((x) => x.id === openId) ?? null);
 
   return {
     state,
     toggleBookmark,
+    /* segments */
+    segments,
+    openSegmentId: openId,
+    openSegment: openSegmentValue,
+    openSegmentBy: openSegment,
+    closeSegment,
+    newSegment,
+    saveSegment,
+    deleteSegment,
+    applySegment,
     /* the search */
     filters: state.filters,
     events,
@@ -251,6 +300,7 @@ export function useSessions() {
        counts are computed against this, so they answer "how many would this
        leave me" rather than "how many are on screen". */
     matched,
+    inWindow,
     total: matched.length,
     pageSize: PAGE_SIZE,
     page: state.page,

@@ -7,16 +7,16 @@ import {
   CirclePlay,
   Settings2,
   Share2,
-  Split,
+  Plus,
 } from 'lucide-react';
 import {
   FIELD_CHOICES,
-  SAVED_SEGMENTS,
   SORT_CHOICES,
   entryOf,
   formatDuration,
   type SessionDisplay,
   type SessionField,
+  type SessionTab,
   type SessionRow,
 } from '@shared/sessions-logic.ts';
 import type { useSessions } from '../state/useSessions.ts';
@@ -30,6 +30,8 @@ import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { sortable } from '../components/SortIcon.tsx';
 import { SearchCard } from './SearchCard.tsx';
+import { SegmentDrawer } from './SegmentDrawer.tsx';
+import { SegmentsPanel } from './SegmentsPanel.tsx';
 import './sessions-page.css';
 
 /** Written out rather than inlined so the control and its type agree: the
@@ -351,67 +353,62 @@ export function SessionsPage({ model }: SessionsPageProps) {
       tabs={
         <Tabs
           activeKey={model.tab}
-          onChange={(k) => model.setTab(k as 'all' | 'bookmarks')}
+          onChange={(k) => model.setTab(k as SessionTab)}
+          /* ⚠ SEGMENTS IS A SECTION, NOT A CONTROL (Mehdi, 2026-09-02). It was
+             a dropdown of names at the top of the page, which is where a thing
+             goes when nobody has decided what it is: it could show you what
+             segments are called and nothing about what they mean, hold, or
+             belong to. Same argument Bookmarked won on - a section replaces the
+             body, a filter narrows it, and a list of segments is a list of a
+             different thing. */
           items={[
             { key: 'all', label: 'All sessions' },
             { key: 'bookmarks', label: 'Bookmarked' },
+            { key: 'segments', label: 'Segments' },
           ]}
         />
       }
       actions={
         <>
-          {/* SAVED SEGMENTS. A search you keep is a segment, and it is the same
-              entity the catalogue lists under "Segments" - so loading one puts
-              it in the search as the one event it is, which is exactly what
-              `processFilterResponse` does with it. */}
-          <Dropdown
-            trigger={['click']}
-            placement="bottomRight"
-            menu={{
-              items: [
-                {
-                  key: 'head',
-                  type: 'group',
-                  label: 'Saved segments',
-                  children: SAVED_SEGMENTS.map((seg) => ({
-                    key: seg.id,
-                    icon: <Split size={13} />,
-                    label: seg.name,
-                    /* Somebody else's segment can be used and not overwritten,
-                       which is a real rule in production. */
-                    extra: seg.mine ? undefined : 'shared',
-                  })),
-                },
-              ],
-              onClick: ({ key }) => {
-                const entry = entryOf(key);
-                if (entry) model.loadSegment(entry);
-              },
-            }}
-          >
-            <Button size="small" icon={<Split size={13} />}>
-              Segments
+          {/* ⚠ THE SEGMENTS DROPDOWN IS GONE. It listed four names and did one
+              thing with them; segments are a tab now, where each one can print
+              its own rules, its live count and its owner. Loading a segment
+              INTO a search is still possible and still one click - it is an
+              entry in the filter picker, under "Segments", like every other
+              thing you can filter by. */}
+          {/* ON THE SEGMENTS TAB THE HEADER'S VERB IS "NEW"; on the two session
+              tabs it is "save what is on screen". Same button, and the label
+              says which, because a New that quietly inherited the filter you
+              had built would be a surprise and a New that threw it away would
+              be a waste. */}
+          {model.tab === 'segments' ? (
+            <Button size="small" icon={<Plus size={13} />} onClick={model.newSegment}>
+              New segment
             </Button>
-          </Dropdown>
-          <Tooltip
-            title={
-              model.filters.length === 0
-                ? 'Add a filter first'
-                : model.filters.some((f) => entryOf(f.entryId)?.category === 'segments')
-                  ? 'A search that uses a segment cannot itself be saved'
-                  : 'Save this search as a segment'
-            }
-          >
-            <Button
-              size="small"
-              disabled={
-                model.filters.length === 0 ||
-                model.filters.some((f) => entryOf(f.entryId)?.category === 'segments')
+          ) : (
+            <Tooltip
+              title={
+                model.filters.length === 0
+                  ? 'Add a filter first'
+                  : model.filters.some((f) => entryOf(f.entryId)?.category === 'segments')
+                    ? 'A search that uses a segment cannot itself be saved'
+                    : 'Save this search as a segment'
               }
             >
-              Save
-            </Button>
-          </Tooltip>
+              <span>
+                <Button
+                  size="small"
+                  disabled={
+                    model.filters.length === 0 ||
+                    model.filters.some((f) => entryOf(f.entryId)?.category === 'segments')
+                  }
+                  onClick={model.newSegment}
+                >
+                  Save as segment
+                </Button>
+              </span>
+            </Tooltip>
+          )}
           <Dropdown
             trigger={['click']}
             placement="bottomRight"
@@ -441,6 +438,22 @@ export function SessionsPage({ model }: SessionsPageProps) {
          STICKS, and a window you cannot change without scrolling back up is
          the same complaint the sticky came out of. */
     >
+      {/* ⚠ A SECTION REPLACES THE BODY. On the segments tab there is no filter
+          card and no sessions table, because you are not looking at sessions -
+          which is the whole reason this is a tab and not a filter. */}
+      {model.tab === 'segments' ? (
+        <SegmentsPanel
+          segments={model.segments}
+          /* ⚠ COUNTED AGAINST THE WINDOW, not against the filtered list. A
+             segment is its own search; counting it inside another one would
+             answer a question nobody asked. */
+          pool={model.inWindow}
+          onOpen={model.openSegmentBy}
+          onApply={model.applySegment}
+          onNew={model.newSegment}
+        />
+      ) : (
+        <>
       <div className="m-ss__sticky">
         <SearchCard
           events={model.events}
@@ -551,6 +564,25 @@ export function SessionsPage({ model }: SessionsPageProps) {
             onPage={model.setPage}
           />
         </>
+      )}
+        </>
+      )}
+
+      {/* ⚠ KEYED ON WHICH SEGMENT. The drawer's draft is seeded once per mount,
+          so a drawer reused across two segments would edit the first one's
+          rules under the second one's name. */}
+      {model.openSegmentId != null && (
+        <SegmentDrawer
+          key={model.openSegmentId}
+          open
+          segment={model.openSegment}
+          seed={{ filters: model.filters, eventsOrder: model.eventsOrder }}
+          pool={model.inWindow}
+          onSave={model.saveSegment}
+          onDelete={model.deleteSegment}
+          onApply={model.applySegment}
+          onClose={model.closeSegment}
+        />
       )}
     </PageCard>
   );

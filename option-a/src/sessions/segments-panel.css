@@ -1,0 +1,51 @@
+/* ── THE SEGMENTS TAB ────────────────────────────────────────────────────────
+   The sessions table's rules apply here unchanged - it is the same table in the
+   same plane, and a second list with its own rhythm would be the thing the
+   shared row height exists to prevent. What is here is only what a SEGMENT row
+   needs that a session row does not: a name with its own rules under it. */
+
+/* Two lines, and the row is as tall as they are. Same shape as an audit's name
+   over its scope, for the same reason: the second line is what the first one
+   means. */
+.m-seg__cell { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+.m-seg__name {
+  color: var(--m-content-primary);
+  font-weight: var(--m-weight-medium);
+}
+
+/* THE RULES, in the search's own voice. Muted and one size down: it is the
+   subtitle of the name above it, not a second name. */
+.m-seg__rules {
+  color: var(--m-content-muted);
+  font-size: var(--m-text-xs);
+}
+
+.m-seg__n {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-secondary);
+}
+.m-seg__n.is-zero { color: var(--m-content-disabled); }
+
+.m-seg__owner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  min-width: 0;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-secondary);
+}
+
+.m-seg__shared { flex: none; color: var(--m-content-decorative); }
+
+/* ⚠ QUIET UNTIL THE ROW IS POINTED AT, like the play on a session row and the
+   remove on a filter row. The ROW opens the segment - that is the common verb -
+   and a solid button on every line would make "use" look like the thing you
+   came here to do. */
+.m-seg__use { opacity: 0; transition: opacity var(--m-duration-instant) var(--m-ease-out); }
+.m-seg__row:hover .m-seg__use,
+.m-seg__use:focus-visible { opacity: 1; }
+
+.m-seg__row { cursor: pointer; }

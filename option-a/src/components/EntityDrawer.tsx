@@ -19,6 +19,9 @@ export interface EntityDrawerProps {
   /** Creation: mount the field already editing and empty, so naming is the
    *  first thing you do rather than something you discover. */
   autoEditTitle?: boolean;
+  /** What the empty name field says while creating: "Name this test", "Name
+   *  this segment". The shell has no noun of its own. */
+  namePlaceholder?: string;
   /** A line under the title for the facts that never change while it is open:
    *  when a run happened, how long it took, where. */
   meta?: ReactNode;
@@ -73,6 +76,7 @@ export function EntityDrawer({
   eyebrow,
   onTitleChange,
   autoEditTitle,
+  namePlaceholder,
   meta,
   headerActions,
   footer,
@@ -91,7 +95,12 @@ export function EntityDrawer({
         <div className="m-drawer__lead">
           <p className="m-drawer__eyebrow">{eyebrow}</p>
           {onTitleChange ? (
-            <EditableTitle title={title} onChange={onTitleChange} autoEdit={autoEditTitle} />
+            <EditableTitle
+              title={title}
+              onChange={onTitleChange}
+              autoEdit={autoEditTitle}
+              placeholder={namePlaceholder}
+            />
           ) : (
             <h2 className="m-drawer__title">{title}</h2>
           )}
@@ -126,10 +135,12 @@ function EditableTitle({
   title,
   onChange,
   autoEdit,
+  placeholder,
 }: {
   title: string;
   onChange: (title: string) => void;
   autoEdit?: boolean;
+  placeholder?: string;
 }) {
   const [editing, setEditing] = useState(!!autoEdit);
   const [val, setVal] = useState(autoEdit ? '' : title);
@@ -164,8 +175,22 @@ function EditableTitle({
           value={val}
           maxLength={120}
           aria-label="Name"
-          placeholder={autoEdit ? 'Name this test' : undefined}
-          onChange={(e) => setVal(e.target.value)}
+          /* ⚠ IT SAID "Name this test" WHATEVER IT WAS NAMING. This shell is
+             the drawer every object opens into, and a hardcoded noun in it
+             makes every second object wrong - the segment drawer asked people
+             to name a test. The caller brings its own word. */
+          placeholder={autoEdit ? (placeholder ?? 'Name') : undefined}
+          onChange={(e) => {
+            setVal(e.target.value);
+            /* ⚠ WHILE CREATING, THE NAME IS LIVE. Renaming an existing thing
+               is a commit - you can change your mind, so it takes Enter and
+               offers Cancel. Creating one is not: the footer owns the only
+               commit there is, and a name that had to be committed SEPARATELY
+               before the footer's button would notice it left people typing a
+               name and clicking a Create that stayed disabled with no way to
+               see why. */
+            if (autoEdit) onChange(e.target.value);
+          }}
           onPressEnter={commit}
           onKeyDown={(e) => {
             /* Same rule as the step editor: Escape cancels the rename, and the
@@ -177,12 +202,18 @@ function EditableTitle({
             }
           }}
         />
-        <Button size="small" type="text" onClick={() => { setVal(title); setEditing(false); }}>
-          Cancel
-        </Button>
-        <Button size="small" type="primary" onClick={commit}>
-          Save
-        </Button>
+        {/* Not while creating: there is nothing to go back to and nothing to
+            commit to but the footer. */}
+        {!autoEdit && (
+          <>
+            <Button size="small" type="text" onClick={() => { setVal(title); setEditing(false); }}>
+              Cancel
+            </Button>
+            <Button size="small" type="primary" onClick={commit}>
+              Save
+            </Button>
+          </>
+        )}
       </div>
     );
   }

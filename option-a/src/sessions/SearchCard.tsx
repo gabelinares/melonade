@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Select, Tooltip } from 'antd';
 import { ListFilter } from 'lucide-react';
 import {
-  describeFilter,
+  describeRules,
   type CatalogueEntry,
   type EventsOrder,
   type SearchFilter,
@@ -95,15 +95,40 @@ export interface SearchCardProps {
   onTogglePropertyOrder: (eventKey: string) => void;
   onEventsOrder: (order: EventsOrder) => void;
   onClear: () => void;
-  /** The sessions the value counts are computed against — everything the date
-   *  range and the other filters already left. */
+  /** The sessions the value counts are computed against.
+   *
+   *  ⚠ THIS AND THE RESULT ARE TWO DIFFERENT NUMBERS, and they were one prop
+   *  for a day. On the page they happen to coincide - the pool is the filtered
+   *  list, so the strip's count is its length. In the segment drawer they must
+   *  not: the pool there is every session in the window, because a picker that
+   *  offered only the values SURVIVING the clause you are editing can never let
+   *  you add a second country - France filters the list to France, and France
+   *  is then the only country the picker can see. */
   rows: readonly SessionRow[];
+  /** What the rules currently hold, for the strip. Defaults to `rows.length`,
+   *  which is right wherever the pool and the result are the same list. */
+  resultCount?: number;
   /** The controls that belong to the LIST rather than to the search - the date
    *  range and the display menu. They ride the search's own bar because the
    *  bar is what sticks: a window you cannot change without scrolling back up
    *  is the same complaint the sticky came out of. A slot rather than props,
    *  because the search has no business knowing what a date range is. */
   trailing?: ReactNode;
+  /**
+   * `page` is the sessions list's own filter: it sticks, it collapses itself as
+   * you scroll into the results, and it carries the list's controls on its bar.
+   *
+   * `panel` is the SAME EDITOR inside a drawer — the segment drawer, which
+   * edits a saved search and therefore edits this. Two things go, and both for
+   * the same reason: a drawer is not a page, so there is nothing to scroll past
+   * and nothing to get out of the way of. It does not collapse, and it has no
+   * bar to hang a date range on.
+   *
+   * ⚠ A variant, not a second component. "The segment is just one saved search
+   * so the design should be really consistent" is a claim you can only make
+   * true by using the same component, and a lookalike is how the two drift.
+   */
+  variant?: 'page' | 'panel';
 }
 
 /**
@@ -169,7 +194,9 @@ export function SearchCard({
   onEventsOrder,
   onClear,
   rows,
+  resultCount,
   trailing,
+  variant = 'page',
 }: SearchCardProps) {
   const [drag, setDrag] = useState<{ from: number; over: number | null; at: 'top' | 'bottom' | null }>({
     from: -1,
@@ -185,7 +212,14 @@ export function SearchCard({
   const any = events.length > 0 || properties.length > 0;
   const takenProperties = properties.map((f) => f.entryId);
   const rowCount = events.length + properties.length;
-  const { collapsed, toggle: toggleCollapsed, anchor, canCollapse } = useFilterCollapse(rowCount);
+  const inPanel = variant === 'panel';
+  const collapse = useFilterCollapse(inPanel ? 0 : rowCount);
+  /* A drawer holds still: nothing scrolls past it, so there is nothing for it
+     to get out of the way of, and a collapsed rule list in a panel opened to
+     edit rules is the control working against its own reason for being open. */
+  const collapsed = inPanel ? false : collapse.collapsed;
+  const canCollapse = inPanel ? false : collapse.canCollapse;
+  const { toggle: toggleCollapsed, anchor } = collapse;
 
   const endDrag = () => setDrag({ from: -1, over: null, at: null });
 
@@ -199,7 +233,7 @@ export function SearchCard({
   };
 
   return (
-    <section className="m-sc" aria-label="Session filter" ref={anchor}>
+    <section className={`m-sc${inPanel ? ' m-sc--panel' : ''}`} aria-label="Session filter" ref={anchor}>
       {/* ── THE FIELD ─────────────────────────────────────────────────────────
           THE MOST IMPORTANT THING ON THE PAGE, and now drawn like it: the
           tallest control here, the only one at 14px, and the only one that gets
@@ -277,7 +311,7 @@ export function SearchCard({
           disclosure.
 
           COLLAPSED IT PRINTS THE WHOLE FILTER AS ONE SENTENCE - the same
-          `describeFilter` the saved-segment list and the screen reader use - so
+          `describeRules` the segments tab and the screen reader use - so
           putting the rows away never costs you knowing what they said. That is
           the difference between a collapse and hiding something.
 
@@ -304,7 +338,7 @@ export function SearchCard({
               <ChevronDown size={13} className="m-sc__caret" aria-hidden="true" />
               <span className="m-sc__summary m-truncate">
                 {collapsed
-                  ? sentence(events, properties, eventsOrder)
+                  ? describeRules(events, properties, eventsOrder)
                   : `${rowCount} ${rowCount === 1 ? 'filter' : 'filters'}`}
               </span>
             </button>
@@ -314,7 +348,7 @@ export function SearchCard({
             </span>
           )}
           <span className="m-sc__count">
-            {rows.length} {rows.length === 1 ? 'session' : 'sessions'}
+            {resultCount ?? rows.length} {(resultCount ?? rows.length) === 1 ? 'session' : 'sessions'}
           </span>
           {/* TWO events, not one: with a single event there is no gap for an
               operator to sit in, and a control that cannot change the result is
@@ -415,25 +449,12 @@ export function SearchCard({
       {/* THE FILTER, IN WORDS. Off-screen, and live: the rows ARE the filter, so
           a change to them has to be announced as a change to the whole thing
           rather than as six unrelated control updates. Built from the same
-          `describeFilter` the saved-segment list prints, so the sentence a
+          `describeRules` the segments tab prints, so the sentence a
           screen reader hears and the sentence a segment shows are one
           sentence. */}
       <p className="m-sr-only" aria-live="polite">
-        {sentence(events, properties, eventsOrder)}
+        {describeRules(events, properties, eventsOrder)}
       </p>
     </section>
   );
-}
-
-/** The rows as one line of English. */
-function sentence(
-  events: readonly SearchFilter[],
-  properties: readonly SearchFilter[],
-  order: EventsOrder,
-): string {
-  if (!events.length && !properties.length) return 'Every session';
-  const parts: string[] = [];
-  if (events.length) parts.push(events.map(describeFilter).join(` ${order} `));
-  if (properties.length) parts.push(properties.map(describeFilter).join(' and '));
-  return parts.join(', ');
 }
