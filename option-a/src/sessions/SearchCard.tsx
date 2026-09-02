@@ -9,8 +9,10 @@ import {
   type SessionRow,
 } from '@shared/sessions-logic.ts';
 import { noNativeTooltip } from '../components/selectOptions.ts';
+import { ChevronDown } from 'lucide-react';
 import { FilterPicker } from './FilterPicker.tsx';
 import { SearchRow } from './SearchRow.tsx';
+import { useFilterCollapse } from './useFilterCollapse.ts';
 import './search-card.css';
 
 /* ── THE PLACEHOLDER ─────────────────────────────────────────────────────────
@@ -182,6 +184,8 @@ export function SearchCard({
 
   const any = events.length > 0 || properties.length > 0;
   const takenProperties = properties.map((f) => f.entryId);
+  const rowCount = events.length + properties.length;
+  const { collapsed, toggle: toggleCollapsed, anchor, canCollapse } = useFilterCollapse(rowCount);
 
   const endDrag = () => setDrag({ from: -1, over: null, at: null });
 
@@ -195,7 +199,7 @@ export function SearchCard({
   };
 
   return (
-    <section className="m-sc" aria-label="Session filter">
+    <section className="m-sc" aria-label="Session filter" ref={anchor}>
       {/* ── THE FIELD ─────────────────────────────────────────────────────────
           THE MOST IMPORTANT THING ON THE PAGE, and now drawn like it: the
           tallest control here, the only one at 14px, and the only one that gets
@@ -244,17 +248,50 @@ export function SearchCard({
         {trailing}
       </div>
 
-      {/* ── what the search is doing, once it is doing something ─────────────
-          The order control and Clear act on the WHOLE search, so they sit above
-          the rows rather than in the field's line: the field is where you add,
-          this strip is where you change your mind. Absent until there is a
-          search to change. */}
+      {/* ── THE STRIP: WHAT THE FILTER SAYS, AND HOW TO PUT IT AWAY ──────────
+          It used to hold Clear and nothing else, which is a whole row of height
+          for one word at the far end of it (Gabriel, 2026-09-02: "the clear
+          button takes a whole space in height that doesn't have anything
+          else"). So it earns the row: it is the filter's own summary AND its
+          disclosure.
+
+          COLLAPSED IT PRINTS THE WHOLE FILTER AS ONE SENTENCE - the same
+          `describeFilter` the saved-segment list and the screen reader use - so
+          putting the rows away never costs you knowing what they said. That is
+          the difference between a collapse and hiding something.
+
+          The count sits beside it because it is the filter's own result and
+          this is the filter's own row. The footer's "1-12 of 134" is about the
+          page of rows; this is about the filter. */}
       {any && (
-        <div className="m-sc__strip">
+        <div className={`m-sc__strip${collapsed ? ' is-collapsed' : ''}`}>
+          {canCollapse ? (
+            <button
+              type="button"
+              className="m-sc__toggle"
+              onClick={toggleCollapsed}
+              aria-expanded={!collapsed}
+              aria-controls="m-sc-rows"
+            >
+              <ChevronDown size={13} className="m-sc__caret" aria-hidden="true" />
+              <span className="m-sc__summary m-truncate">
+                {collapsed ? sentence(events, properties, eventsOrder) : `${rowCount} filters`}
+              </span>
+            </button>
+          ) : (
+            <span className="m-sc__summary is-static">
+              {rowCount === 1 ? '1 filter' : `${rowCount} filters`}
+            </span>
+          )}
+          <span className="m-sc__count">
+            {rows.length} {rows.length === 1 ? 'session' : 'sessions'}
+          </span>
           {/* TWO events, not one: with a single event there is no gap for an
               operator to sit in, and a control that cannot change the result is
               a control that teaches you to ignore controls. */}
-          {events.length > 1 && (
+          {/* Hidden while collapsed: it edits a relationship between rows you
+              cannot see, and the summary already prints the word. */}
+          {events.length > 1 && !collapsed && (
             <span className="m-sc__order">
               <Tooltip title="How the events relate to each other, across the whole search.">
                 <span className="m-sc__order-label">matching</span>
@@ -294,8 +331,8 @@ export function SearchCard({
       )}
 
       {/* ── the list ── */}
-      {any ? (
-        <div className="m-sc__list">
+      {any && !collapsed ? (
+        <div className="m-sc__list" id="m-sc-rows">
           {events.map((f, i) => (
             <SearchRow
               key={f.key}

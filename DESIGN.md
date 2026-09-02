@@ -3731,3 +3731,81 @@ accent this view gets, which the ring already has.
 rename and are left alone deliberately.** Renaming a prefix across four
 stylesheets, five components and a check suite to change a word nobody sees is
 churn, and a half-done rename is worse than an old one.
+
+### The filter puts itself away (2026-09-02)
+
+Two complaints, one shape.
+
+> *"The clear button takes a whole space in height that doesn't have anything
+> else, [and] as the list grows, I can't collapse the list to show the result."*
+
+**The strip that held only Clear now earns its row.** It carries the filter's
+**summary**, its **result count**, and its **disclosure** — and Clear rides along
+at the end where it already was. Four things on a row that had one, and none of
+them is new chrome: the summary and the count were both already computed, and
+the caret is the answer to the other half.
+
+```
+⌄ 4 filters · 89 sessions          matching then ▾            Clear
+1  Events · add_to_cart
+2  Events · checkout_start
+   Geography · Country  is  France
+   Technology · Browser  is  Safari
+
+⌃ add_to_cart then checkout_start, Country is… and Browser is… · 13 sessions   Clear
+```
+
+**Collapsed it prints the whole filter as one sentence** — the same
+`describeFilter` the saved-segment list and the screen reader use. That is the
+difference between a collapse and hiding something: putting the rows away never
+costs you knowing what they said.
+
+### And scrolling does it for you
+
+The rule is one sentence, and it is the app's own:
+
+> **Scrolling collapses it, and you override that until the filter changes.**
+
+Which is `useNavCollapse` again, deliberately — there the window decides when it
+crosses 1080 and you override until the next crossing. Same shape, same reason.
+**Two moments matter and they are different intents:** building a filter, where
+you want every row, and reading results, where you want the filter out of the
+way but still want to know what it says. **Scrolling is the moment your intent
+changes.** So nobody has to click anything in the common case, and the one click
+there is always wins.
+
+*"Until the filter changes"* is the important half. Adding a clause is you going
+back to building, so the override lapses and the card opens to show you what you
+just added. An override that outlived the thing it was about would leave you
+editing a filter you cannot see.
+
+**It does nothing below three rows.** A one-clause filter is shorter than the
+summary line that would replace it, so collapsing it would be the control
+costing more than the thing it hides — the strip shows "1 filter" as plain text,
+with no caret.
+
+### An open control is not an accent
+
+> *"This colour in that state is a weird semantic token."*
+
+Two tokens were wrong and both were in `theme/antd.ts`, so both were wrong
+everywhere:
+
+**`controlItemBgActive: surface-selected`.** This is *the* token behind a
+selected row in every dropdown, menu and picker in the app, and
+`surface-selected` is the one teal-tinted surface in the set. So "the option you
+already chose" was **the only selection in the build that meant selection in a
+different colour.** Everything else says it with a neutral fill and primary
+ink: the nav's current row, the pager's current page, the segmented thumb, the
+picker's own category rail. It is `surface-active` now, in both the global token
+and Dropdown's override.
+
+**`activeBorderColor: border-accent`** on Input and Select. antd fires that
+whenever a field is focused or a dropdown is open, so every control in the app
+was spending the one accent this design rations to say nothing more than "you
+are typing in me" — which the caret already says, and which an open popover says
+unmistakably. `border-strong` instead: a firmer edge and nothing else.
+
+**The keyboard focus ring is untouched and still accent.** That is
+`:focus-visible` in `base.css` with `--m-focus-ring`, and an accent focus
+indicator is the one place this colour is genuinely load-bearing.

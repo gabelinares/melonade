@@ -568,6 +568,102 @@ check('a fixture value field has shares too, so nothing in the picker is bare',
   fixture.values.includes('200') && fixture.bars === fixture.values.length,
   `${fixture.values.join(', ')} — ${fixture.bars} bars`);
 
+/* ── 12. THE FILTER PUTS ITSELF AWAY ────────────────────────────────────────
+   Two complaints, one shape (Gabriel, 2026-09-02): "the clear button takes a
+   whole space in height that doesn't have anything else" and "as the list
+   grows, I can't collapse the list to show the result". The strip that held
+   only Clear now carries the summary, the count and the disclosure - and
+   SCROLLING collapses it, because scrolling is the moment your intent changes
+   from building the filter to reading the results. */
+await p.setViewportSize({ width: 1560, height: 620 });
+await p.waitForTimeout(300);
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(300);
+for (const n of ['add_to_cart', 'checkout_start', 'Country', 'Browser']) await addEntry(n);
+await p.mouse.move(900, 560);
+await p.waitForTimeout(400);
+
+const strip = () =>
+  p.evaluate(() => {
+    const el = document.querySelector('.m-sc__strip');
+    return {
+      collapsed: el.classList.contains('is-collapsed'),
+      summary: el.querySelector('.m-sc__summary')?.textContent?.trim(),
+      count: el.querySelector('.m-sc__count')?.textContent?.trim(),
+      hasClear: !!el.querySelector('.m-sc__clear'),
+      rows: document.querySelectorAll('.m-srow').length,
+      /* the row it sits on has to be doing something with its height */
+      inhabitants: el.querySelectorAll(':scope > *').length,
+    };
+  });
+const open = await strip();
+check('the strip carries the summary, the count and Clear, not just Clear',
+  open.inhabitants >= 3 && !!open.count && open.hasClear,
+  `${open.inhabitants} things on it — ${open.summary} · ${open.count}`);
+
+await p.evaluate(() => { document.querySelector('.m-page__body').scrollTop = 220; });
+await p.waitForTimeout(600);
+const shut = await strip();
+check('scrolling into the results collapses the filter by itself',
+  shut.collapsed && shut.rows === 0, `collapsed ${shut.collapsed}, ${shut.rows} rows drawn`);
+/* COLLAPSED IT STILL SAYS WHAT IT IS. That is the difference between a collapse
+   and hiding something: the same `describeFilter` the segments list prints. */
+/* The order word is whatever the earlier step left it as, so match any of the
+   three rather than pinning it - the claim is that the SENTENCE is there, not
+   which conjunction is in it. */
+check('and collapsed it prints the whole filter as one sentence',
+  /add_to_cart (then|and|or) checkout_start, Country/.test(shut.summary ?? '') && !!shut.count,
+  `${shut.summary} · ${shut.count}`);
+
+await p.locator('.m-sc__toggle').click();
+await p.waitForTimeout(400);
+const reopened = await strip();
+check('and the one click there is beats the scroll, as useNavCollapse does',
+  !reopened.collapsed && reopened.rows === 4, `${reopened.rows} rows back`);
+
+/* A ONE-CLAUSE FILTER GETS NO COLLAPSE: the summary line that replaced it would
+   be taller than the thing it hid. */
+await p.evaluate(() => { document.querySelector('.m-page__body').scrollTop = 0; });
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(300);
+await addEntry('Country');
+await p.waitForTimeout(300);
+const one = await p.evaluate(() => ({
+  toggle: !!document.querySelector('.m-sc__toggle'),
+  summary: document.querySelector('.m-sc__summary')?.textContent?.trim(),
+}));
+check('one clause gets no disclosure, because the control would cost more',
+  !one.toggle && one.summary === '1 filter', `toggle ${one.toggle}, says ${one.summary}`);
+
+/* ── 13. AN OPEN CONTROL IS NOT AN ACCENT ───────────────────────────────────
+   Gabriel, on the operator dropdown: "this colour in that state is a weird
+   semantic token." antd's `controlItemBgActive` was `surface-selected` - the
+   one teal-tinted surface in the set - so the option you had already chosen was
+   the only selection in the build that meant selection in a different colour.
+   Everything else says it with a neutral fill: the nav row, the pager, the
+   segmented thumb, the picker's rail. */
+await p.locator('.m-srow__op').first().click();
+await p.waitForTimeout(450);
+const token = await p.evaluate(() => {
+  const opt = document.querySelector('.ant-select-item-option-selected');
+  const root = getComputedStyle(document.documentElement);
+  const rgb = (hex) => {
+    const h = hex.trim().replace('#', '');
+    const n = Number.parseInt(h, 16);
+    return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+  };
+  return {
+    bg: opt ? getComputedStyle(opt).backgroundColor : null,
+    active: rgb(root.getPropertyValue('--m-surface-active')),
+    selected: rgb(root.getPropertyValue('--m-surface-selected')),
+  };
+});
+check('a chosen option is the app\'s own neutral selection fill, not the tinted one',
+  token.bg === token.active && token.bg !== token.selected,
+  `${token.bg} — active ${token.active}, tinted ${token.selected}`);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(200);
+
 check('no console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log('\nPASS');

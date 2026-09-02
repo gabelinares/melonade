@@ -137,10 +137,19 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
          ACTIVE the moment the popup opens, so that colour was the resting
          state of every dropdown in the app, not an edge case on hover. */
       controlItemBgHover: c['surface-hover'],
-      controlItemBgActive: c['surface-selected'],
+      /* ⚠ `surface-active`, NOT `surface-selected`, since 2026-09-02. This is
+         THE token behind a selected row in every dropdown, menu and picker in
+         the app, and `surface-selected` is the one teal-tinted surface in the
+         set - so "the option you already chose" was the only selection in the
+         build that meant selection in a different colour. Everything else says
+         it with a neutral fill and primary ink: the nav's current row, the
+         pager's current page, the segmented thumb, the picker's category rail.
+         Gabriel, on the operator dropdown: "this colour in that state is a
+         weird semantic token." It was. */
+      controlItemBgActive: c['surface-active'],
       /* Hovering the row you already picked must not announce anything: it is
          the same state, and a second, louder tint would read as a third one. */
-      controlItemBgActiveHover: c['surface-selected'],
+      controlItemBgActiveHover: c['surface-active'],
 
       /* ── type ── */
       fontFamily: overrides?.fonts?.sans ?? scales['font-sans'],
@@ -254,8 +263,20 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
         borderRadiusXS: r.control,
       },
 
+      /* ⚠ AN OPEN OR FOCUSED CONTROL IS NOT AN ACCENT (Gabriel, 2026-09-02:
+         "this colour in that state is a weird semantic token"). antd calls it
+         `activeBorderColor` and it fires whenever a field is focused or a
+         dropdown is open, so every control in the app was painting the ONE
+         accent this design rations to say nothing more than "you are typing in
+         me" - which the caret already says, and which the popover says
+         unmistakably.
+
+         `border-strong` instead: an open control takes a firmer edge and
+         nothing else. The KEYBOARD focus ring is untouched and still accent -
+         that is `:focus-visible` in base.css with `--m-focus-ring`, and an
+         accent focus indicator is the one place this colour is load-bearing. */
       Input: {
-        activeBorderColor: c['border-accent'],
+        activeBorderColor: c['border-strong'],
         hoverBorderColor: c['border-strong'],
         activeShadow: 'none',
         errorActiveShadow: 'none',
@@ -265,10 +286,17 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
       },
 
       Select: {
-        optionSelectedBg: c['surface-selected'],
+        /* ⚠ `surface-active`, NOT `surface-selected`. Selection in this build
+           is a NEUTRAL FILL plus primary ink - the nav's current row, the
+           pager's current page, the segmented thumb, the picker's own category
+           rail - and `surface-selected` is the one teal-tinted surface in the
+           set. Used here it made "the option you already chose" the only
+           selection in the app that means selection in a different colour,
+           which is exactly the semantic drift Gabriel caught. */
+        optionSelectedBg: c['surface-active'],
         optionSelectedColor: c['content-primary'],
         optionActiveBg: c['surface-hover'],
-        activeBorderColor: c['border-accent'],
+        activeBorderColor: c['border-strong'],
         hoverBorderColor: c['border-strong'],
         activeOutlineColor: 'transparent',
         multipleItemBg: c['status-neutral-bg'],
@@ -277,8 +305,8 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
 
       Dropdown: {
         controlItemBgHover: c['surface-hover'],
-        controlItemBgActive: c['surface-selected'],
-        controlItemBgActiveHover: c['surface-selected'],
+        controlItemBgActive: c['surface-active'],
+        controlItemBgActiveHover: c['surface-active'],
         paddingBlock: 5,
       },
 

@@ -241,15 +241,80 @@
   .m-sc__ring::before { animation: none; background: var(--m-border-accent); }
 }
 
-/* ── the strip: what acts on the whole search ────────────────────────────────
-   The field is where you ADD; this is where you change your mind about what is
-   already there. It is absent until there is something to change, which is why
-   it is not part of the bar. */
+/* ── THE STRIP ───────────────────────────────────────────────────────────────
+   It held Clear and nothing else - a whole row of height for one word at the
+   far end of it. Now it carries the filter's SUMMARY, its RESULT, and its
+   DISCLOSURE, and Clear rides along at the end where it already was. Four
+   things on a row that had one, and none of them is new chrome: the summary
+   and the count were both already computed, and the caret is the answer to the
+   other half of the complaint.
+
+   Collapsed it is the whole row: the sentence, the count, and Clear. There is
+   nothing under it, so it closes the well itself. */
 .m-sc__strip {
   display: flex;
   align-items: center;
   gap: var(--m-space-4);
+  min-height: var(--m-control-height-md);
   padding: var(--m-space-3) var(--m-space-5) 0;
+}
+.m-sc__strip.is-collapsed { padding-bottom: var(--m-space-4); }
+
+/* The disclosure and the summary are ONE control, because the sentence is the
+   thing you click - pointing at a caret four pixels wide to reveal a filter you
+   are already reading is a target for the sake of a convention. */
+.m-sc__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin-inline-start: calc(var(--m-space-2) * -1);
+  padding-inline: var(--m-space-2);
+  height: var(--m-control-height-sm);
+  border-radius: var(--m-radius-control);
+  color: var(--m-content-secondary);
+  transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-sc__toggle:hover { background: var(--m-surface-default); color: var(--m-content-primary); }
+
+/* Down when open, right when shut: the same chevron and the same rotation the
+   nav's own disclosure uses. */
+.m-sc__caret {
+  flex: none;
+  color: var(--m-content-decorative);
+  transition: transform var(--m-duration-fast) var(--m-ease-out);
+}
+.m-sc__strip.is-collapsed .m-sc__caret { transform: rotate(-90deg); }
+
+/* Open, it is a count of rows you can see, so it is quiet. Collapsed, it IS the
+   filter - the only place the clauses are legible - so it takes primary ink and
+   the room to say so. */
+.m-sc__summary {
+  min-width: 0;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-muted);
+}
+.m-sc__summary.is-static { padding-inline: var(--m-space-2); }
+.m-sc__strip.is-collapsed .m-sc__summary { color: var(--m-content-primary); }
+
+/* THE FILTER'S OWN RESULT, next to the filter. The footer's "1-12 of 134" is
+   about the page of rows; this is about the clauses that produced them, and
+   when the rows are collapsed it is the only thing on screen that says the
+   filter did anything at all. */
+.m-sc__count {
+  flex: none;
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-muted);
+}
+.m-sc__count::before {
+  content: '·';
+  margin-inline-end: var(--m-space-3);
+  color: var(--m-content-decorative);
 }
 
 /* ── the order control ───────────────────────────────────────────────────────
