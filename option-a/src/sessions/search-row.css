@@ -131,9 +131,20 @@
    Measured in `sessions-check`, not eyeballed. */
 .m-srow .m-srow__op.ant-select { flex: none; }
 
+/* ⚠ PRIMARY INK, NOT SECONDARY (Mehdi, 2026-09-02: "the 'is not' colour doesn't
+   have contrast enough"). Measured, because the eye was right and the reason
+   was not obvious: the closed control drew the word at #b9bfc1 while the SAME
+   word in the dropdown under it drew at #eff2f4, so opening the menu made the
+   value brighter than the value you already had.
+
+   The rule it settles is worth keeping: IN A CLAUSE, THE WORDS YOU CAN CHANGE
+   ARE PRIMARY AND THE WORDS YOU CANNOT ARE MUTED. The subject and the operator
+   are controls that happen to be set as prose; "is matched", "to" and "seconds"
+   are the sentence's own connective tissue. Colour is doing the work an
+   underline or a box would do more loudly. */
 .m-srow .m-srow__op .ant-select-content {
   padding-inline: var(--m-space-2);
-  color: var(--m-content-secondary);
+  color: var(--m-content-primary);
   font-size: var(--m-text-sm);
   border-radius: var(--m-radius-control);
   transition: background-color var(--m-duration-instant) var(--m-ease-out),

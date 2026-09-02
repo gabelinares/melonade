@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { RunData } from '@shared/runs-data.ts';
+import type { DateRangeValue } from '@shared/date-range.ts';
 import {
   DEFAULT_RUN_FILTERS,
   INITIAL_RUNS_STATE,
@@ -56,15 +57,19 @@ export function useRuns() {
        so the empty list only ever has two causes: the tab, or the filters. */
     filtered: state.query !== '' || runFilterCount(state.filters) > 0,
 
+    range: state.range,
+    setRange: (range: DateRangeValue) => patch((s) => ({ ...s, range })),
     setQuery: (query: string) => patch((s) => ({ ...s, query })),
     setTab: (tab: RunTab) => patch((s) => ({ ...s, tab })),
     toggleFilter: (key: RunFilterKey, value: string) =>
       patch((s) => ({ ...s, filters: toggleRunFilter(s.filters, key, value) })),
     isFilterActive: (key: RunFilterKey, value: string) =>
       (state.filters[key] as string[]).includes(value),
-    /* Clearing goes back to NO period rather than to the default seven days:
-       "clear all" that leaves a filter behind is the reason the default is a
-       visible chip in the first place. */
+    /* ⚠ Clearing does NOT touch the date window. Clear-all empties the
+       questions you asked; the window is not one of them - it is the state the
+       list is always in, it is printed on its own control, and resetting it
+       from a button somewhere else would move rows for a reason nothing on
+       screen explains. */
     clearFilters: () => patch((s) => ({ ...s, filters: NO_RUN_FILTERS, query: '' })),
     resetFilters: () => patch((s) => ({ ...s, filters: DEFAULT_RUN_FILTERS })),
     setSort: (key: RunSortKey | null, desc = false) =>

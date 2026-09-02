@@ -1,36 +1,45 @@
-import { Button, Dropdown, Pagination, Select, Table, Tabs, Tooltip } from 'antd';
+import { Button, Dropdown, Table, Tabs, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
   Bookmark,
   BookOpen,
   MoreHorizontal,
-  Play,
+  CirclePlay,
   Settings2,
   Share2,
   Split,
 } from 'lucide-react';
 import {
-  DATE_RANGES,
   FIELD_CHOICES,
   SAVED_SEGMENTS,
   SORT_CHOICES,
   entryOf,
   formatDuration,
+  type SessionDisplay,
   type SessionField,
   type SessionRow,
 } from '@shared/sessions-logic.ts';
 import type { useSessions } from '../state/useSessions.ts';
+import { DateRange } from '../components/DateRange.tsx';
 import { PageCard } from '../components/PageCard.tsx';
-import { DisplayShell } from '../components/DisplayMenu.tsx';
+import { DisplayShell, MenuSelect } from '../components/DisplayMenu.tsx';
 import { EmptyState } from '../components/EmptyState.tsx';
 import { IconButton } from '../components/IconButton.tsx';
+import { ListFooter } from '../components/ListFooter.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
-import { pagerItem } from '../components/Pager.tsx';
 import { sortable } from '../components/SortIcon.tsx';
-import { noNativeTooltip } from '../components/selectOptions.ts';
 import { SearchCard } from './SearchCard.tsx';
 import './sessions-page.css';
+
+/** Written out rather than inlined so the control and its type agree: the
+ *  three values are `SessionDisplay['viewed']`, and an inline array of object
+ *  literals widens to `string`. */
+const WATCHED_CHOICES: ReadonlyArray<{ value: SessionDisplay['viewed']; label: string }> = [
+  { value: 'show', label: 'Show all' },
+  { value: 'hide', label: 'Hide watched' },
+  { value: 'only', label: 'Only watched' },
+];
 
 export interface SessionsPageProps {
   model: ReturnType<typeof useSessions>;
@@ -84,8 +93,6 @@ export function SessionsPage({ model }: SessionsPageProps) {
   const { display } = model;
   const has = (f: SessionField) => display.fields.includes(f);
 
-  const rangeStart = (model.page - 1) * model.pageSize + 1;
-  const rangeEnd = Math.min(model.page * model.pageSize, model.total);
 
   const columns: TableColumnsType<SessionRow> = [
     {
@@ -97,11 +104,10 @@ export function SessionsPage({ model }: SessionsPageProps) {
           <span className={`m-dot is-slot${s.viewed ? ' is-off' : ''}`} aria-hidden={s.viewed} />
           <span className={`m-ss__name m-truncate${s.userId ? '' : ' is-anon'}`}>{s.displayName}</span>
           {s.live && <span className="m-ss__live">live</span>}
-          {s.favorite && (
-            <Tooltip title="Bookmarked">
-              <Bookmark size={12} className="m-ss__mark" aria-label="Bookmarked" />
-            </Tooltip>
-          )}
+          {/* ⚠ NO BOOKMARK MARK HERE. It moved to the actions cell on the right
+              and became a CONTROL (Mehdi, 2026-09-02). A read-only copy of it
+              beside the name would be the same fact drawn twice, and the copy
+              would be the one that does not respond to a click. */}
         </div>
       ),
     },
@@ -246,13 +252,56 @@ export function SessionsPage({ model }: SessionsPageProps) {
           },
         ]
       : []),
+    /* ── THE PLAY, PINNED TO THE RIGHT EDGE (Mehdi, 2026-09-02) ──────────────
+       Third position for this glyph in a day, and the two rejected ones are
+       worth keeping because each was wrong for its own reason.
+
+       It began as a hover-only glyph in the last column, on the argument that
+       the ROW opens the replay so a button repeating that 134 times is 134
+       invitations to do what the row already does. Half of that still holds -
+       the row is the target and this is not a second control - but it made the
+       one verb of the whole page invisible until you were already pointing at
+       it.
+
+       Then it led the row, at 12px and filled: "the play icon on the left is
+       horrible, it looks like a chevron". Right - a small solid triangle with
+       no container is a caret, and at the START of a row a caret means expand.
+
+       Now: an OUTLINE glyph in a circle, at the right edge, always drawn, and
+       ⚠ STICKY - it holds the right edge while the table scrolls under it, so
+       narrowing the window can never take the one affordance off screen. The
+       gradient behind it is what makes that legible: content scrolling past
+       fades out under the glyph instead of colliding with it. */
     {
       title: '',
-      key: 'play',
-      width: 44,
-      render: () => (
-        <span className="m-ss__play" aria-hidden="true">
-          <Play size={13} strokeWidth={2} />
+      key: 'actions',
+      width: 88,
+      className: 'm-ss__playcell',
+      render: (_: unknown, s: SessionRow) => (
+        <span className="m-ss__acts">
+          {/* ⚠ A CONTROL, not a mark. It carries the row's own state and sets
+              it, so it is a real button with `aria-pressed` and it stops the
+              click reaching the row - bookmarking a session is not asking to
+              watch it. The filled glyph IS the on state: two lucide glyphs of
+              the same shape, one hollow and one solid, which is the only pair
+              of states a bookmark has ever needed. */}
+          <Tooltip title={s.favorite ? 'Remove bookmark' : 'Bookmark this session'} mouseEnterDelay={0.3}>
+            <button
+              type="button"
+              className={`m-ss__act${s.favorite ? ' is-on' : ''}`}
+              aria-pressed={s.favorite}
+              aria-label={s.favorite ? `Remove bookmark from ${s.displayName}` : `Bookmark ${s.displayName}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                model.toggleBookmark(s.sessionId);
+              }}
+            >
+              <Bookmark size={15} strokeWidth={1.75} fill={s.favorite ? 'currentColor' : 'none'} />
+            </button>
+          </Tooltip>
+          <span className="m-ss__play" aria-hidden="true">
+            <CirclePlay size={16} strokeWidth={1.75} />
+          </span>
         </span>
       ),
     },
@@ -414,14 +463,12 @@ export function SessionsPage({ model }: SessionsPageProps) {
           rows={model.matched}
           trailing={
             <>
-              <Select
-                className="m-ss__range"
-                size="small"
-                value={model.range}
-                onChange={model.setRange}
-                options={noNativeTooltip(DATE_RANGES.map((d) => ({ value: d.value, label: d.label })))}
-                aria-label="Date range"
-              />
+              {/* ⚠ THE SAME CONTROL AS EVERY OTHER LIST since 2026-09-02, and
+                  the same one Issues, Runs and Audits carry. It names the field
+                  it measures - a session's window is when it STARTED - and its
+                  custom range is a real pair of dates rather than the preset
+                  that quietly applied ninety days. */}
+              <DateRange field="Started" value={model.range} onChange={model.setRange} />
               <DisplayShell
                 changeCount={model.displayChangeCount}
                 onReset={model.resetDisplay}
@@ -430,14 +477,11 @@ export function SessionsPage({ model }: SessionsPageProps) {
                     id: 'sort',
                     label: 'Order',
                     control: (
-                      <Select
+                      <MenuSelect
                         id="sort"
-                        size="small"
                         value={display.sort}
+                        choices={SORT_CHOICES}
                         onChange={(v) => model.setDisplay('sort', v)}
-                        options={noNativeTooltip(
-                          SORT_CHOICES.map((c) => ({ value: c.value, label: c.label })),
-                        )}
                       />
                     ),
                   },
@@ -445,16 +489,11 @@ export function SessionsPage({ model }: SessionsPageProps) {
                     id: 'viewed',
                     label: 'Watched',
                     control: (
-                      <Select
+                      <MenuSelect
                         id="viewed"
-                        size="small"
                         value={display.viewed}
+                        choices={WATCHED_CHOICES}
                         onChange={(v) => model.setDisplay('viewed', v)}
-                        options={noNativeTooltip([
-                          { value: 'show', label: 'Show all' },
-                          { value: 'hide', label: 'Hide watched' },
-                          { value: 'only', label: 'Only watched' },
-                        ])}
                       />
                     ),
                   },
@@ -479,6 +518,16 @@ export function SessionsPage({ model }: SessionsPageProps) {
         <>
           <Table<SessionRow>
             className="m-ss__table"
+            /* ⚠ FIXED, AND EVERY TABLE IN THE APP IS (Mehdi, 2026-09-02: "when
+               you change the pages and the data changes, the column widths
+               change too, and this shouldn't happen"). antd's default is
+               `auto`, under which a column's `width` is a SUGGESTION the
+               browser overrides from the content - so page 2 with a longer
+               email in it shifted every column beside it, and the columns you
+               were reading moved under you between pages. Fixed makes the
+               widths mean what they say; the one column without one - the
+               session itself - takes the remainder. */
+            tableLayout="fixed"
             rowKey={(s) => s.sessionId}
             columns={columns}
             dataSource={[...model.rows]}
@@ -494,24 +543,13 @@ export function SessionsPage({ model }: SessionsPageProps) {
               },
             })}
           />
-          <footer className="m-ss__foot">
-            <span className="m-ss__range-label">
-              {model.total > model.pageSize
-                ? `${rangeStart}–${rangeEnd} of ${model.total}`
-                : `${model.total} ${model.total === 1 ? 'session' : 'sessions'}`}
-            </span>
-            {model.total > model.pageSize && (
-              <Pagination
-                size="small"
-                current={model.page}
-                total={model.total}
-                pageSize={model.pageSize}
-                onChange={model.setPage}
-                showSizeChanger={false}
-                itemRender={pagerItem}
-              />
-            )}
-          </footer>
+          <ListFooter
+            page={model.page}
+            pageSize={model.pageSize}
+            total={model.total}
+            noun={['session', 'sessions']}
+            onPage={model.setPage}
+          />
         </>
       )}
     </PageCard>

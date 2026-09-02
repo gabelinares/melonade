@@ -234,7 +234,28 @@ export function SearchCard({
             onFocus={() => setHere(true)}
             onBlur={() => setHere(false)}
           >
-            <span className="m-sc__ring" aria-hidden="true" />
+            {/* ⚠ AN SVG STROKE, not a gradient (Mehdi, 2026-09-02: "the ring
+                should be a circle, and have a nice modern effect of increasing
+                and decreasing the size of the arc"). A dash on a stroked path
+                is measured in ARC LENGTH, which is the only model that treats
+                a 1400x40 rectangle as a loop: the arc is the same length on
+                the long rims and the end caps, it travels the whole perimeter,
+                and its length is a number that can be animated on its own. The
+                two gradients that came before could not do either - a conic
+                one divides by angle, a linear one only moves sideways.
+
+                `pathLength="100"` normalises the perimeter, so the dash figures
+                below are percentages of the loop and hold at any field width. */}
+            <span className="m-sc__ring" aria-hidden="true">
+              <svg>
+                {/* TWO PASSES OF ONE ARC. The wide, heavily blurred one is the
+                    glow; the narrow, barely blurred one is the arc itself, and
+                    its blur is what gives the ends a gradient instead of a
+                    cap. Same dash, same keyframes, so they cannot drift. */}
+                <rect className="m-sc__glow" x="0" y="0" width="100%" height="100%" rx="4" pathLength="100" />
+                <rect className="m-sc__arc" x="0" y="0" width="100%" height="100%" rx="4" pathLength="100" />
+              </svg>
+            </span>
             <ListFilter size={16} className="m-sc__field-glyph" aria-hidden="true" />
             {/* The lead never moves and the example is keyed on itself, so only
                 the example crossfades. A placeholder whose whole line changed
@@ -265,6 +286,13 @@ export function SearchCard({
           page of rows; this is about the filter. */}
       {any && (
         <div className={`m-sc__strip${collapsed ? ' is-collapsed' : ''}`}>
+          {/* ⚠ THE CARET IS ALWAYS HERE now (Mehdi, 2026-09-02: "what happened
+              with the collapse search, I can't see it anymore" - he had two
+              clauses). It used to appear at three, because collapsing one row
+              saves less height than the line replacing it costs. That is true
+              and it is not the point: a control that comes and goes on a count
+              nobody is tracking reads as broken, and the moment you go looking
+              for it is the moment it is not there. See useFilterCollapse. */}
           {canCollapse ? (
             <button
               type="button"
@@ -275,7 +303,9 @@ export function SearchCard({
             >
               <ChevronDown size={13} className="m-sc__caret" aria-hidden="true" />
               <span className="m-sc__summary m-truncate">
-                {collapsed ? sentence(events, properties, eventsOrder) : `${rowCount} filters`}
+                {collapsed
+                  ? sentence(events, properties, eventsOrder)
+                  : `${rowCount} ${rowCount === 1 ? 'filter' : 'filters'}`}
               </span>
             </button>
           ) : (

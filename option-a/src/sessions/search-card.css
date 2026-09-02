@@ -156,89 +156,156 @@
    and a control that is about to start answering questions should look like it
    is listening.
 
-   HOW IT IS BUILT, and it is deliberately the boring technique. A clipped box
-   sits over the field's border; a conic gradient twice the box's size spins
-   inside it; a second layer inset by 1px covers the middle in the field's own
-   colour, leaving a one-pixel rim. No `mask`, no `@property`, no registered
-   custom property - so it behaves the same in every browser and degrades to a
-   static rim rather than to nothing.
+   ── HOW IT IS BUILT, AND WHY IT IS THE THIRD ATTEMPT ──────────────────────
+   A single SVG `rect`, stroked, with a dash travelling around it. Nothing is
+   clipped, nothing is masked, no `@property` and no registered custom
+   property: the rim is a path, and the arc is a gap in a dash pattern on it.
+
+   The two attempts before it both failed on the same fact - THIS FIELD IS
+   1400px BY 40px - and each failed in the way its own model implies:
+
+   1. A CONIC gradient divides the box by ANGLE. The whole right-hand end cap
+      of this field occupies about three degrees of the sweep and the top rim
+      occupies a hundred and seventy-six, so a fifteen-degree accent was a
+      five-pixel dot crossing the middle and covered the entire end cap when it
+      arrived there. Mehdi: "at the bottom and top it's small, but on left and
+      right it takes like half the field."
+   2. A LINEAR gradient divides it by DISTANCE, which balances the arc but only
+      moves sideways - the top and bottom rims light at the same moment and the
+      thing stops reading as a ring at all. Mehdi: "now it's a horizontal
+      movement, that's wrong."
+
+   A DASHED STROKE is measured in ARC LENGTH along the path itself. The arc is
+   the same length wherever it is, it goes round the corners, and it travels
+   the whole perimeter in order - which is what "a circle" means on a shape
+   that is not one.
+
+   ⚠ `pathLength="100"` on the rect, so every figure here is a percentage of
+   the perimeter and holds at any width the plane happens to be.
 
    THREE RULES it follows, and each one is the difference between this and the
    AI-slop version of itself:
 
    1. NOT ON AT REST. A permanently animated border is a page you cannot read,
-      and the animation is `paused` rather than merely invisible so it costs
+      and the animations are `paused` rather than merely invisible so they cost
       nothing while nobody is pointing at it.
-   2. MOSTLY GREY. The sweep is the border's own two greys with a SINGLE accent
-      arc passing through it - Graphite rations colour, and one accent per view
-      is the rule. It is not a rainbow and it is not purple.
-   3. IT STOPS BEING A SWEEP WHEN IT IS A FOCUS RING. On `:focus-visible` the
-      rim holds still in the accent: a focus indicator that moves is a focus
-      indicator you cannot locate. */
+   2. THE RIM UNDERNEATH NEVER MOVES. The field keeps its own border; this
+      draws one accent arc over it. So the border can never appear to go away,
+      which is what the first version did on three quarters of its sweep.
+   3. IT STOPS BEING AN ARC WHEN IT IS A FOCUS RING. On `:focus-visible` the
+      dash becomes the whole perimeter and holds still: a focus indicator that
+      moves is a focus indicator you cannot locate. */
 .m-sc__ring {
   position: absolute;
-  inset: calc(var(--m-border-width) * -1);
-  z-index: -1;
+  /* Half the border outwards, so the path runs down the MIDDLE of the field's
+     own 1px rim rather than a pixel inside it. Inside, the two are a doubled
+     line; outside, the arc floats off the control. */
+  inset: calc(var(--m-border-width) * -0.5);
   border-radius: inherit;
-  overflow: hidden;
+  pointer-events: none;
   opacity: 0;
   transition: opacity var(--m-duration-fast) var(--m-ease-out);
 }
 
-.m-sc__ring::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 220%;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  /* ⚠ THE BASE IS THE RESTING BORDER'S OWN COLOUR, not something lighter.
-     Built on `border-subtle` the sweep made three quarters of the rim FAINTER
-     than the border it replaced, so pointing at the field read as the border
-     going away. It never drops below where it started; the accent arc is the
-     only thing that changes. */
-  background: conic-gradient(
-    var(--m-border-default) 0deg,
-    var(--m-border-default) 180deg,
-    var(--m-border-strong) 245deg,
-    var(--m-content-accent) 295deg,
-    var(--m-content-accent) 310deg,
-    var(--m-border-strong) 350deg,
-    var(--m-border-default) 360deg
-  );
-  animation: m-sc-sweep 2.6s linear infinite;
-  animation-play-state: paused;
+/* `overflow: visible` because a stroke is centred on its path, so half of it
+   sits outside the box it is drawn on. Clipped, the ring would be half as
+   thick as it is on the long rims and a quarter of it missing at the corners. */
+.m-sc__ring svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-/* the hole, in the field's own colour: what is left is the rim */
-.m-sc__ring::after {
-  content: '';
-  position: absolute;
-  inset: var(--m-border-width);
-  border-radius: inherit;
-  background: var(--m-surface-default);
+/* ── the two passes ──────────────────────────────────────────────────────────
+   ⚠ THE ENDS ARE A GRADIENT, NOT A CAP (Mehdi, 2026-09-02: "the edges of the
+   arc segments should be a gradient and the colour more subtle, you can even
+   add a glow"). A stroke cannot be given a gradient ALONG its own length in
+   CSS - `stroke` paints by position in the box, not by distance down the path -
+   so the softness comes from a blur instead, which is the same result by a
+   simpler route: a blurred cap has no edge, it has a falloff.
+
+   Two passes of the identical dash. The wide one is blurred hard and is the
+   glow; the narrow one is blurred just enough to lose its ends. They share the
+   keyframes, so they can never drift apart.
+
+   AND THE COLOUR IS HELD BACK. The arc is the accent at just over half
+   strength and the glow at a fifth - one accent per view is the rule here, and
+   this one is decoration on a control that is already the largest object on
+   the page. At full strength it read as a status. */
+.m-sc__ring rect {
+  fill: none;
+  stroke: var(--m-content-accent);
+  /* Round caps still, under the blur: a butt cap blurs into a straight faded
+     edge, which reads as a cut rather than as a falloff. */
+  stroke-linecap: round;
+  /* THE ARC AND THE GAP, as percentages of the perimeter. It starts short. */
+  stroke-dasharray: 6 94;
+  rx: var(--m-radius-control);
+  animation:
+    m-sc-travel 3.4s linear infinite,
+    m-sc-breathe 1.7s var(--m-ease-in-out) infinite alternate;
+  animation-play-state: paused, paused;
 }
 
-@keyframes m-sc-sweep {
-  to { rotate: 1turn; }
+.m-sc__arc {
+  stroke-width: 1.25;
+  opacity: 0.6;
+  filter: blur(0.7px);
+}
+
+.m-sc__glow {
+  stroke-width: 4;
+  opacity: 0.22;
+  filter: blur(3.5px);
+}
+
+/* Round the loop, once. Negative, so it runs clockwise from the top-left the
+   way a rect path is drawn. */
+@keyframes m-sc-travel {
+  to { stroke-dashoffset: -100; }
+}
+
+/* ⚠ THE ARC GROWS AND SHRINKS, which is the part that makes it read as alive
+   rather than as a marquee. The two ends move at different speeds because the
+   dash grows from one end - so the leading edge runs ahead, the trailing edge
+   catches up, and the loop never looks like a fixed object being dragged. The
+   period is deliberately not a divisor of the travel: at 3.4s and 1.7s exactly
+   they would land in phase every cycle and the whole thing would tick. */
+@keyframes m-sc-breathe {
+  from { stroke-dasharray: 6 94; }
+  to { stroke-dasharray: 30 70; }
 }
 
 .m-sc__field:hover .m-sc__ring { opacity: 1; }
-.m-sc__field:hover .m-sc__ring::before { animation-play-state: running; }
+.m-sc__field:hover .m-sc__ring rect { animation-play-state: running, running; }
 
-/* Focus holds still, and in the focus colour. */
-.m-sc__field:focus-visible { outline: none; border-color: transparent; }
+/* Focus holds still, as the whole perimeter, in the focus colour. */
+.m-sc__field:focus-visible { outline: none; }
 .m-sc__field:focus-visible .m-sc__ring { opacity: 1; }
-.m-sc__field:focus-visible .m-sc__ring::before {
+.m-sc__field:focus-visible .m-sc__ring .m-sc__arc {
   animation: none;
-  background: var(--m-focus-ring);
+  stroke: var(--m-focus-ring);
+  stroke-dasharray: 100 0;
+  stroke-width: 2;
+  opacity: 1;
+  /* A focus ring is an indicator, not an effect: no blur and no glow, because
+     the one thing it has to be is exactly locatable. */
+  filter: none;
 }
+.m-sc__field:focus-visible .m-sc__ring .m-sc__glow { display: none; }
 
 /* A ring that only exists as a movement is a ring that is not there for
    somebody who has turned movement off. It becomes a plain accent rim. */
 @media (prefers-reduced-motion: reduce) {
-  .m-sc__ring::before { animation: none; background: var(--m-border-accent); }
+  .m-sc__ring rect {
+    animation: none;
+    stroke: var(--m-border-accent);
+    stroke-dasharray: 100 0;
+    filter: none;
+  }
+  .m-sc__ring .m-sc__glow { display: none; }
+  .m-sc__ring .m-sc__arc { opacity: 1; }
 }
 
 /* ── THE STRIP ───────────────────────────────────────────────────────────────

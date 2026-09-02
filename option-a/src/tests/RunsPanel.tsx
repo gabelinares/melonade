@@ -1,8 +1,7 @@
-import { Button, Pagination, Table, Tooltip } from 'antd';
-import { pagerItem } from '../components/Pager.tsx';
+import { Button, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { App } from 'antd';
-import { CalendarClock, Globe, MonitorSmartphone, RotateCw, Server, Tag as TagIcon } from 'lucide-react';
+import { Globe, MonitorSmartphone, RotateCw, Server, Tag as TagIcon } from 'lucide-react';
 import type { DataState } from '@shared/issues-logic.ts';
 import { formatDuration, regionLabel, resolutionLabel, type RunData } from '@shared/runs-data.ts';
 import type { RunFilterKey, RunSortKey, RunTab } from '@shared/runs-logic.ts';
@@ -17,9 +16,11 @@ import { LiveDuration } from '../components/LiveDuration.tsx';
 import { MoreCount } from '../components/MoreCount.tsx';
 import { PageToolbar } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
+import { DateRange } from '../components/DateRange.tsx';
 import { RunResultChip } from '../components/RunResultChip.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { sortable } from '../components/SortIcon.tsx';
+import { ListFooter } from '../components/ListFooter.tsx';
 import { RunDrawer } from './RunDrawer.tsx';
 import './runs-panel.css';
 
@@ -28,7 +29,6 @@ const FILTER_ICONS: Partial<Record<RunFilterKey, typeof Server>> = {
   tags: TagIcon,
   viewports: MonitorSmartphone,
   regions: Globe,
-  period: CalendarClock,
 };
 
 const EMPTY_TAB: Record<RunTab, string> = {
@@ -190,8 +190,6 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
     },
   ];
 
-  const rangeStart = model.total === 0 ? 0 : (model.page - 1) * model.pageSize + 1;
-  const rangeEnd = (model.page - 1) * model.pageSize + model.rows.length;
 
   const empty = model.filtered ? (
     <EmptyState
@@ -215,7 +213,12 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
           selected={[state.tab]}
           onSelect={(key) => model.setTab(key as RunTab)}
         />
-        <div className="m-runs__controls">
+        <div className="m-page__controls">
+          {/* A RUN'S WINDOW IS WHEN IT RAN, and it is the same control as every
+              other list since 2026-09-02. It used to be a "Period" dimension
+              inside the filter menu here and nowhere else, which made this the
+              one list whose date window was a filter. */}
+          <DateRange field="Started" value={model.range} onChange={model.setRange} />
           <FilterMenu
             dimensions={model.dimensions}
             isActive={model.isFilterActive}
@@ -248,6 +251,11 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
         <>
           <Table<RunData>
             className="m-runs__table"
+            /* Fixed, like every table here since 2026-09-02: antd's default
+               `auto` treats a column's width as a suggestion and re-measures
+               from the CONTENT, so a longer name on page 2 moved every column
+               beside it. See SessionsPage for the full note. */
+            tableLayout="fixed"
             rowKey="key"
             columns={columns}
             dataSource={model.rows}
@@ -265,24 +273,13 @@ export function RunsPanel({ model, dataState }: RunsPanelProps) {
               },
             })}
           />
-          <footer className="m-runs__foot">
-            <span className="m-runs__range">
-              {model.paginated
-                ? `${rangeStart}–${rangeEnd} of ${model.total} runs`
-                : `${model.total} ${model.total === 1 ? 'run' : 'runs'}`}
-            </span>
-            {model.paginated && (
-              <Pagination
-                size="small"
-                current={model.page}
-                total={model.total}
-                pageSize={model.pageSize}
-                onChange={model.setPage}
-                showSizeChanger={false}
-                itemRender={pagerItem}
-              />
-            )}
-          </footer>
+          <ListFooter
+            page={model.page}
+            pageSize={model.pageSize}
+            total={model.total}
+            noun={['run', 'runs']}
+            onPage={model.paginated ? model.setPage : undefined}
+          />
         </>
       )}
 

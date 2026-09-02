@@ -1,5 +1,4 @@
-import { App, Button, Dropdown, Pagination, Select, Table, Tooltip } from 'antd';
-import { pagerItem } from '../components/Pager.tsx';
+import { App, Button, Dropdown, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
   Calendar,
@@ -34,9 +33,8 @@ import { useTestDialogs } from '../dialogs/useTestDialogs.tsx';
 import { ActiveFilters } from '../components/ActiveFilters.tsx';
 import { Chip } from '../components/Chip.tsx';
 import { EmptyState } from '../components/EmptyState.tsx';
-import { DisplayShell, SortControl } from '../components/DisplayMenu.tsx';
+import { DisplayShell, MenuSelect, SortControl } from '../components/DisplayMenu.tsx';
 import { FilterMenu } from '../components/FilterMenu.tsx';
-import { noNativeTooltip } from '../components/selectOptions.ts';
 import { FilterStrip } from '../components/FilterStrip.tsx';
 import { MoreCount } from '../components/MoreCount.tsx';
 import { PageToolbar } from '../components/PageCard.tsx';
@@ -45,6 +43,7 @@ import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { sortable } from '../components/SortIcon.tsx';
 import { TestDrawer } from './TestDrawer.tsx';
 import { TestStatusChip } from '../components/TestStatusChip.tsx';
+import { ListFooter } from '../components/ListFooter.tsx';
 import './tests-page.css';
 
 /* The same glyph for the same dimension as the Runs panel uses: environment,
@@ -400,8 +399,6 @@ export function TestsList({ model, dataState, onCreate, onViewRuns, creating, on
     },
   ];
 
-  const rangeStart = model.total === 0 ? 0 : (model.page - 1) * model.pageSize + 1;
-  const rangeEnd = (model.page - 1) * model.pageSize + model.rows.length;
 
   /* ── the first run ────────────────────────────────────────────────────────
      Nothing to set up and nothing to import: the agent is already watching, and
@@ -494,7 +491,7 @@ export function TestsList({ model, dataState, onCreate, onViewRuns, creating, on
             apply to them: same row, no banner sliding the table down, and every
             button carries the count it would affect so nobody has to hold "how
             many were active again" in their head. */}
-        <div className="m-tests__controls">
+        <div className="m-page__controls">
           {selected.length > 0 ? (
             <>
               <span className="m-tests__selcount">{selected.length} selected</span>
@@ -550,13 +547,11 @@ export function TestsList({ model, dataState, onCreate, onViewRuns, creating, on
                   id: 'td-group',
                   label: 'Grouping',
                   control: (
-                    <Select
+                    <MenuSelect
                       id="td-group"
-                      size="small"
-                      className="m-dm__select"
                       value={model.display.group}
+                      choices={TEST_GROUP_CHOICES}
                       onChange={(v) => model.setGroup(v as TestGroupKey)}
-                      options={noNativeTooltip(TEST_GROUP_CHOICES)}
                     />
                   ),
                 },
@@ -607,6 +602,11 @@ export function TestsList({ model, dataState, onCreate, onViewRuns, creating, on
         <>
           <Table<Row>
             className="m-tests__table"
+            /* Fixed, like every table here since 2026-09-02: antd's default
+               `auto` treats a column's width as a suggestion and re-measures
+               from the CONTENT, so a longer name on page 2 moved every column
+               beside it. See SessionsPage for the full note. */
+            tableLayout="fixed"
             rowKey="key"
             columns={columns}
             dataSource={rows}
@@ -650,24 +650,13 @@ export function TestsList({ model, dataState, onCreate, onViewRuns, creating, on
               },
             })}
           />
-          <footer className="m-tests__foot">
-            <span className="m-tests__range">
-              {model.paginated
-                ? `${rangeStart}–${rangeEnd} of ${model.total} tests`
-                : `${model.total} ${model.total === 1 ? 'test' : 'tests'}`}
-            </span>
-            {model.paginated && (
-              <Pagination
-                size="small"
-                current={model.page}
-                total={model.total}
-                pageSize={model.pageSize}
-                onChange={model.setPage}
-                showSizeChanger={false}
-                itemRender={pagerItem}
-              />
-            )}
-          </footer>
+          <ListFooter
+            page={model.page}
+            pageSize={model.pageSize}
+            total={model.total}
+            noun={['test', 'tests']}
+            onPage={model.paginated ? model.setPage : undefined}
+          />
         </>
       )}
 

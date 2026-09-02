@@ -484,7 +484,7 @@ check('every mark in the pager sits in the middle of its own box',
 
 // ── 1b. the segments control, now a toolbar icon ──────────────────────────
 const seg = await p.evaluate(() => {
-  const group = document.querySelector('.m-issues__controls');
+  const group = document.querySelector('.m-page__controls');
   const btns = [...(group?.querySelectorAll('button') ?? [])].map((el) => {
     const r = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
@@ -507,12 +507,30 @@ const seg = await p.evaluate(() => {
   });
   return { btns, oldPill: !!document.querySelector('.m-capture') };
 });
-const uniq = (k) => [...new Set(seg.btns.map((b) => b[k]))];
-check('segments sits with filter and display', seg.btns.length === 3,
-  seg.btns.map((b) => b.label.split(',')[0]).join(' | '));
+/* ⚠ FOUR CONTROLS SINCE 2026-09-02, and one of them is deliberately not an
+   IconButton: the DATE WINDOW prints its own value. The others are questions
+   you open, answer and close, and a badge reports what they hold; a window has
+   no "off" - every list is permanently inside one - so it says what it is doing
+   at rest, and that costs the width of its label. Everything else about it
+   agrees: height, radius, border, baseline.
+
+   So the checks split. The three ICON controls still have to be one component
+   down to the pixel. The window has to agree on the things that make a row of
+   controls read as a row. */
+const icons = seg.btns.filter((b) => b.cls);
+const windows = seg.btns.filter((b) => !b.cls);
+const uniq = (k) => [...new Set(icons.map((b) => b[k]))];
+check('the window, segments, filter and display sit together', seg.btns.length === 4,
+  seg.btns.map((b) => b.label.split(':')[0].split(',')[0]).join(' | '));
+check('the window is the one that prints its value', windows.length === 1 && /Past \d+ days/.test(windows[0]?.label ?? ''),
+  windows.map((w) => w.label).join(' | '));
 check('the wide pill is gone', !seg.oldPill);
-check('the three agree on height', uniq('h').length === 1, uniq('h').join('/') + 'px');
-check('the three are the same component', seg.btns.every((b) => b.cls));
+check('all four agree on height', [...new Set(seg.btns.map((b) => b.h))].length === 1,
+  [...new Set(seg.btns.map((b) => b.h))].join('/') + 'px');
+check('all four agree on radius and baseline',
+  [...new Set(seg.btns.map((b) => b.radius))].length === 1 && [...new Set(seg.btns.map((b) => b.midY))].length === 1,
+  `${[...new Set(seg.btns.map((b) => b.radius))].join('/')} @ ${[...new Set(seg.btns.map((b) => b.midY))].join('/')}`);
+check('the three icon controls are the same component', icons.length === 3 && icons.every((b) => b.cls));
 check('the three agree on glyph box', uniq('iconW').length === 1, uniq('iconW').join('/') + 'px');
 /* OUTER WIDTH IS ALLOWED TO DIFFER, and only for one reason: a control carrying
    a count goes from square to padded, so it is wider by the badge plus its gap -
@@ -520,16 +538,14 @@ check('the three agree on glyph box', uniq('iconW').length === 1, uniq('iconW').
    every badgeless control with every other, which is the real "did they drift"
    question. Two earlier versions of this check modelled the badge arithmetic
    instead and both were wrong about the toolbar rather than about the code. */
-const bareW = [...new Set(seg.btns.filter((b) => !b.badgeW).map((b) => b.w))];
-check('badgeless controls agree exactly', bareW.length === 1, bareW.join('/') + 'px');
-check('only the counted control is wider', seg.btns.every((b) => (b.badgeW > 0) === (b.w > bareW[0])),
-  seg.btns.map((b) => `${b.w}px${b.badgeW ? ' +badge' : ''}`).join(' | '));
-check('the three agree on radius', uniq('radius').length === 1, uniq('radius').join('/'));
-check('the three sit on one line', uniq('midY').length === 1, uniq('midY').join('/'));
+const bareW = [...new Set(icons.filter((b) => !b.badgeW).map((b) => b.w))];
+check('badgeless icon controls agree exactly', bareW.length === 1, bareW.join('/') + 'px');
+check('only the counted control is wider', icons.every((b) => (b.badgeW > 0) === (b.w > bareW[0])),
+  icons.map((b) => `${b.w}px${b.badgeW ? ' +badge' : ''}`).join(' | '));
 
 /* The panel behind the glyph has to be the panel that was behind the pill: an
    icon that opens a different, smaller thing is a downgrade dressed as a tidy-up. */
-await p.locator('.m-issues__controls button').first().click();
+await p.locator('.m-page__controls button.m-iconbtn').first().click();
 await p.waitForTimeout(400);
 const panel = await p.evaluate(() => {
   const el = document.querySelector('.m-capture__panel');

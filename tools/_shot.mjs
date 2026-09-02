@@ -1,0 +1,14 @@
+import { chromium } from 'playwright';
+const [url, out, row='Login flow'] = process.argv.slice(2);
+const b = await chromium.launch();
+const p = await (await b.newContext({ viewport:{width:1440,height:1000}, deviceScaleFactor:2 })).newPage();
+const errs=[]; p.on('pageerror', e=>errs.push('pageerror: '+e.message)); p.on('console', m=>{if(m.type()==='error')errs.push(m.text());});
+await p.goto(url, { waitUntil:'networkidle' });
+await p.waitForTimeout(1300);
+await p.locator('.m-nav-item__label', { hasText: /^Synthetics$/ }).first().click();
+await p.locator('.m-tests__table').waitFor(); await p.waitForTimeout(400);
+await p.locator('.ant-table-tbody tr', { hasText: row }).first().click();
+await p.waitForTimeout(900);
+await p.locator('.ant-drawer-content-wrapper').screenshot({ path: out });
+console.log('errors:', errs.slice(0,3));
+await b.close();

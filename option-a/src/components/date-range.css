@@ -1,0 +1,95 @@
+/* ── THE DATE WINDOW ─────────────────────────────────────────────────────────
+   A control that prints its value, beside two that do not. See DateRange.tsx
+   for why the asymmetry is deliberate: Display and Filters are questions you
+   answered and closed, a date window is a state every list is permanently in.
+
+   The trigger is `IconButton`'s outline variant with a label in it - same
+   height, same radius, same border, same hover - because a row of toolbar
+   controls that agree on three of those four is worse than one that agrees on
+   none. It is not IconButton itself, which is icon-only by contract. */
+.m-dr { position: relative; display: inline-flex; }
+
+.m-dr__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  flex: none;
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-4);
+  border: 1px solid var(--m-border-default);
+  border-radius: var(--m-radius-control);
+  background: var(--m-surface-default);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-sm);
+  transition: border-color var(--m-duration-fast) var(--m-ease-out),
+    background-color var(--m-duration-fast) var(--m-ease-out),
+    color var(--m-duration-fast) var(--m-ease-out);
+}
+
+.m-dr__trigger:hover { border-color: var(--m-border-strong); color: var(--m-content-primary); }
+.m-dr__trigger.is-open { background: var(--m-surface-hover); color: var(--m-content-primary); }
+/* Anything other than the default window is a state worth reading off the
+   closed control, the same way the other two toolbar controls carry a badge. */
+.m-dr__trigger.is-active { color: var(--m-content-primary); }
+
+.m-dr__value { white-space: nowrap; }
+
+/* ⚠ THE TRIGGER SITS ABOVE THE SCRIM WHILE THE MENU IS OPEN. Under it, a click
+   on the button that opened the menu was swallowed by the click-away: the menu
+   still closed, so it looked right, but the button never saw the event and
+   could not toggle. A control whose own click does nothing is a control that
+   works by accident. */
+.m-dr__trigger.is-open { position: relative; z-index: calc(var(--m-z-dropdown) + 2); }
+
+/* The caret is decoration on a control whose value is already printed, so it
+   sits one step back and only comes forward with the rest of the button. */
+.m-dr__caret { color: var(--m-content-decorative); }
+.m-dr__trigger:hover .m-dr__caret,
+.m-dr__trigger.is-open .m-dr__caret { color: var(--m-content-secondary); }
+
+/* ── the menu ─────────────────────────────────────────────────────────────── */
+.m-dr__scrim { position: fixed; inset: 0; z-index: var(--m-z-dropdown); }
+
+.m-dr__menu {
+  position: absolute;
+  top: calc(100% + var(--m-space-2));
+  right: 0;
+  z-index: calc(var(--m-z-dropdown) + 1);
+  display: flex;
+  flex-direction: column;
+  min-width: 12.5rem;
+  padding: var(--m-space-2);
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-surface);
+  background: var(--m-surface-raised);
+  box-shadow: var(--m-shadow-popover);
+}
+
+/* WHICH DATE. Four lists share this control and each one measures a different
+   moment, so the menu names the field rather than leaving "Past 30 days" to
+   mean whatever the reader assumes. */
+.m-dr__field {
+  padding: var(--m-space-2) var(--m-space-3) var(--m-space-3);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-wide);
+  text-transform: uppercase;
+}
+
+.m-dr__rule {
+  margin: var(--m-space-2) var(--m-space-3);
+  border-top: 1px solid var(--m-border-subtle);
+}
+
+.m-dr__picker { padding: var(--m-space-3) var(--m-space-3) var(--m-space-2); }
+.m-dr__picker .ant-picker { width: 100%; }
+
+/* An unfinished range is not an error. It says what is missing in the same
+   quiet voice the rest of the menu uses, because the list has not changed and
+   nothing has gone wrong. */
+.m-dr__hint {
+  padding-top: var(--m-space-2);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+}

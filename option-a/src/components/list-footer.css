@@ -1,0 +1,29 @@
+/* ── THE BOTTOM EDGE OF EVERY LIST ───────────────────────────────────────────
+   One object, five pages. See ListFooter.tsx for what the five copies had
+   drifted into.
+
+   THE HORIZONTAL PADDING IS THE TABLE'S CELL INSET, `--m-space-7`, and that is
+   the whole point of the file: the count lines up with the first column and the
+   pager ends where the last one does. It was `--m-space-5` on four pages and
+   nothing at all on the fifth, which put the range label 8px inside the names
+   above it on four lists and 20px inside them on one. */
+.m-listfoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-space-4);
+  /* The plane is a fixed height, so a short list leaves space under it. The
+     footer takes that space rather than floating in the middle of it: the
+     count and the pager belong to the bottom edge of the LIST, not to the last
+     row of it. */
+  margin-top: auto;
+  padding: var(--m-space-4) var(--m-space-7);
+  border-top: 1px solid var(--m-border-subtle);
+}
+
+.m-listfoot__range {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-muted);
+}

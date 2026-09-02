@@ -286,6 +286,12 @@ const RAW: Omit<Issue, 'tags' | 'fix'>[] = [
     segmentId: 2, // surfaced by the "Pricing · France" segment
     cat: 'UI/UX',
     impact: 12,
+    /* Fourteen days, and it stays inside the default thirty-day window on
+       purpose. Aging it out was tried and reverted: eleven issues is one more
+       than a page, so dropping one to prove the date control works took the
+       PAGER off the default view - a filter demonstrating itself by deleting
+       another control. The window still bites at 24 hours and 7 days, which is
+       where anybody would actually use it. */
     seenAgoMin: 20160,
     real: 'A noticeable share of sessions land on the pricing page from ads and leave within a few seconds with no scroll and no click. The instant bounce suggests the above-the-fold content is not matching the intent the ad set up — the value proposition or the plan they expected is not immediately visible. These are paid arrivals leaving before they engage at all, so the wasted acquisition spend compounds the lost conversions.',
     journey: 'User landed on pricing from an ad, stayed under ten seconds without scrolling or interacting, and closed the tab.',

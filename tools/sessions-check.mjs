@@ -52,7 +52,7 @@ const shell = await p.evaluate(() => ({
   hasToolbar: !!document.querySelector('.m-page__toolbar'),
   columns: [...document.querySelectorAll('.m-ss__table th')].map((e) => e.textContent.trim()).filter(Boolean),
   rows: document.querySelectorAll('.m-ss__table tbody tr').length,
-  foot: document.querySelector('.m-ss__range-label')?.textContent,
+  foot: document.querySelector('.m-listfoot__range')?.textContent,
   /* the search is a well, not a card: it steps DOWN from the plane, because the
      plane is already the only surface (the 08-28 shell) */
   searchBg: getComputedStyle(document.querySelector('.m-sc')).backgroundColor,
@@ -66,8 +66,13 @@ check('and the two sections are text tabs, not the pill strip',
    toolbar row went with it - the date range and the display menu moved onto the
    search's own bar, which is the row that STICKS. */
 check('the issue-type strip is gone, and so is the row it was on', !shell.hasToolbar);
+/* ⚠ NOT 134. The default window is thirty days and the fixture now spreads
+   over sixty, which is the whole reason the date control can do anything - see
+   sessions-data. What is asserted is the SHAPE of the footer, and that the
+   window is holding something back rather than everything. */
 check('the list is a table and it pages',
-  shell.rows === 12 && /1–12 of 134/.test(shell.foot ?? ''), `${shell.rows} rows, ${shell.foot}`);
+  shell.rows === 12 && /^1–12 of \d+ sessions$/.test((shell.foot ?? '').trim()),
+  `${shell.rows} rows, ${shell.foot}`);
 check('errorsCount is finally on screen, which the payload has always carried',
   shell.columns.includes('Errors'), shell.columns.join(' | '));
 check('the search is a well rather than a second card on the plane',
@@ -186,7 +191,7 @@ await p.waitForTimeout(400);
 const translated = await p.evaluate(() => ({
   rows: [...document.querySelectorAll('.m-srow')].map((r) => r.querySelector('.m-srow__name')?.textContent?.trim()),
   editable: document.querySelectorAll('.m-srow .ant-select').length,
-  count: document.querySelector('.m-ss__range-label')?.textContent,
+  count: document.querySelector('.m-listfoot__range')?.textContent,
 }));
 check('what comes back is editable rows, not a result set',
   translated.rows.length >= 3 && translated.editable > 0,
@@ -255,7 +260,7 @@ const countFor = async (word) => {
   await p.waitForTimeout(250);
   await p.locator('.ant-select-item-option', { hasText: new RegExp(`^${word}`) }).first().click();
   await p.waitForTimeout(350);
-  return p.evaluate(() => document.querySelector('.m-ss__range-label')?.textContent?.trim() ?? '');
+  return p.evaluate(() => document.querySelector('.m-listfoot__range')?.textContent?.trim() ?? '');
 };
 const counts = { then: await countFor('then'), and: await countFor('and'), or: await countFor('or') };
 check('then, and and or are three different questions',
@@ -330,7 +335,7 @@ await p.waitForTimeout(450);
 const vault = await p.evaluate(() => ({
   rows: document.querySelectorAll('.m-ss__table tbody tr').length,
   marks: document.querySelectorAll('.m-ss__mark').length,
-  foot: document.querySelector('.m-ss__range-label')?.textContent?.trim(),
+  foot: document.querySelector('.m-listfoot__range')?.textContent?.trim(),
   empty: document.querySelector('.m-empty__title')?.textContent?.trim(),
   searchStillThere: !!document.querySelector('.m-sc'),
   tabsStillThere: document.querySelectorAll('.m-page__tabs .ant-tabs-tab').length === 2,
@@ -426,15 +431,27 @@ check('the body scrolls on a short window', stick.rest.canScroll > 100, `${stick
 check('and the search holds its place while the rows go past it',
   stick.after.scroll > 100 && stick.after.top === stick.rest.top,
   `scrolled ${stick.after.scroll}px, search stayed at ${stick.after.top}`);
-/* The gap under it has to belong to the sticky box or rows slide through it. */
+/* ⚠ NO GAP UNDER IT, and the sticky box is opaque (Mehdi, 2026-09-02: "on the
+   top of the table titles there's an empty row"). The band's hairline is the
+   separation; 16px of the plane's colour between the band and the header row
+   read as a blank row of the table. The margin still has to be zero and the box
+   still has to be opaque - both were load-bearing before and still are. */
+await p.evaluate(() => document.querySelector('.m-page__body').scrollTo(0, 0));
+await p.waitForTimeout(200);
 const gapOwner = await p.evaluate(() => {
   const w = document.querySelector('.m-ss__sticky');
   const cs = getComputedStyle(w);
-  return { pad: cs.paddingBottom, margin: getComputedStyle(document.querySelector('.m-sc')).marginBottom, bg: cs.backgroundColor };
+  const th = document.querySelector('.m-ss__table th').getBoundingClientRect();
+  return {
+    pad: cs.paddingBottom,
+    margin: getComputedStyle(document.querySelector('.m-sc')).marginBottom,
+    bg: cs.backgroundColor,
+    gapToHeader: Math.round(th.top - document.querySelector('.m-sc').getBoundingClientRect().bottom),
+  };
 });
-check('and the gap under it is padding on the sticky box, not a margin on the card',
-  gapOwner.pad !== '0px' && gapOwner.margin === '0px' && gapOwner.bg !== 'rgba(0, 0, 0, 0)',
-  `pad ${gapOwner.pad}, card margin ${gapOwner.margin}, opaque ${gapOwner.bg}`);
+check('the column titles sit directly under the search, with no blank row between',
+  gapOwner.pad === '0px' && gapOwner.margin === '0px' && gapOwner.gapToHeader === 0 && gapOwner.bg !== 'rgba(0, 0, 0, 0)',
+  `pad ${gapOwner.pad}, card margin ${gapOwner.margin}, gap ${gapOwner.gapToHeader}px, opaque ${gapOwner.bg}`);
 /* AND THE WELL KEPT ITS OWN COLOUR. Putting the sticky on the card itself made
    `.m-page__body > .m-sc` out-specify `.m-sc` and the well turned white. */
 const well = await p.evaluate(() => ({
@@ -456,29 +473,30 @@ await p.waitForTimeout(400);
 const ringState = async () =>
   p.evaluate(() => {
     const r = document.querySelector('.m-sc__ring');
-    const before = getComputedStyle(r, '::before');
+    const arc = r.querySelector('.m-sc__arc');
+    const cs = getComputedStyle(arc);
     return {
       opacity: getComputedStyle(r).opacity,
-      play: before.animationPlayState,
-      name: before.animationName,
-      /* the rim sits on the field's own border box, so it replaces the border
-         rather than sitting inside or outside it */
+      play: cs.animationPlayState,
+      name: cs.animationName,
+      /* The path runs down the MIDDLE of the field's own rim, so the arc
+         replaces the border rather than sitting inside or outside it. */
       onBorder: (() => {
         const a = r.getBoundingClientRect();
         const f = document.querySelector('.m-sc__field').getBoundingClientRect();
-        return Math.round(a.left - f.left) === 0 && Math.round(a.width - f.width) === 0;
+        return Math.abs(a.left - f.left) <= 1 && Math.abs(a.width - f.width) <= 2;
       })(),
     };
   });
 const ringRest = await ringState();
 check('the ring is off at rest, and paused rather than merely invisible',
-  ringRest.opacity === '0' && ringRest.play === 'paused',
+  ringRest.opacity === '0' && ringRest.play === 'paused, paused',
   `opacity ${ringRest.opacity}, ${ringRest.play}`);
 await p.hover('.m-sc__field');
 await p.waitForTimeout(400);
 const ringHover = await ringState();
 check('it sweeps on hover, on the field\'s own border box',
-  ringHover.opacity === '1' && ringHover.play === 'running' && ringHover.onBorder,
+  ringHover.opacity === '1' && ringHover.play === 'running, running' && ringHover.onBorder,
   `opacity ${ringHover.opacity}, ${ringHover.play}, on the border ${ringHover.onBorder}`);
 await p.focus('.m-sc__field');
 await p.keyboard.press('Tab');
@@ -531,7 +549,7 @@ check('and every bar shares one axis',
 const tally = await p.evaluate(() => {
   const rows = [...document.querySelectorAll('.m-vp .m-checkrow')];
   const sum = rows.reduce((n, r) => n + (Number(r.querySelector('.m-vp__n')?.textContent) || 0), 0);
-  const total = Number((document.querySelector('.m-ss__range-label')?.textContent ?? '').replace(/.*of /, ''))
+  const total = Number((document.querySelector('.m-listfoot__range')?.textContent ?? '').replace(/.*of /, '').replace(/[^0-9].*$/, ''))
     || document.querySelectorAll('.m-ss__table tbody tr').length;
   return { sum, total };
 });
@@ -621,8 +639,11 @@ const reopened = await strip();
 check('and the one click there is beats the scroll, as useNavCollapse does',
   !reopened.collapsed && reopened.rows === 4, `${reopened.rows} rows back`);
 
-/* A ONE-CLAUSE FILTER GETS NO COLLAPSE: the summary line that replaced it would
-   be taller than the thing it hid. */
+/* ⚠ ONE CLAUSE STILL GETS THE CARET (Mehdi, 2026-09-02: "what happened with the
+   collapse search, I can't see it anymore"). It appeared at three rows, on the
+   sound arithmetic that collapsing one clause saves less height than the
+   summary line costs - and it read as a control that had broken. The SCROLL
+   rule keeps the threshold; the affordance does not. */
 await p.evaluate(() => { document.querySelector('.m-page__body').scrollTop = 0; });
 await p.locator('.m-sc__clear').click();
 await p.waitForTimeout(300);
@@ -632,8 +653,8 @@ const one = await p.evaluate(() => ({
   toggle: !!document.querySelector('.m-sc__toggle'),
   summary: document.querySelector('.m-sc__summary')?.textContent?.trim(),
 }));
-check('one clause gets no disclosure, because the control would cost more',
-  !one.toggle && one.summary === '1 filter', `toggle ${one.toggle}, says ${one.summary}`);
+check('one clause keeps the disclosure, because a control that comes and goes reads as broken',
+  one.toggle && one.summary === '1 filter', `toggle ${one.toggle}, says ${one.summary}`);
 
 /* ── 13. AN OPEN CONTROL IS NOT AN ACCENT ───────────────────────────────────
    Gabriel, on the operator dropdown: "this colour in that state is a weird
@@ -663,6 +684,253 @@ check('a chosen option is the app\'s own neutral selection fill, not the tinted 
   `${token.bg} — active ${token.active}, tinted ${token.selected}`);
 await p.keyboard.press('Escape');
 await p.waitForTimeout(200);
+
+/* ── THE DATE WINDOW ──────────────────────────────────────────────────────
+   Four presets and a real custom range, and the only claim worth asserting is
+   that each of them CHANGES something: the previous control offered "Custom
+   range" and quietly applied ninety days, which nothing on screen contradicted.
+   The fixture spreads over sixty days for exactly this reason. */
+await p.evaluate(() => document.querySelector('.m-page__body').scrollTo(0, 0));
+await p.waitForTimeout(250);
+const total = async () =>
+  Number((await p.locator('.m-listfoot__range').textContent()).replace(/.*of /, '').replace(/[^0-9].*$/, ''));
+/* Open it, and be sure it is open: the trigger TOGGLES, so a step that left the
+   menu up (a half-filled custom range, say) turns the next "open" into a
+   close. Two clicks and a wait, rather than a guess. */
+const openRange = async () => {
+  for (let i = 0; i < 3; i += 1) {
+    if (await p.locator('.m-dr__menu').count()) return;
+    await p.locator('.m-dr__trigger').click();
+    await p.waitForTimeout(250);
+  }
+};
+const preset = async (label) => {
+  await openRange();
+  await p.locator('.m-dr__menu .m-checkrow', { hasText: label }).click();
+  await p.waitForTimeout(350);
+  return total();
+};
+const windows = {
+  '24h': await preset('Past 24 hours'),
+  '7d': await preset('Past 7 days'),
+  '30d': await preset('Past 30 days'),
+  '90d': await preset('Past 90 days'),
+};
+check('every preset is a different window, so the control can be seen to work',
+  new Set(Object.values(windows)).size === 4 &&
+    windows['24h'] < windows['7d'] && windows['7d'] < windows['30d'] && windows['30d'] < windows['90d'],
+  JSON.stringify(windows));
+
+/* ⚠ AND CUSTOM IS A REAL RANGE. It used to be a fifth preset applying ninety
+   days under a label that said something else. */
+await openRange();
+await p.locator('.m-dr__menu .m-checkrow', { hasText: 'Custom range' }).click();
+await p.waitForTimeout(300);
+const halfPicked = {
+  picker: await p.locator('.m-dr__picker .ant-picker').count(),
+  hint: await p.locator('.m-dr__hint').count(),
+  rows: await total(),
+};
+check('picking custom opens a two-ended picker and narrows nothing until both ends are in',
+  halfPicked.picker === 1 && halfPicked.hint === 1 && halfPicked.rows === windows['90d'],
+  `picker ${halfPicked.picker}, hint ${halfPicked.hint}, ${halfPicked.rows} rows`);
+
+const day = (back) => {
+  const d = new Date(Date.now() - back * 86400000);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+const ends = p.locator('.m-dr__picker .ant-picker input');
+await ends.nth(0).click();
+await ends.nth(0).fill(day(20));
+await p.keyboard.press('Enter');
+await p.waitForTimeout(250);
+await ends.nth(1).fill(day(5));
+await p.keyboard.press('Enter');
+await p.waitForTimeout(450);
+const custom = {
+  label: await p.locator('.m-dr__value').textContent(),
+  rows: await total(),
+  closed: (await p.locator('.m-dr__menu').count()) === 0,
+};
+check('a custom range filters, prints its dates, and closes when it is complete',
+  custom.rows > 0 && custom.rows < windows['90d'] && /\w+ \d+ – \w+ \d+/.test(custom.label ?? '') && custom.closed,
+  `${custom.label} — ${custom.rows} rows, closed ${custom.closed}`);
+
+/* ⚠ THE COLUMN WIDTHS DO NOT MOVE BETWEEN PAGES (Mehdi, 2026-09-02). antd's
+   default table layout re-measures from the content, so a longer email on page
+   two shifted every column beside it. */
+await preset('Past 30 days');
+const widths = () =>
+  p.evaluate(() => [...document.querySelectorAll('.m-ss__table thead th')].map((t) => Math.round(t.getBoundingClientRect().width)).join(','));
+const w1 = await widths();
+await p.locator('.ant-pagination-item', { hasText: '2' }).click();
+await p.waitForTimeout(400);
+const w2 = await widths();
+await p.locator('.ant-pagination-item', { hasText: '3' }).click();
+await p.waitForTimeout(400);
+const w3 = await widths();
+check('the columns hold their widths as the data under them changes', w1 === w2 && w2 === w3, `${w1} / ${w2} / ${w3}`);
+await p.locator('.ant-pagination-item', { hasText: '1' }).click();
+await p.waitForTimeout(350);
+
+/* ── THE PLAY HOLDS THE RIGHT EDGE ───────────────────────────────────────
+   Third position in a day: hover-only in the last column, then leading the row
+   ("it looks like a chevron"), now an outline glyph pinned right. What is
+   asserted is the part that is easy to break and impossible to see in a
+   screenshot - it is STICKY, so narrowing the window cannot take the one
+   affordance on the page off the side of it. */
+const playRest = await p.evaluate(() => {
+  const g = document.querySelector('.m-ss__play');
+  const cell = g?.closest('td');
+  return {
+    last: cell === cell?.parentElement?.lastElementChild,
+    sticky: getComputedStyle(cell).position,
+    fade: getComputedStyle(cell, '::before').backgroundImage.startsWith('linear-gradient'),
+    colour: getComputedStyle(g).color,
+  };
+});
+check('the play is the last cell, stuck to the right edge, on a fade of its own',
+  playRest.last && playRest.sticky === 'sticky' && playRest.fade,
+  `last ${playRest.last}, ${playRest.sticky}, fade ${playRest.fade}`);
+
+/* ⚠ AND IT STAYS THERE WHEN THE TABLE SCROLLS UNDER IT, which is the whole
+   reason it is sticky rather than simply last. */
+const held = await p.evaluate(async () => {
+  const body = document.querySelector('.m-page__body');
+  const right = () => Math.round(document.querySelector('td.m-ss__playcell').getBoundingClientRect().right);
+  const before = right();
+  body.scrollBy(300, 0);
+  await new Promise((r) => setTimeout(r, 250));
+  const after = right();
+  const moved = body.scrollLeft > 0;
+  body.scrollTo(0, body.scrollTop);
+  return { before, after, moved };
+});
+check('and it holds that edge while the table scrolls under it',
+  !held.moved || held.before === held.after,
+  held.moved ? `${held.before} → ${held.after}` : 'nothing to scroll at this width');
+
+await p.hover('.m-ss__row');
+await p.waitForTimeout(250);
+const playHover = await p.evaluate(() => {
+  const root = getComputedStyle(document.documentElement);
+  const hex = root.getPropertyValue('--m-content-accent').trim().replace('#', '');
+  const n = Number.parseInt(hex, 16);
+  return {
+    colour: getComputedStyle(document.querySelector('.m-ss__play')).color,
+    accent: `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`,
+  };
+});
+check('and it takes the accent on the ROW\'s hover, because the row is the target',
+  playRest.colour !== playHover.colour && playHover.colour === playHover.accent,
+  `${playRest.colour} → ${playHover.colour}`);
+
+/* ── THE RING IS A DASH ON A PATH ────────────────────────────────────────
+   Third attempt, and the two before it failed on the same fact - the field is
+   1400 by 40. A conic gradient divides by ANGLE, so the arc was a dot on the
+   long rim and covered the whole end cap. A linear one balances the arc but
+   only moves sideways, which stops reading as a ring at all ("now it's a
+   horizontal movement, that's wrong"). A dashed stroke is measured in ARC
+   LENGTH, travels the perimeter in order, and its length is a number that can
+   breathe on its own. */
+await p.hover('.m-sc__field');
+await p.waitForTimeout(400);
+const ringShape = await p.evaluate(() => {
+  const rect = document.querySelector('.m-sc__ring rect');
+  if (!rect) return null;
+  const cs = getComputedStyle(rect);
+  return {
+    tag: rect.tagName,
+    anim: cs.animationName,
+    state: cs.animationPlayState,
+    dash: cs.strokeDasharray,
+    perimeter: Math.round(rect.getTotalLength()),
+    field: Math.round(document.querySelector('.m-sc__field').getBoundingClientRect().width),
+  };
+});
+check('the ring is a stroked path, not a gradient, and it both travels and breathes',
+  !!ringShape && ringShape.anim === 'm-sc-travel, m-sc-breathe' && ringShape.state === 'running, running',
+  `${ringShape?.anim} — ${ringShape?.state}`);
+/* ⚠ THE ARC IS THE SAME LENGTH WHEREVER IT IS, which is the one thing the two
+   gradient versions could not do. `pathLength="100"` normalises the perimeter,
+   so the dash is a percentage of the loop at any plane width. */
+const arc = await p.evaluate(() => {
+  const rect = document.querySelector('.m-sc__ring rect');
+  const read = () => Number.parseFloat(getComputedStyle(rect).strokeDasharray);
+  return new Promise((done) => {
+    const seen = [];
+    const tick = () => {
+      seen.push(read());
+      if (seen.length < 12) setTimeout(tick, 90);
+      else done({ min: Math.min(...seen), max: Math.max(...seen) });
+    };
+    tick();
+  });
+});
+check('and the arc grows and shrinks rather than holding one length',
+  arc.max - arc.min > 4 && ringShape.perimeter > ringShape.field * 2,
+  `dash ${arc.min.toFixed(1)}–${arc.max.toFixed(1)} of 100, perimeter ${ringShape.perimeter}px`);
+
+/* ── THE OPERATOR READS (Mehdi: "the 'is not' colour doesn't have contrast
+   enough"). The closed control drew the word one step quieter than the SAME
+   word in the menu under it. */
+await p.locator('.m-sc__field').click();
+await p.waitForTimeout(300);
+await p.fill('.m-pick__search input', 'User ID');
+await p.waitForTimeout(300);
+await p.locator('.m-pick__row').first().click();
+await p.waitForTimeout(400);
+await p.locator('.m-srow__op').first().click();
+await p.waitForTimeout(400);
+const ink = await p.evaluate(() => ({
+  closed: getComputedStyle(document.querySelector('.m-srow__op .ant-select-content')).color,
+  option: getComputedStyle(document.querySelector('.ant-select-dropdown .ant-select-item')).color,
+}));
+check('the operator on the closed control is the same ink as the operator in its own menu',
+  ink.closed === ink.option, `${ink.closed} vs ${ink.option}`);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(200);
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(300);
+
+/* ── THE BOOKMARK IS A CONTROL, NOT A MARK (Mehdi, 2026-09-02) ────────────
+   It sat beside the name reporting `favorite`, which meant the row drew the
+   fact and nothing set it. Now it is beside the play, it is a real button, and
+   the filled glyph is its on state. */
+const markGone = await p.evaluate(() => !document.querySelector('.m-ss__mark'));
+const bookmark = await p.evaluate(() => {
+  const btn = document.querySelector('.m-ss__act');
+  return {
+    inActions: btn?.parentElement?.classList.contains('m-ss__acts'),
+    pressed: btn?.getAttribute('aria-pressed'),
+    fill: btn?.querySelector('svg')?.getAttribute('fill'),
+  };
+});
+await p.locator('.m-ss__act').first().click();
+await p.waitForTimeout(350);
+const after = await p.evaluate(() => {
+  const btn = document.querySelector('.m-ss__act');
+  return { pressed: btn?.getAttribute('aria-pressed'), fill: btn?.querySelector('svg')?.getAttribute('fill') };
+});
+check('the bookmark moved to the actions cell, and it sets the row rather than reporting it',
+  markGone && bookmark.inActions && bookmark.pressed !== after.pressed && after.fill === 'currentColor',
+  `mark gone ${markGone}, ${bookmark.pressed} → ${after.pressed}, fill ${after.fill}`);
+/* ⚠ AND THE CLICK DOES NOT REACH THE ROW. Bookmarking a session is not asking
+   to watch it, and the row is what opens the replay. */
+const bookmarkedTab = await p.evaluate(async () => {
+  const tabs = [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')];
+  tabs.find((t) => /Bookmarked/.test(t.textContent))?.click();
+  await new Promise((r) => setTimeout(r, 400));
+  return document.querySelectorAll('.m-ss__table tbody tr').length;
+});
+check('and the bookmarked tab is a list of what the control set',
+  bookmarkedTab > 0, `${bookmarkedTab} bookmarked`);
+await p.evaluate(async () => {
+  const tabs = [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')];
+  tabs.find((t) => /All sessions/.test(t.textContent))?.click();
+  await new Promise((r) => setTimeout(r, 300));
+});
+
 
 check('no console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 

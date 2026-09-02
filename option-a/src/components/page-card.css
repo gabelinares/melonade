@@ -107,6 +107,26 @@
   border-block: 1px solid var(--m-border-subtle);
 }
 
+/* ── THE TOOLBAR'S RIGHT-HAND CLUSTER ────────────────────────────────────────
+   The window, the filters and the display, kept together at the end of the
+   row. It belongs to the toolbar and therefore to this file: it had been
+   defined four times - `.m-issues__controls`, `.m-tests__controls`,
+   `.m-runs__controls`, and nothing at all on Audits - in three stylesheets
+   that already disagreed about whether it wraps. Four copies of five
+   declarations is how two neighbouring toolbars drift by a pixel and then by
+   four, which is the argument IconButton was extracted on.
+
+   It WRAPS. A narrow plane with four controls on the right and a strip on the
+   left has to put them somewhere, and a toolbar that grows a row is better
+   than one that pushes a control off its own edge. */
+.m-page__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
 /* everything below the header scrolls, so the plane's own edges never move */
 .m-page__body {
   display: flex;

@@ -28,6 +28,7 @@ import {
    shortlist: how clearly a session fails is a fact about the recording, so it
    is read from the replay layer rather than re-derived here. */
 import { durationSeconds, failureMoment, replayMarkers } from './replay.ts';
+import { DEFAULT_RANGE, minutesAgoWithin, type DateRangeValue } from './date-range.ts';
 
 export type { CategoryName, CriticalRule, ImpactLevel, Issue, IssueSession };
 
@@ -132,6 +133,11 @@ export const DEFAULT_DISPLAY: Display = {
 export interface IssuesState {
   filters: Filters;
   display: Display;
+  /* THE DATE WINDOW, and it is state rather than a filter on purpose: every
+     list is permanently inside one, so it has no "off" and it never becomes a
+     chip. What it measures here is LAST SEEN - an issue is a standing thing,
+     and the question people ask of it is whether it is still happening. */
+  range: DateRangeValue;
   /** issue id -> the reason it was hidden */
   hidden: Record<number, string>;
   /** issue id -> I dropped its critical flag for myself */
@@ -145,6 +151,7 @@ export interface IssuesState {
 export const INITIAL_STATE: IssuesState = {
   filters: DEFAULT_FILTERS,
   display: DEFAULT_DISPLAY,
+  range: DEFAULT_RANGE,
   hidden: {},
   dropped: {},
   renamed: {},
@@ -189,6 +196,7 @@ export function filterIssues(state: IssuesState): Issue[] {
   const q = filters.q.trim().toLowerCase();
 
   const list = ISSUES.filter((i) => {
+    if (!minutesAgoWithin(i.seenAgoMin, state.range)) return false;
     const isHidden = state.hidden[i.id] != null;
     if (state.display.hidden === 'hide' && isHidden) return false;
     if (state.display.hidden === 'only' && !isHidden) return false;

@@ -56,22 +56,3 @@
 
 .m-audits__row { cursor: pointer; }
 
-.m-audits__foot {
-  display: flex;
-  /* The plane is a fixed height now, so a short list leaves space under it. The
-     footer takes that space rather than floating in the middle of it: the range
-     and the pager belong to the bottom edge of the list, not to the last row. */
-  margin-top: auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--m-space-4);
-  padding: var(--m-space-4) var(--m-space-5);
-  border-top: 1px solid var(--m-border-subtle);
-}
-
-.m-audits__range {
-  font-family: var(--m-font-num);
-  font-size: var(--m-text-xs);
-  color: var(--m-content-muted);
-  font-variant-numeric: tabular-nums;
-}

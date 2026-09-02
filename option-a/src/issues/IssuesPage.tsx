@@ -1,5 +1,4 @@
-import { Button, Dropdown, Pagination, Table, Tooltip } from 'antd';
-import { pagerItem } from '../components/Pager.tsx';
+import { Button, Dropdown, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
   AlertTriangle,
@@ -21,6 +20,7 @@ import { PageCard } from '../components/PageCard.tsx';
 import { ActiveFilters } from '../components/ActiveFilters.tsx';
 import { FilterStrip } from '../components/FilterStrip.tsx';
 import { SearchField } from '../components/SearchField.tsx';
+import { DateRange } from '../components/DateRange.tsx';
 import { CapturePill } from '../components/CapturePill.tsx';
 import { Chip } from '../components/Chip.tsx';
 import { CriticalFlag } from '../components/CriticalFlag.tsx';
@@ -28,6 +28,7 @@ import { DisplayMenu } from '../components/DisplayMenu.tsx';
 import { EmptyState } from '../components/EmptyState.tsx';
 import { FilterMenu } from '../components/FilterMenu.tsx';
 import { IconButton } from '../components/IconButton.tsx';
+import { ListFooter } from '../components/ListFooter.tsx';
 import { ImpactMeter } from '../components/ImpactMeter.tsx';
 import { MoreCount } from '../components/MoreCount.tsx';
 import { OriginBadge } from '../components/OriginBadge.tsx';
@@ -231,8 +232,6 @@ export function IssuesPage({ model }: IssuesPageProps) {
     },
   ];
 
-  const rangeStart = model.total === 0 ? 0 : (model.page - 1) * model.pageSize + 1;
-  const rangeEnd = (model.page - 1) * model.pageSize + model.visible.length;
 
   const empty = (() => {
     switch (model.emptyReason) {
@@ -382,7 +381,7 @@ export function IssuesPage({ model }: IssuesPageProps) {
               line saying "2 segments" about a setting somebody touches once a
               month, and being shaped like a chip it read as a filter while being
               the opposite of one. */}
-          <div className="m-issues__controls">
+          <div className="m-page__controls">
             <CapturePill
               variant="icon"
               mode={model.captureMode}
@@ -390,6 +389,12 @@ export function IssuesPage({ model }: IssuesPageProps) {
               activeSegmentIds={model.activeSegmentIds}
               onToggleSegment={model.toggleSegment}
             />
+            {/* THE WINDOW, and it sits second because the four controls read
+                outward-in: what is collected, WHEN, which of those, and how it
+                is drawn. An issue's window is when it was LAST SEEN - the
+                question you ask of a standing problem is whether it is still
+                happening. */}
+            <DateRange field="Last seen" value={model.range} onChange={model.setRange} />
             <FilterMenu
               dimensions={model.dimensions}
               isActive={model.isFilterActive}
@@ -423,6 +428,11 @@ export function IssuesPage({ model }: IssuesPageProps) {
         <>
           <Table<Row>
             className="m-issues__table"
+            /* Fixed, like every table here since 2026-09-02: antd's default
+               `auto` treats a column's width as a suggestion and re-measures
+               from the CONTENT, so a longer name on page 2 moved every column
+               beside it. See SessionsPage for the full note. */
+            tableLayout="fixed"
             rowKey={(r) => (r.kind === 'group' ? `g:${r.key}` : r.issue.id)}
             columns={columns}
             dataSource={rows}
@@ -447,26 +457,14 @@ export function IssuesPage({ model }: IssuesPageProps) {
                 : `m-issues__row${model.isHidden(r.issue.id) ? ' is-hidden-row' : ''}`
             }
           />
-          <footer className="m-issues__foot">
-            <span className="m-issues__range">
-              {model.paginated
-                ? `${rangeStart}–${rangeEnd} of ${model.total}`
-                : `${model.total} ${model.total === 1 ? 'issue' : 'issues'} in ${model.groups.length} ${
-                    model.groups.length === 1 ? 'group' : 'groups'
-                  }`}
-            </span>
-            {model.paginated && model.total > model.pageSize && (
-              <Pagination
-                size="small"
-                current={model.page}
-                total={model.total}
-                pageSize={model.pageSize}
-                onChange={model.setPage}
-                showSizeChanger={false}
-                itemRender={pagerItem}
-              />
-            )}
-          </footer>
+          <ListFooter
+            page={model.page}
+            pageSize={model.pageSize}
+            total={model.total}
+            noun={['issue', 'issues']}
+            onPage={model.paginated ? model.setPage : undefined}
+            detail={`in ${model.groups.length} ${model.groups.length === 1 ? 'group' : 'groups'}`}
+          />
         </>
       )}
       {dialogs.elements}

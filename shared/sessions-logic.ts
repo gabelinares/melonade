@@ -32,6 +32,7 @@ import {
   type SessionRow,
   type ValueCandidate,
 } from './sessions-data.ts';
+import { DEFAULT_RANGE, minutesAgoWithin, type DateRangeValue } from './date-range.ts';
 
 export type { CatalogueEntry, DataType, IssueType, SessionRow, ValueCandidate };
 export {
@@ -138,19 +139,10 @@ export interface SearchFilter {
   propertyOrder?: PropertyOrder;
 }
 
-export type DateRange = '24h' | '7d' | '30d' | 'custom';
-
-export const DATE_RANGES: ReadonlyArray<{ value: DateRange; label: string; minutes: number }> = [
-  { value: '24h', label: 'Past 24 hours', minutes: 24 * 60 },
-  { value: '7d', label: 'Past 7 days', minutes: 7 * 24 * 60 },
-  { value: '30d', label: 'Past 30 days', minutes: 30 * 24 * 60 },
-  /* Custom carries the widest window here: a prototype has no date picker and
-     a range that filtered nothing would look broken rather than unimplemented. */
-  { value: 'custom', label: 'Custom range', minutes: 90 * 24 * 60 },
-];
-
-export const rangeMinutes = (r: DateRange): number =>
-  DATE_RANGES.find((d) => d.value === r)!.minutes;
+/* THE WINDOW LIVES IN `shared/date-range.ts` since 2026-09-02, because four
+   lists ask it and only this one could answer. What was here was a list of
+   presets in minutes, which cannot express "the 3rd to the 18th" at all - so
+   `custom` was a preset that quietly applied ninety days. See date-range.ts. */
 
 export type SessionSortKey = 'recent' | 'oldest' | 'events' | 'errors' | 'duration';
 
@@ -223,7 +215,7 @@ export interface SessionsState {
    *  the card. */
   filters: SearchFilter[];
   eventsOrder: EventsOrder;
-  range: DateRange;
+  range: DateRangeValue;
   display: SessionDisplay;
   page: number;
   /** The saved segment currently loaded, if any. */
@@ -237,7 +229,7 @@ export const INITIAL_SESSIONS_STATE: SessionsState = {
   tab: 'all',
   filters: [],
   eventsOrder: 'then',
-  range: '30d',
+  range: DEFAULT_RANGE,
   display: DEFAULT_DISPLAY,
   page: 1,
   dataState: 'ready',
@@ -580,10 +572,9 @@ export const splitFilters = (filters: readonly SearchFilter[]) => ({
 
 export function filterSessions(state: SessionsState, rows: readonly SessionRow[] = SESSIONS): SessionRow[] {
   const { events, properties } = splitFilters(state.filters);
-  const window = rangeMinutes(state.range);
   const out = rows.filter((s) => {
     if (state.tab === 'bookmarks' && !s.favorite) return false;
-    if (s.startedAgoMin > window) return false;
+    if (!minutesAgoWithin(s.startedAgoMin, state.range)) return false;
     if (state.display.viewed === 'hide' && s.viewed) return false;
     if (state.display.viewed === 'only' && !s.viewed) return false;
     if (!properties.every((f) => matchProperty(s, f))) return false;

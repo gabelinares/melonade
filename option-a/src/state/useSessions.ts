@@ -11,6 +11,7 @@
  * already exists: addFilter, updateFilter, removeFilter, edit, clearSearch. */
 
 import { useCallback, useMemo, useState } from 'react';
+import type { DateRangeValue } from '@shared/date-range.ts';
 import {
   DEFAULT_DISPLAY,
   INITIAL_SESSIONS_STATE,
@@ -26,7 +27,6 @@ import {
   toggleSessionField,
   translate,
   type CatalogueEntry,
-  type DateRange,
   type EventsOrder,
   type SearchFilter,
   type SessionDisplay,
@@ -157,7 +157,7 @@ export function useSessions() {
   /* ── everything else on the search instance ── */
 
   const setEventsOrder = useCallback((o: EventsOrder) => patch({ eventsOrder: o }), [patch]);
-  const setRange = useCallback((r: DateRange) => patch({ range: r }), [patch]);
+  const setRange = useCallback((r: DateRangeValue) => patch({ range: r }), [patch]);
   const setTab = useCallback((t: SessionTab) => patch({ tab: t }), [patch]);
   const setPage = useCallback((p: number) => setState((s) => ({ ...s, page: p })), []);
 
@@ -200,13 +200,32 @@ export function useSessions() {
 
   /* ── what the list is ── */
 
-  const all: readonly SessionRow[] = state.dataState === 'empty' ? [] : SESSIONS;
+  /* ⚠ BOOKMARKING IS A REAL EDIT, so it is state rather than a fixture flag.
+     The row's bookmark went from a mark that reported `favorite` to a control
+     that sets it (Mehdi, 2026-09-02), and a control whose click changes nothing
+     is worse than no control. It is an overlay keyed by session id rather than
+     a copy of the list: the fixture stays the fixture, and "what did I change"
+     is one object you can read. */
+  const [bookmarks, setBookmarks] = useState<Record<string, boolean>>({});
+
+  const toggleBookmark = useCallback(
+    (sessionId: string) =>
+      setBookmarks((b) => ({ ...b, [sessionId]: !(b[sessionId] ?? SESSIONS.find((s) => s.sessionId === sessionId)?.favorite ?? false) })),
+    [],
+  );
+
+  const all: readonly SessionRow[] = useMemo(() => {
+    if (state.dataState === 'empty') return [];
+    if (Object.keys(bookmarks).length === 0) return SESSIONS;
+    return SESSIONS.map((s) => (s.sessionId in bookmarks ? { ...s, favorite: bookmarks[s.sessionId]! } : s));
+  }, [state.dataState, bookmarks]);
   const matched = useMemo(() => filterSessions(state, all), [state, all]);
   const rows = useMemo(() => pageOf(matched, state.page), [matched, state.page]);
   const { events, properties } = useMemo(() => splitFilters(state.filters), [state.filters]);
 
   return {
     state,
+    toggleBookmark,
     /* the search */
     filters: state.filters,
     events,

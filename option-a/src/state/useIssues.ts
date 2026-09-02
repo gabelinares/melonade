@@ -41,6 +41,7 @@ import {
   type SessionFilters,
 } from '@shared/issues-logic.ts';
 import { ISSUES } from '@shared/issues-data.ts';
+import type { DateRangeValue } from '@shared/date-range.ts';
 
 /** The issues you have not opened yet, seeded: the three most recently seen.
  *  Derived rather than listed, so it survives the fixtures changing under it. */
@@ -272,6 +273,7 @@ export function useIssues() {
     state,
     filters: state.filters,
     display: state.display,
+    range: state.range,
     dataState: state.dataState,
     rules: state.rules,
 
@@ -310,6 +312,15 @@ export function useIssues() {
 
     setFilter,
     setDisplay,
+    /* The window resets the page for the same reason a filter does: page four
+       of a list that just got shorter is a blank screen. */
+    setRange: useCallback(
+      (range: DateRangeValue) => {
+        patch((s) => ({ ...s, range }));
+        setPage(1);
+      },
+      [patch],
+    ),
     toggleField: useCallback(
       (f: FieldKey) => patch((s) => ({ ...s, display: toggleField(s.display, f) })),
       [patch],

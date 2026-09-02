@@ -461,9 +461,18 @@ function derive(i: number): SessionRow {
     displayName: identified ? name : anon,
     numericHash: hash,
     /* Ordered oldest-last, in a widening spread: the newest sessions are
-       minutes apart and the oldest are hours, which is what a real day of
-       traffic looks like on a list sorted by time. */
-    startedAgoMin: 3 + Math.round(i * i * 0.28 + i * 4),
+       minutes apart and the oldest are weeks, which is what a list sorted by
+       time actually looks like.
+
+       ⚠ THE CURVE REACHES SIXTY DAYS, and that is a requirement rather than a
+       flourish. Until 2026-09-02 it topped out at THREE AND A HALF, so every
+       preset on the date control - 7 days, 30 days, 90 days - returned the
+       identical 134 rows and the only way to tell was to count them. A control
+       that cannot change anything is worse than a missing one: it teaches
+       people the filter is broken. The exponent leaves roughly a quarter of the
+       list inside a day and three quarters inside a month, which is the shape
+       of real traffic and gives every preset a different answer. */
+    startedAgoMin: 3 + Math.round(Math.pow(i / (TOTAL - 1), 3.1) * 60 * 1440),
     durationSec: 18 + ((i * 53 + n * 7) % 1500),
     eventsCount: events,
     errorsCount: errors,

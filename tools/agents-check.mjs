@@ -35,7 +35,7 @@ const shell = () => p.evaluate(() => {
     headH: head ? Math.round(head.height) : null,
     tabs: [...document.querySelectorAll('.m-seg__item')].map((el) => el.textContent.trim()),
     rows: document.querySelectorAll('.ant-table-tbody tr.ant-table-row').length,
-    range: document.querySelector('.m-tests__range, .m-audits__range')?.textContent?.trim() ?? null,
+    range: document.querySelector('.m-listfoot__range')?.textContent?.trim() ?? null,
     firstRow: document.querySelector('.ant-table-tbody tr.ant-table-row')?.textContent?.trim().slice(0, 40) ?? null,
     rowH: Math.round(document.querySelector('.ant-table-tbody tr.ant-table-row')?.getBoundingClientRect().height ?? 0),
     /* Where the first thing on a row starts, measured from the plane's edge,
@@ -124,14 +124,14 @@ await p.locator('.ant-table-tbody tr.ant-table-row .ant-checkbox-input').nth(1).
 await p.waitForTimeout(250);
 const bulk = await p.evaluate(() => ({
   count: document.querySelector('.m-tests__selcount')?.textContent?.trim() ?? null,
-  buttons: [...document.querySelectorAll('.m-tests__controls button')].map((x) => x.textContent.trim()).filter(Boolean),
-  filters: !!document.querySelector('.m-tests__controls [aria-label^="Filter tests"]'),
+  buttons: [...document.querySelectorAll('.m-page__controls button')].map((x) => x.textContent.trim()).filter(Boolean),
+  filters: !!document.querySelector('.m-page__controls [aria-label^="Filter tests"]'),
 }));
 t('TESTS: selection swaps filters for bulk actions',
   bulk.count === '2 selected' && !bulk.filters && bulk.buttons.some((x) => /^Merge \(2\)/.test(x)) &&
   bulk.buttons.some((x) => /^Delete \(2\)/.test(x)),
   `${bulk.count}: ${bulk.buttons.join(' | ')}`);
-await p.locator('.m-tests__controls button', { hasText: 'Clear' }).click();
+await p.locator('.m-page__controls button', { hasText: 'Clear' }).click();
 await p.waitForTimeout(200);
 
 // a column header replaces the queue with a flat sort
@@ -360,7 +360,7 @@ t('SECTIONS: the sentence follows the section', /Every execution/.test(runsHead.
 // RUNS: a log, defaulted to a week, and the default is visible
 const runs = await p.evaluate(() => ({
   chips: [...document.querySelectorAll('.m-af__chip')].map((c) => c.textContent.trim()),
-  range: document.querySelector('.m-runs__range')?.textContent?.trim() ?? null,
+  range: document.querySelector('.m-listfoot__range')?.textContent?.trim() ?? null,
   tabs: [...document.querySelectorAll('.m-seg__item')].map((x) => x.textContent.trim()),
   first: document.querySelector('.ant-table-tbody tr.ant-table-row')?.textContent?.trim().slice(0, 24) ?? null,
   rerunButtons: document.querySelectorAll('[aria-label^="Rerun"]').length,
@@ -368,10 +368,18 @@ const runs = await p.evaluate(() => ({
     .filter((r) => /Failed/.test(r.textContent)).length,
   live: document.querySelectorAll('.ant-table-tbody tr.ant-table-row td')?.length ? true : false,
   addTest: [...document.querySelectorAll('.m-page__actions button')].some((b) => /Add test/.test(b.textContent)),
+  window: document.querySelector('.m-page__controls .m-dr__value')?.textContent?.trim() ?? null,
 }));
 t('RUNS: the log is newest first', /Running/.test(runs.first ?? ''), runs.first);
-t('RUNS: the seven-day default is a visible, removable chip',
-  runs.chips.some((c) => /Period/.test(c) && /7 days/.test(c)), runs.chips.join(' | '));
+/* ⚠ THE WINDOW IS NO LONGER A FILTER (2026-09-02). It was a "Period" dimension
+   inside this page's filter menu and nowhere else in the app, which made Runs
+   the one list whose date window arrived as a removable chip. What that chip
+   was FOR still has to hold - a list silently truncated to a window lies about
+   how much there is - so the assertion moved rather than went: the shared
+   control prints its own value, on the toolbar, in words. */
+t('RUNS: the window is printed on the toolbar rather than hidden in a menu',
+  runs.window != null && /Past \d+ days/.test(runs.window), runs.window);
+t('RUNS: and it is not a filter chip any more', !runs.chips.some((c) => /Period/.test(c)), runs.chips.join(' | '));
 t('RUNS: result tabs, not status tabs', runs.tabs[1]?.startsWith('Running') && runs.tabs.length === 4, runs.tabs.join(' | '));
 t('RUNS: rerun is offered on failures only', runs.rerunButtons === runs.failedRows && runs.rerunButtons > 0,
   `${runs.rerunButtons} buttons, ${runs.failedRows} failed rows`);
@@ -488,18 +496,41 @@ const detail = await p.evaluate(() => ({
   exportsDisabled: [...document.querySelectorAll('.m-audits__artifacts button')].filter((b) => b.disabled).length,
   menus: document.querySelectorAll('[aria-label^="Actions for"]').length,
   runningCell: document.querySelector('.m-audits__table .m-bar')?.closest('td')?.textContent?.trim() ?? '',
+  running: document.querySelectorAll('.m-audits__table .m-bar').length,
+  controls: {
+    window: !!document.querySelector('.m-page__controls .m-dr__trigger'),
+    filters: !!document.querySelector('.m-page__controls [aria-label^="Filter audits"]'),
+    display: !!document.querySelector('.m-page__controls [aria-label^="Display audits"]'),
+  },
 }));
 
-t('AUDITS: the page is the page', audits.title === 'Audits' && audits.rows === 3, `${audits.title}, ${audits.rows} rows`);
-t('AUDITS: three tabs, counted', audits.tabs.length === 3 && /Ready\s*2/.test(audits.tabs[2]), audits.tabs.join(' | '));
+/* ⚠ RELATIVE TO WHAT IS ON SCREEN, not to a fixture of three. The list grew to
+   eleven audits and sits inside a thirty-day window by default, so any hard
+   count here is a number that has to be re-derived every time either changes -
+   and a check nobody can re-derive gets deleted rather than fixed. What is
+   asserted is the RELATIONSHIP: one bar per running job, one score per finished
+   one, and the two adding up to the rows on screen. */
+t('AUDITS: the page is the page', audits.title === 'Audits' && audits.rows > 0, `${audits.title}, ${audits.rows} rows`);
+t('AUDITS: three tabs, and they add up to the list',
+  audits.tabs.length === 3 && detail.running + detail.health.length === audits.rows,
+  `${audits.tabs.join(' | ')} — ${detail.running} running + ${detail.health.length} scored = ${audits.rows}`);
 t('AUDITS: the running job is drawn, never numbered',
-  detail.bars === 1 && detail.runningCell === '', `${detail.bars} bar, cell text "${detail.runningCell}"`);
-t('AUDITS: the two finished audits carry a score', detail.health.length === 2, detail.health.join(' | '));
-t('AUDITS: the sample is a share, not a pair', detail.samples.length === 3 && detail.samples.every((s) => /^~\d+%$/.test(s)),
+  detail.bars === detail.running && detail.runningCell === '', `${detail.bars} bars, cell text "${detail.runningCell}"`);
+t('AUDITS: every finished audit carries a score', detail.health.length === audits.rows - detail.running,
+  detail.health.join(' | '));
+t('AUDITS: the sample is a share, not a pair',
+  detail.samples.length === audits.rows && detail.samples.every((s) => /^~\d+%$/.test(s)),
   detail.samples.join(' | '));
-t('AUDITS: every name carries its scope', detail.scopes.length === 3, detail.scopes.join(' | '));
-t('AUDITS: exports wait for the job', detail.exportsDisabled === 2, `${detail.exportsDisabled} disabled`);
-t("AUDITS: somebody else's audit has no menu", detail.menus === 2, `${detail.menus} menus of 3 rows`);
+t('AUDITS: every name carries its scope', detail.scopes.length === audits.rows, detail.scopes.join(' | '));
+t('AUDITS: exports wait for the job', detail.exportsDisabled === detail.running * 2,
+  `${detail.exportsDisabled} disabled for ${detail.running} running`);
+t("AUDITS: somebody else's audit has no menu", detail.menus > 0 && detail.menus < audits.rows,
+  `${detail.menus} menus of ${audits.rows} rows`);
+/* The toolbar's right-hand cluster, which this page did not have until
+   2026-09-02: the same window / filters / display it carries everywhere else. */
+t('AUDITS: it asks the same three questions as every other list',
+  detail.controls.window && detail.controls.filters && detail.controls.display,
+  JSON.stringify(detail.controls));
 /* The one deliberate break in the shared rhythm: an audit's name is meaningless
    without its scope, so that cell is two lines and the row is taller for it. */
 t('AUDITS: the taller row is the only break in the rhythm',
@@ -511,14 +542,21 @@ t('AUDITS: shell continuity with the queue',
   audits.left === issues.left && audits.width === issues.width && audits.headH === issues.headH,
   `${audits.left}/${audits.width}/${audits.headH}`);
 
-// a ready audit opens; a running one says why it cannot
-await p.locator('.ant-table-tbody tr.ant-table-row').nth(1).locator('.m-audits__name').click();
+/* A ready audit opens; a running one says why it cannot. ⚠ Found by STATE
+   rather than by row index: with eleven audits and a date window the running
+   ones are no longer the first two rows, and an index here was a check that
+   passed for the wrong reason the moment the fixture moved. */
+const readyRow = p.locator('.ant-table-tbody tr.ant-table-row').filter({ has: p.locator('.m-chip') }).first();
+const readyName = await readyRow.locator('.m-audits__name').textContent();
+await readyRow.locator('.m-audits__name').click();
 await p.locator('.ant-drawer').waitFor();
 const report = await p.evaluate(() => document.querySelector('.ant-drawer-title')?.textContent?.trim() ?? null);
-t('AUDITS: a ready audit opens its report', /Checkout & billing/.test(report ?? ''), report);
+t('AUDITS: a ready audit opens its report', (report ?? '').startsWith(readyName?.trim() ?? '\u0000'),
+  `${report?.slice(0, 40)} — expected ${readyName}`);
 await p.keyboard.press('Escape');
 await p.waitForTimeout(350);
-await p.locator('.ant-table-tbody tr.ant-table-row').nth(0).locator('.m-audits__name').click();
+await p.locator('.ant-table-tbody tr.ant-table-row').filter({ has: p.locator('.m-bar') }).first()
+  .locator('.m-audits__name').click();
 await p.waitForTimeout(400);
 const running = await p.evaluate(() => ({
   drawer: !!document.querySelector('.ant-drawer-open'),

@@ -1,8 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** Above this many rows the filter is worth getting out of the way. One or two
- *  clauses cost less height than the control that would hide them. */
-const WORTH_COLLAPSING = 2;
+/** ⚠ ONE. The caret is on the strip whenever there is a filter at all.
+ *
+ *  It used to be two - a one-clause filter is shorter than the summary line
+ *  that replaces it, so collapsing it saves nothing - and that reasoning was
+ *  about HEIGHT and wrong about the control. Mehdi, 2026-09-02: "what happened
+ *  with the collapse search, I can't see it anymore." He had two clauses. An
+ *  affordance that comes and goes on a threshold nobody is counting does not
+ *  read as an optimisation, it reads as a control that has broken - and then
+ *  the one time it is missing is the time you go looking for it.
+ *
+ *  Below the threshold the collapse saves a few pixels and costs nothing. Being
+ *  in the same place every time is worth more than either. */
+const WORTH_COLLAPSING = 0;
+
+/** And the number of rows it takes before the page collapses it FOR you. */
+const WORTH_COLLAPSING_ON_SCROLL = 2;
 
 /** Enough scroll to mean "I am reading the results now" rather than "I nudged
  *  the wheel". */
@@ -32,9 +45,11 @@ const READING_AT = 28;
  * you just added. An override that outlived the thing it was about would leave
  * you editing a filter you cannot see.
  *
- * ── AND IT DOES NOTHING BELOW THREE ROWS ───────────────────────────────────
- * A one-clause filter is shorter than the summary line that would replace it.
- * Collapsing it would be the control costing more than the thing it hides.
+ * ── AND THE CARET IS ALWAYS THERE ──────────────────────────────────────────
+ * It was hidden below three rows, on the argument that collapsing a one-clause
+ * filter saves less height than the summary line costs. True, and beside the
+ * point: see WORTH_COLLAPSING. What SCROLL does is still thresholded - nothing
+ * collapses itself under you until there is enough of it to be in the way.
  * ════════════════════════════════════════════════════════════════════════════
  */
 export function useFilterCollapse(rowCount: number) {
@@ -56,7 +71,7 @@ export function useFilterCollapse(rowCount: number) {
   /* A change to the filter is you going back to building it. */
   useEffect(() => {
     overridden.current = false;
-    if (rowCount <= WORTH_COLLAPSING) setCollapsed(false);
+    setCollapsed(false);
   }, [rowCount]);
 
   useEffect(() => {
@@ -67,7 +82,10 @@ export function useFilterCollapse(rowCount: number) {
 
     const onScroll = () => {
       if (overridden.current) return;
-      if (rowCount <= WORTH_COLLAPSING) return;
+      /* ⚠ SCROLL keeps the old threshold. Collapsing yourself is a thing the
+         page does without being asked, so it waits until the filter is
+         actually in the way; offering the caret is not, so it does not. */
+      if (rowCount <= WORTH_COLLAPSING_ON_SCROLL) return;
       setCollapsed(scroller.scrollTop > READING_AT);
     };
     onScroll();

@@ -204,7 +204,10 @@ const VERSIONED: Record<string, { current: number; since: number }> = {
 const GENERATED: RunData[] = Array.from({ length: 70 }, (_, i) => {
   const d = CYCLE[i % CYCLE.length]!;
   const failed = i % 5 === 2;
-  const date = ago(58 + i * 6);
+  /* ⚠ SPREAD OVER FIFTY-TWO DAYS since 2026-09-02, where it used to be twenty.
+     The date window is a control on the toolbar now, and every preset on it
+     returned the identical 74 rows while the whole log fitted inside a month. */
+  const date = ago(20 + i * 18);
   const rv = VERSIONED[d.testName];
   return {
     key: `r${10 + i}`,

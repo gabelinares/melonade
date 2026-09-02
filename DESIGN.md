@@ -3809,3 +3809,297 @@ unmistakably. `border-strong` instead: a firmer edge and nothing else.
 **The keyboard focus ring is untouched and still accent.** That is
 `:focus-visible` in `base.css` with `--m-focus-ring`, and an accent focus
 indicator is the one place this colour is genuinely load-bearing.
+
+## 23. The window, the footer, and three things the sessions table got wrong (2026-09-02)
+
+A batch off Mehdi's second pass on the sessions page, plus two asks that turned
+out to be about the whole app rather than that one screen.
+
+### The date window is one control, and it exists everywhere now
+
+> *"Custom range should work, and the date filter should exist also in issues,
+> synthetics and audits."*
+
+Four lists in this app are the same kind of thing — sessions, issues, runs and
+audits are all "things that happened, most recent first" — and until today only
+one of them had a window at all. Worse, the one that had it offered **"Custom
+range" and quietly applied ninety days**. A control that lies is worse than one
+that is missing: nothing on screen contradicted it, so the only way to find out
+was to count rows.
+
+`shared/date-range.ts` is now the model and `components/DateRange.tsx` the
+control. What is shared: the presets, the custom pair, the arithmetic that turns
+either into two absolute bounds, and the label. **What is not shared is which
+field a page tests** — a session's window is when it started, an issue's is when
+it was last seen, a run's is when it ran, an audit's is when it was created — so
+each page passes its own timestamp in and **the menu prints the field's name**.
+"Past 30 days" of what is a real question with four different answers, and the
+control answers it rather than leaving the reader to assume.
+
+**Why bounds and not minutes.** The first version was `rangeMinutes()`, a number
+of minutes back from now, which cannot express "the 3rd to the 18th" at all.
+Every preset can be written as a pair of bounds; a custom range cannot be
+written as a duration. So the pair is the model and the presets are the special
+case.
+
+Three smaller calls inside it:
+
+- **It prints its value, which is why it is not an icon.** Display and Filters
+  sit beside it as icon-only buttons and they can: both are questions you
+  opened, answered and closed, and a badge reports what they hold. A date window
+  has no "off" — every list is permanently inside one, and it silently decides
+  what the count at the bottom of the page means. A control that is always doing
+  something has to always say what it is doing.
+- **Half a range filters nothing.** Until both ends are picked the list keeps
+  every row, because emptying a list while somebody is mid-decision is the least
+  helpful moment to do it.
+- ⚠ **The picker's panel renders inside the menu's own DOM node.** Left in the
+  body it is "outside" as far as the click-away is concerned, so the first click
+  on a date closed the menu the picker lives in.
+
+**And the fixtures had to grow up.** Sessions spanned three and a half days, so
+7, 30 and 90 days returned the identical 134 rows; runs spanned twenty days.
+Both now spread over about two months on a curve weighted to recent, which is
+the shape of real traffic and gives every preset a different answer. **A control
+that cannot change anything teaches people it is broken**, and the demo is the
+only place that can be found out.
+
+⚠ **The runs list lost its "Period" dimension.** It was the one list whose date
+window was a filter — inside the menu, as a removable chip. The reasoning behind
+that chip was sound and it survives as the trigger's job: **a list silently
+truncated to a window lies about how much there is.** A control that prints its
+own value says that at least as loudly, and it can also say "Jul 3 – Jul 18".
+
+⚠ **Not on the tests list.** Production has an "All time" filter there and
+Gabriel already told Nikita to remove it; a date range over a list of test
+definitions is a window on nothing anybody asks about. Runs is the part of
+Synthetics that happens in time.
+
+### Audits asks the same three questions as every other list
+
+> *"Audits doesn't even have display and filter settings consistent with what we
+> have."*
+
+This file used to argue the opposite, in as many words: *"there is no filter menu
+here and no display menu… adding the others to look consistent would be adding
+controls that filter nothing."* **That was true of a three-row fixture and false
+of the page.** An audit carries a scope, a period, an author, a health band and
+a date, and every one of them is a question people ask of a shelf of reports:
+the mobile ones, mine, the ones that came out badly, the ones since the redesign
+shipped. What made the old argument look right was having three rows to ask it
+of.
+
+⚠ **The rule that survives is the one that made it sound right: consistency is
+not a reason on its own.** Every dimension reads a field the audit already has,
+and every ordering key is a column the table already draws. Nothing was invented
+to fill a menu. `scope: string[]` became `segment: string` with a `scopeLabel()`
+for the display line, because the one question people ask of this list — "show
+me the mobile ones" — should not be answered by matching text in a pre-joined
+array.
+
+The fixture went from three audits to eleven, for the same reason the sessions
+one grew: **eleven is enough for a filter, an ordering and a window to visibly
+do something.** Four people, six scopes, three periods, health scores across all
+three bands, dates from this morning to eleven weeks back.
+
+### The footer was five copies of one object
+
+> *"The footer padding is wrong."*
+
+Five pages had written it out longhand, and the five had drifted three ways:
+four inset the row by 12px against a table whose cells are inset by 20px, the
+fifth had no horizontal padding at all and its count sat against the plane's own
+edge, and one of the five had no rule above it.
+
+`ListFooter` now, and **the alignment rule is the whole reason it exists: the
+count starts where the first CELL starts and the pager ends where the last cell
+ends.** Not where the table starts — the table is edge to edge in the plane and
+its outer cells carry the page's margin themselves. A footer that uses a
+different number is a footer that is *nearly* right, which is the only kind of
+misalignment people feel without being able to name.
+
+`.m-page__controls` came out of the same pass: the toolbar's right-hand cluster
+was defined four times in three stylesheets that already disagreed about whether
+it wraps.
+
+### The columns stopped moving
+
+> *"When you change the pages and the data changes, the column widths change
+> too, and this shouldn't happen."*
+
+antd's default table layout is `auto`, under which **a column's `width` is a
+suggestion the browser overrides from the content**. So page two with a longer
+email on it shifted every column beside it, and the columns you were reading
+moved under you between pages. `tableLayout="fixed"` on all five tables; the one
+column without a width takes the remainder. Asserted across three pages, because
+this is exactly the kind of thing a screenshot of page one cannot show.
+
+### The blank row above the column titles
+
+> *"On the top of the table titles there's an empty row — look between the filter
+> and the column title."*
+
+The sticky search had 16px of `padding-bottom`, on the sound rule that a gap
+under a sticky box belongs to the box rather than being a margin on the card:
+rows slide up through a margin. What made it wrong was **the search becoming a
+full-bleed band**. A hairline closes the band, the table's header row is a band
+of its own, and 16px of the plane's colour between two bands reads as a blank
+row of the table. The hairline is the separation now.
+
+### "is not" could not be read
+
+Measured, because the eye was right and the reason was not obvious: **the closed
+operator drew the word at `content-secondary` while the same word in the
+dropdown under it drew at `content-primary`** — so opening the menu made the
+value brighter than the value you already had.
+
+The rule it settles is worth keeping: **in a clause, the words you can change
+are primary ink and the words you cannot are muted.** The subject and the
+operator are controls set as prose; "is matched", "to" and "seconds" are the
+sentence's connective tissue. Colour does the work an underline or a box would
+do more loudly.
+
+### The dropdowns truncated their own options
+
+> *"These dropdowns are awful, it's not consistent because I can't even see the
+> whole word — it doesn't make sense to truncate that."*
+
+antd's `popupMatchSelectWidth` defaults to true, so the menu is exactly as wide
+as the control that opened it. That control is 140px because it sits in a 240px
+popover beside its own label — and the option rows carry their own padding and
+draw a pixel larger than the closed control. So "Most events" fitted in the
+trigger and came out as "Most eve…" in the list under it, **which is the one
+place truncation is indefensible: a menu exists to show you the words.**
+
+`MenuSelect` is a component rather than a prop passed at six call sites, because
+six call sites is exactly how the first five get fixed and the sixth does not.
+
+### The ring, third attempt: an arc on a path
+
+Two versions were rejected and both failed on the same fact — **this field is
+1400px by 40px** — each in the way its own model implies.
+
+1. A **conic** gradient divides the box by **angle**. The whole right-hand end
+   cap occupies about three degrees of the sweep and the top rim occupies a
+   hundred and seventy-six, so a fifteen-degree accent arc was a five-pixel dot
+   crossing the middle and covered the entire end cap when it arrived there.
+   *"At the bottom and top it's small, but on left and right it takes like half
+   the field."*
+2. A **linear** gradient divides it by **distance**, which balances the arc but
+   only moves sideways — the top and bottom rims light at the same moment and it
+   stops reading as a ring at all. *"Now it's a horizontal movement, that's
+   wrong."*
+
+**A dashed stroke on an SVG path is measured in arc length.** The arc is the
+same length wherever it is, it goes round the corners, and it travels the
+perimeter in order — which is what "a circle" means on a shape that is not one.
+`pathLength="100"` normalises the perimeter, so every dash figure is a
+percentage of the loop and holds at any plane width.
+
+⚠ **And the arc grows and shrinks**, which is the part that makes it read as
+alive rather than as a marquee: the dash grows from one end, so the leading edge
+runs ahead and the trailing edge catches up. The travel and the breathing are
+deliberately not divisors of each other — at 3.4s and 1.7s exactly they would
+land in phase every cycle and the whole thing would tick.
+
+> *"The edges of the arc segments should be a gradient and the colour more
+> subtle, you can even add a glow."*
+
+A stroke cannot be given a gradient **along** its own length in CSS — `stroke`
+paints by position in the box, not by distance down the path — so the softness
+is a **blur**, which is the same result by a simpler route: a blurred cap has no
+edge, it has a falloff. Two passes of the identical dash sharing one set of
+keyframes: a wide one blurred hard is the glow, a narrow one blurred just enough
+loses its ends. **And the colour is held back** — the arc is the accent at 60%
+and the glow at 22%. At full strength it read as a status.
+
+### The play, and the two positions it was wrong in
+
+Three positions in one day, and the two rejected ones are worth keeping because
+each was wrong for a different reason.
+
+It began as a **hover-only glyph in the last column**, on the argument that the
+row opens the replay so a button repeating that 134 times is 134 invitations to
+do what the row already does. Half of that still holds — the row is the target
+and this is not a second control — but it made the one verb of the whole page
+invisible until you were already pointing at it.
+
+Then it **led the row**, filled, at 12px: *"the play icon on the left is
+horrible, it looks like a chevron."* Right. A small solid triangle with no
+container is a caret, and at the *start* of a row a caret means expand.
+
+> *"Maybe better to add an icon on the right, an outline lucide icon, that
+> appears on top of the information, with a nice gradient behind to cover what's
+> behind — so if I reduce the viewport and a scroll appears for the table, the
+> play icon would still appear on the right."*
+
+So: an outline `CirclePlay` at the right edge, always drawn, and ⚠ **sticky**.
+The plane's body is the scroll container in both directions, and nine columns on
+a narrow window overflow sideways — which put "watch this" off the right edge of
+the screen on exactly the viewport where somebody needs it most.
+
+⚠ **The gradient is what makes a sticky cell readable.** Without it the cell is
+either transparent, so metadata chips slide under the glyph and collide with it,
+or a hard fill, which reads as a column with a seam down its left edge. A fade
+from nothing to the row's own colour lets content go quiet as it passes and
+never draws an edge of its own. The fill is a custom property set on the **row**,
+so it follows the hover — the plane's colour would stop matching in the one
+state the play is actually in when somebody is looking at it. And `transparent`
+rather than `rgb(… / 0)`: CSS gradients interpolate in premultiplied alpha, so
+transparent-to-a-colour does not pass through grey.
+
+⚠ **The header cell is sticky too**, and it is not a row: antd puts a column's
+`className` on both the `th` and the `td`, which is what makes the pair hold one
+edge. It gets the header's own ground so the column titles do not scroll out
+from under the glyph.
+
+### The bookmark became a control
+
+> *"Add a bookmark icon right beside the replay, and besides all the regular
+> states it should have the bookmarked (filled). This will remove the bookmark
+> icon in the session column."*
+
+It had been a **mark** beside the name, reporting `favorite`: the row drew the
+fact and nothing set it. It is a real button now, with `aria-pressed`, a
+stopped-propagation click — bookmarking a session is not asking to watch it —
+and **the filled glyph is its on state**. Two lucide glyphs of the same shape,
+one hollow and one solid, which is the only pair of states a bookmark has ever
+needed, and it keeps this page's single accent for the play.
+
+Four states and only the fourth is not a shade of grey: decorative at rest, the
+row's hover brings it forward, its own hover gives it a target, bookmarked is
+filled and primary. ⚠ **The bookmarked rules come after the hover ones**, or a
+bookmarked row stops reading as bookmarked the moment the cursor lands anywhere
+on it.
+
+Bookmarking is a real edit, so it is state rather than a fixture flag — an
+overlay keyed by session id, so the fixture stays the fixture and "what did I
+change" is one object you can read.
+
+### And the collapse came back below three clauses
+
+> *"What happened with the collapse search, I can't see it anymore."*
+
+He had two clauses. The caret appeared at three, on the arithmetic that
+collapsing a one-clause filter saves less height than the summary line replacing
+it costs. **That is true and it is beside the point.** An affordance that comes
+and goes on a threshold nobody is counting does not read as an optimisation, it
+reads as a control that has broken — and then the one time it is missing is the
+time you go looking for it.
+
+The caret is on the strip whenever there is a filter. ⚠ **The scroll rule keeps
+its threshold**: collapsing itself is something the page does without being
+asked, so it waits until the filter is actually in the way; offering the caret
+is not, so it does not.
+
+### One real bug, found by the fixture growing
+
+`useAudits` called `onFinished` — which raises a toast, a setState on the App
+provider — **from inside the `setAudits` updater**. React runs updaters during
+the render phase, so that is "cannot update a component while rendering a
+different component", and under StrictMode the updater runs twice so the toast
+fired twice as well. It was invisible while the fixture had one audit at 38%
+that never finished inside a session, and surfaced the moment there were two
+running jobs. The updater is pure now, the announcement is queued out of the
+render phase, and a Set makes it once per audit however many times React replays
+the update.

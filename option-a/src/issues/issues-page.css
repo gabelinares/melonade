@@ -25,34 +25,6 @@
 
 .m-issues__table .is-hidden-row > td { opacity: 0.55; }
 
-.m-issues__foot {
-  display: flex;
-  /* The plane is a fixed height now, so a short list leaves space under it. The
-     footer takes that space rather than floating in the middle of it: the range
-     and the pager belong to the bottom edge of the list, not to the last row. */
-  margin-top: auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--m-space-4);
-  padding: var(--m-space-4) var(--m-space-5);
-  border-top: 1px solid var(--m-border-subtle);
-}
-
-.m-issues__range {
-  font-family: var(--m-font-num);
-  font-size: var(--m-text-xs);
-  color: var(--m-content-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* the two menu triggers, kept together at the end of the toolbar */
-.m-issues__controls {
-  display: flex;
-  align-items: center;
-  gap: var(--m-space-3);
-  margin-left: auto;
-}
-
 /* ── grouping ────────────────────────────────────────────────────────────────
    antd has no grouping, so a group header rides in as a synthetic row that
    colSpans the table. It is a label, not a row: no hover, no caret, no cursor. */

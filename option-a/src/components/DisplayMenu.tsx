@@ -16,6 +16,50 @@ import { IconButton } from './IconButton.tsx';
 import './display-menu.css';
 import { noNativeTooltip } from './selectOptions.ts';
 
+/**
+ * ⚠ THE SELECT USED IN THESE MENUS, and it exists for one property.
+ *
+ * Mehdi, 2026-09-02: *"these dropdowns are awful, it's not consistent because I
+ * can't even see the whole word - it doesn't make sense to truncate that."*
+ * Right, and the cause is antd's default: `popupMatchSelectWidth` is TRUE, so
+ * the menu is exactly as wide as the control that opened it. The control is
+ * 140px because it sits in a 240px popover next to its own label - and the
+ * option rows inside the menu carry their own 12px padding and draw at 14px
+ * where the closed control draws at 13. So "Most events" fitted in the trigger
+ * and came out as "Most eve…" in the list under it, which is the one place
+ * truncation is indefensible: a menu exists to show you the words.
+ *
+ * A menu is free to be wider than the thing that opened it. `false` keeps the
+ * trigger's width as a MINIMUM and lets the list take what its longest label
+ * needs.
+ *
+ * It is a component rather than a prop passed at six call sites because six
+ * call sites is exactly how the first five got fixed and the sixth did not.
+ */
+export function MenuSelect<T extends string>({
+  id,
+  value,
+  choices,
+  onChange,
+}: {
+  id?: string;
+  value: T;
+  choices: readonly { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <Select<T>
+      id={id}
+      size="small"
+      className="m-dm__select"
+      popupMatchSelectWidth={false}
+      value={value}
+      onChange={onChange}
+      options={noNativeTooltip(choices as { value: T; label: string }[])}
+    />
+  );
+}
+
 /** One labelled row of the menu: a question on the left, its control on the
  *  right. The shell owns the row; the caller owns the vocabulary. */
 export interface DisplayRow {
@@ -133,14 +177,7 @@ export function SortControl<T extends string>({
         onClick={() => onDesc(!desc)}
         icon={desc ? <ArrowDownWideNarrow size={13} /> : <ArrowUpNarrowWide size={13} />}
       />
-      <Select<T>
-        id={id}
-        size="small"
-        className="m-dm__select"
-        value={value}
-        onChange={onValue}
-        options={noNativeTooltip(choices as { value: T; label: string }[])}
-      />
+      <MenuSelect<T> id={id} value={value} choices={choices} onChange={onValue} />
     </span>
   );
 }

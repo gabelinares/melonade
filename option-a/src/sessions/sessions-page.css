@@ -9,11 +9,13 @@
    rule belongs in a shared stylesheet, not copied. Two tables that drift by a
    pixel is the thing this system keeps deleting. */
 
-/* The date range, on the search's own bar. `none` and a width rather than a
-   min-width: it is beside a field that takes every spare pixel, and a control
-   that grows with the plane would put "Past 30 days" in the middle of a 200px
-   box. */
-.m-sc__bar .m-ss__range.ant-select { flex: none; width: 9.25rem; }
+/* The date range, on the search's own bar. `none`: it sits beside a field that
+   takes every spare pixel, and a control that grew with the plane would put
+   "Past 30 days" in the middle of a 200px box. It is the shared `DateRange`
+   since 2026-09-02 - the same control Issues, Runs and Audits carry - and it
+   sizes to its own value rather than to a fixed width, because "Jul 3 - Jul 18"
+   is longer than any preset. */
+.m-sc__bar .m-dr { flex: none; }
 
 /* ── THE SEARCH STAYS AT THE TOP (Mehdi, 2026-09-02) ────────────────────────
    The plane's body is the scroll container, so the search holds still while a
@@ -29,9 +31,16 @@
       disappear into it instead of showing through. Put that on `.m-sc` and it
       out-specifies the card's own sunken fill and the well turns white - which
       is exactly what happened for one build.
-   2. THE GAP BELONGS TO THE STICKY BOX. `padding-bottom` here, never a margin
-      on the card: a margin sits outside the sticky box, so rows would slide up
-      through that 16px strip while the card held still above it.
+   2. ⚠ THERE IS NO GAP AT ALL (Mehdi, 2026-09-02: "on the top of the table
+      titles there's an empty row - look between the filter and the column
+      title"). It had 16px of `padding-bottom`, on the sound rule that a gap
+      under a sticky box belongs to the box rather than being a margin on the
+      card - rows slide up through a margin. What made it wrong was the search
+      becoming a full-bleed BAND: a hairline closes the band, the table's header
+      row is a band of its own, and 16px of the plane's colour between two bands
+      reads as a blank row of the table. The hairline is the separation, so the
+      header sits directly under it and rows disappear into an opaque box that
+      ends where it looks like it ends.
    3. `z-index` above the table, or the header row of a sorted table paints
       over it.
 
@@ -42,7 +51,6 @@
   position: sticky;
   top: 0;
   z-index: var(--m-z-sticky);
-  padding-bottom: var(--m-space-6);
   background: var(--m-surface-default);
 }
 
@@ -88,8 +96,6 @@
   font-size: var(--m-text-2xs);
   line-height: 1.45;
 }
-
-.m-ss__mark { flex: none; color: var(--m-content-decorative); }
 
 /* ── the figures ─────────────────────────────────────────────────────────────
    TABULAR, RIGHT-ALIGNED, ONE FACE. This is the whole argument for the table:
@@ -164,44 +170,136 @@
 }
 .m-ss__meta-chip:hover { background: var(--m-surface-active); color: var(--m-content-primary); }
 
-/* ── the play affordance ─────────────────────────────────────────────────────
-   A glyph that appears on hover, not a button on every row. The ROW opens the
-   replay - it is the only thing a session row does - so a button repeating that
-   134 times is 134 invitations to do the thing the row already does. It sits in
-   its own column so the rows keep a right edge to end on. */
-.m-ss__play {
+/* ── the play, pinned to the right edge ──────────────────────────────────────
+   See SessionsPage for the three positions this glyph has had. What is here is
+   the two things that make the third one work.
+
+   1. ⚠ IT IS STICKY, so the one affordance on the page cannot be scrolled off
+      it. The plane's body is the scroll container in both directions, and a
+      table with nine columns on a narrow window overflows sideways - which put
+      "watch this" past the right edge of the screen on exactly the viewport
+      where a person needs it most.
+   2. ⚠ THE GRADIENT IS WHAT MAKES A STICKY CELL READABLE. Without it the cell
+      is either transparent - so metadata chips slide under the glyph and
+      collide with it - or a hard fill, which reads as a column with a seam
+      down its left edge. A fade from nothing to the row's own colour lets the
+      content go quiet as it passes and never draws an edge of its own.
+
+   ⚠ The fill has to be the ROW's colour, not the plane's, or the gradient
+   stops matching the moment the row is hovered - which is the one state the
+   play is actually in when somebody is looking at it. One custom property set
+   on the row, read by the gradient on the cell. */
+/* ⚠ THE SELECTOR CARRIES `.ant-table-wrapper .ant-table` for the same reason
+   the cell-inset rule in antd-overrides.css does: antd sets `position:
+   relative` on every cell from three classes deep behind a `:where()`. Two
+   classes TIE and lose on order, silently - the declaration lands in the
+   stylesheet, applies to nothing, and the cell scrolls away looking exactly
+   like a sticky one that has not been told to stick. Read the computed value,
+   never the file. */
+.m-page__body .ant-table-wrapper .ant-table .m-ss__playcell {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: transparent;
+  text-align: right;
+}
+
+/* The fade, drawn on the cell rather than as a sibling: a pseudo-element
+   inherits the cell's own stacking and cannot be left behind by a reflow. */
+.m-page__body .ant-table-wrapper .ant-table .m-ss__playcell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* 45% of the cell is the fade and the rest is solid, so the glyph always has
+     an opaque ground under it however long the value beside it is.
+
+     ⚠ `transparent`, not `rgb(... / 0)`: CSS gradients interpolate in
+     PREMULTIPLIED alpha, so transparent-to-a-colour does not pass through grey
+     the way the old "fade to rgba(0,0,0,0)" folklore says. It also means the
+     ground can stay a plain colour token instead of needing a channel-triple
+     variant of two surfaces generated for one gradient. */
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--m-ss-play-ground) 45%,
+    var(--m-ss-play-ground) 100%
+  );
+  pointer-events: none;
+}
+
+/* The row's colour as a channel triple, so the gradient can fade it to
+   nothing. Hover and the sticky cell change together, which is the whole
+   reason this is a variable rather than three copies of a colour. */
+/* ⚠ THE HEADER CELL IS STICKY TOO, and it is not a row - antd puts a column's
+   className on both the `th` and the `td`, which is what makes the pair hold
+   one edge. Without a ground of its own the header's gradient would resolve to
+   nothing and the column titles would scroll out from under the glyph. */
+.m-ss__table { --m-ss-play-ground: var(--m-surface-sunken); }
+.m-ss__table .m-ss__row { --m-ss-play-ground: var(--m-surface-default); }
+.m-ss__table .m-ss__row:hover { --m-ss-play-ground: var(--m-surface-hover); }
+
+/* Two things at the row's right edge, in the order you reach for them: keep
+   this one, then watch it. The play is last because it is the row's own verb
+   and the edge is where the eye stops. */
+.m-ss__acts {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+}
+
+.m-ss__play,
+.m-ss__act {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.375rem;
-  height: 1.375rem;
-  border-radius: var(--m-radius-full);
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--m-radius-control);
   color: var(--m-content-decorative);
-  opacity: 0;
-  transition: opacity var(--m-duration-instant) var(--m-ease-out);
+  transition: color var(--m-duration-fast) var(--m-ease-out),
+    background-color var(--m-duration-fast) var(--m-ease-out);
 }
-.m-ss__row:hover .m-ss__play { opacity: 1; }
+
+/* ── the bookmark ────────────────────────────────────────────────────────────
+   FOUR STATES, and the fourth is the only one that is not a shade of the same
+   grey: rest is decorative like everything else out here, the row's hover
+   brings it forward, its OWN hover gives it a target, and BOOKMARKED IS
+   FILLED. A solid glyph beside a hollow one is legible without colour, which
+   is what lets this page keep spending its single accent on the play. */
+.m-ss__row:hover .m-ss__act { color: var(--m-content-secondary); }
+.m-ss__act:hover { background: var(--m-surface-active); color: var(--m-content-primary); }
+
+/* ⚠ AFTER the two rules above, because a bookmarked row still has to read as
+   bookmarked while the cursor is somewhere else on it. */
+.m-ss__act.is-on,
+.m-ss__row:hover .m-ss__act.is-on { color: var(--m-content-primary); }
+.m-ss__act.is-on:hover { background: var(--m-surface-active); }
+
+.m-ss__act:focus-visible {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: -2px;
+}
+
+/* A watched session's play is one step quieter at rest, which is the same
+   thing its name does: the row is not disabled, it is behind you.
+
+   ⚠ BEFORE the hover rule, not after. Both selectors weigh the same, so the
+   later one wins and a watched row's play would have stayed grey under the
+   cursor - the one row state where the affordance matters most. */
+.m-ss__row.is-viewed .m-ss__play { color: var(--m-content-disabled); }
+
+/* THE ACCENT, and only the accent (Mehdi: "hovering it would bring the accent
+   color"). No fill behind the glyph: it is already sitting on a gradient, and
+   this page spends its one accent on the search field's ring - a colour that
+   arrives on the row you are pointing at and leaves with the cursor does not
+   compete with it. */
+.m-ss__row:hover .m-ss__play,
+.m-ss__row.is-viewed:hover .m-ss__play { color: var(--m-content-accent); }
 
 /* A watched session is not dimmed, only its name gives up its weight. Dimming
    the whole row makes half the table look disabled; the list is still the
    list. */
 .m-ss__row.is-viewed .m-ss__name { font-weight: var(--m-weight-regular); }
 
-/* ── the foot ────────────────────────────────────────────────────────────────
-   Same object as the issues footer: the range on the left, the pager on the
-   right, pinned to the plane's bottom edge. */
-.m-ss__foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--m-space-4);
-  margin-top: auto;
-  padding-top: var(--m-space-5);
-}
-
-.m-ss__range-label {
-  font-family: var(--m-font-num);
-  font-size: var(--m-text-xs);
-  font-variant-numeric: tabular-nums;
-  color: var(--m-content-muted);
-}

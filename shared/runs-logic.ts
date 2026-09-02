@@ -3,46 +3,37 @@
 
 import { RUNS, type RunData, type RunStatus, regionLabel, resolutionLabel } from './runs-data.ts';
 import type { Resolution } from './tests-data.ts';
+import { DEFAULT_RANGE, withinRange, type DateRangeValue } from './date-range.ts';
 
 export type RunTab = 'all' | RunStatus;
 
-export type RunFilterKey = 'envs' | 'tags' | 'viewports' | 'regions' | 'period';
+export type RunFilterKey = 'envs' | 'tags' | 'viewports' | 'regions';
 
-/** Periods are a SINGLE-select dimension: "the last 24 hours or the last 30
- *  days" is not a question anybody asks. */
-export type Period = '24h' | '7d' | '30d' | 'all';
-
-export const PERIODS: readonly { value: Period; label: string }[] = [
-  { value: '24h', label: 'Last 24 hours' },
-  { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
-  { value: 'all', label: 'All time' },
-];
+/* ⚠ THE PERIOD LEFT THIS MENU on 2026-09-02. It had been a single-select
+   dimension inside Filters - the one list in the app whose date window was a
+   filter, on four other lists it was a control of its own or missing entirely.
+   It is now the shared `DateRange`, in the toolbar, on every list. The
+   reasoning that put it here still holds and is now the trigger's job: THE
+   DEFAULT MUST BE VISIBLE, because a list silently truncated to seven days
+   lies about how much there is. A control that prints its own value says it at
+   least as loudly as a removable chip did, and it can also say "Jul 3 - Jul
+   18", which a preset never could. */
 
 export interface RunFilters {
   envs: string[];
   tags: string[];
   viewports: string[];
   regions: string[];
-  period: Period[];
 }
 
-/* Runs default to the last SEVEN DAYS, not to all time: what you come to this
-   tab for is what happened recently, and eighty rows of history is not that.
-
-   Graphite differs from production here in one deliberate way - the default is
-   VISIBLE. It arrives as a removable chip in the filter bar like any other
-   filter, because a list that is silently truncated is a list that lies about
-   how much there is. */
 export const DEFAULT_RUN_FILTERS: RunFilters = {
   envs: [],
   tags: [],
   viewports: [],
   regions: [],
-  period: ['7d'],
 };
 
-export const NO_RUN_FILTERS: RunFilters = { envs: [], tags: [], viewports: [], regions: [], period: [] };
+export const NO_RUN_FILTERS: RunFilters = { envs: [], tags: [], viewports: [], regions: [] };
 
 export type RunSortKey = 'result' | 'test' | 'env' | 'duration' | 'when';
 
@@ -51,6 +42,11 @@ export interface RunsState {
   query: string;
   tab: RunTab;
   filters: RunFilters;
+  /* Runs default to thirty days like every other list. It used to be seven,
+     which was right when the window was buried in a menu and wrong now that it
+     is printed on the toolbar: the same default everywhere is what stops the
+     window moving under you as you cross the app. */
+  range: DateRangeValue;
   sort: { key: RunSortKey; desc: boolean } | null;
 }
 
@@ -61,36 +57,34 @@ export const INITIAL_RUNS_STATE: RunsState = {
   query: '',
   tab: 'all',
   filters: DEFAULT_RUN_FILTERS,
+  range: DEFAULT_RANGE,
   /* Newest first, because a run list is a log and a log is read from the top.
      This is the one list in the app that arrives sorted rather than queued:
      there is no "waiting on you" among finished runs. */
   sort: { key: 'when', desc: true },
 };
 
-const HOUR = 3600000;
-
-export const periodCutoff = (period: Period, now: number): number =>
-  period === 'all' ? 0 : now - (period === '24h' ? 24 : period === '7d' ? 7 * 24 : 30 * 24) * HOUR;
-
 const matchesQuery = (r: RunData, q: string) =>
   !q.trim() || r.testName.toLowerCase().includes(q.trim().toLowerCase());
 
-const inPeriod = (r: RunData, period: string[], now: number) =>
-  period.length === 0 || r.date >= periodCutoff(period[0] as Period, now);
-
-const matchesFilters = (r: RunData, f: RunFilters, now: number) =>
+const matchesFilters = (r: RunData, f: RunFilters) =>
   (f.envs.length === 0 || (r.envName != null && f.envs.includes(r.envName))) &&
   (f.tags.length === 0 || (r.tags ?? []).some((t) => f.tags.includes(t))) &&
   (f.viewports.length === 0 || f.viewports.includes(r.resolution ?? 'desktop')) &&
-  (f.regions.length === 0 || (r.region != null && f.regions.includes(r.region))) &&
-  inPeriod(r, f.period, now);
+  (f.regions.length === 0 || (r.region != null && f.regions.includes(r.region)));
+
+/** The window and the filters are two questions, and every count in here has
+ *  to answer both: an option's count that ignored the date window would
+ *  promise rows the list cannot show. */
+const inScope = (r: RunData, state: RunsState, now: number) =>
+  matchesFilters(r, state.filters) && withinRange(r.date, state.range, now);
 
 export function filterRuns(state: RunsState, now: number): RunData[] {
   const rows = state.runs.filter(
     (r) =>
       matchesQuery(r, state.query) &&
       (state.tab === 'all' || r.status === state.tab) &&
-      matchesFilters(r, state.filters, now),
+      inScope(r, state, now),
   );
   if (!state.sort) return rows;
   const RESULT_ORDER: Record<RunStatus, number> = { running: 0, failed: 1, passed: 2 };
@@ -115,7 +109,7 @@ export interface RunTabCount {
 }
 
 export function runCounts(state: RunsState, now: number): RunTabCount[] {
-  const pool = state.runs.filter((r) => matchesQuery(r, state.query) && matchesFilters(r, state.filters, now));
+  const pool = state.runs.filter((r) => matchesQuery(r, state.query) && inScope(r, state, now));
   const of = (s: RunStatus) => pool.filter((r) => r.status === s).length;
   return [
     { key: 'all', label: 'All', count: pool.length },
@@ -138,7 +132,7 @@ export function runFilterDimensions(state: RunsState, now: number): RunFilterDim
   /* Each option counts what it would leave, with the OTHER dimensions still
      applied and its own released. */
   const countWith = (key: RunFilterKey, value: string) =>
-    base.filter((r) => matchesFilters(r, { ...state.filters, [key]: [value] } as RunFilters, now)).length;
+    base.filter((r) => inScope(r, { ...state, filters: { ...state.filters, [key]: [value] } as RunFilters }, now)).length;
 
   const envs = Array.from(new Set(state.runs.map((r) => r.envName).filter(Boolean) as string[])).sort();
   const tags = Array.from(new Set(state.runs.flatMap((r) => r.tags ?? []))).sort();
@@ -150,25 +144,14 @@ export function runFilterDimensions(state: RunsState, now: number): RunFilterDim
     { key: 'tags', label: 'Tags', options: tags.map((v) => ({ value: v, label: v, count: countWith('tags', v) })) },
     { key: 'viewports', label: 'Viewport', options: viewports.map((v) => ({ value: v, label: resolutionLabel(v as Resolution), count: countWith('viewports', v) })) },
     { key: 'regions', label: 'Region', options: regions.map((v) => ({ value: v, label: regionLabel(v), count: countWith('regions', v) })) },
-    {
-      key: 'period',
-      label: 'Period',
-      hint: 'Runs are the last seven days unless you say otherwise',
-      single: true,
-      options: PERIODS.map((p) => ({ value: p.value, label: p.label, count: countWith('period', p.value) })),
-    },
   ];
 }
 
 export const runFilterCount = (f: RunFilters): number =>
-  f.envs.length + f.tags.length + f.viewports.length + f.regions.length + f.period.length;
+  f.envs.length + f.tags.length + f.viewports.length + f.regions.length;
 
 export function toggleRunFilter(f: RunFilters, key: RunFilterKey, value: string): RunFilters {
   const on = (f[key] as string[]).includes(value);
-  /* Single-select replaces rather than accumulates, and clicking the value that
-     is already on turns it off - "all time" is reachable by unticking, so the
-     period never becomes a filter you cannot remove. */
-  if (key === 'period') return { ...f, period: on ? [] : [value as Period] };
   const current = f[key] as string[];
   return { ...f, [key]: on ? current.filter((v) => v !== value) : [...current, value] };
 }
