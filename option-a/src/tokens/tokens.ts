@@ -396,6 +396,13 @@ export const layout = {
   'control-height-md': '1.875rem', // 30
   'control-height-lg': '2.25rem',  // 36
   'row-height': '2.375rem',        // 38: the compact table row
+  /* THE MENU'S OWN ROW, 2026-09-02, and it is a token rather than a number in
+     side-nav.css for the reason the density note gives: "a row that keeps its
+     height while the gaps around it grow reads as a spacing bug rather than as
+     a roomier product". It is not `control-height-md` because a nav row is not
+     a control - it went to 32 at compact for the air Mehdi asked for, where
+     every input and button stayed at 30. A section row is this minus 2. */
+  'nav-row-height': '2rem',        // 32
   'header-height': '2.75rem',      // 44
 } as const;
 

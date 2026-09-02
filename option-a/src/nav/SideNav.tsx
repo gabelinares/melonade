@@ -11,6 +11,8 @@ import {
   Settings2,
 } from 'lucide-react';
 import { AGENTS } from './agents.ts';
+import { DEFAULT_PROJECT, ORG, projectName } from './account.ts';
+import { AccountMenu } from './AccountMenu.tsx';
 import { AGENT_ICONS } from './icons.ts';
 import { BrandMark } from './BrandMark.tsx';
 import { NavItem } from './NavItem.tsx';
@@ -19,14 +21,6 @@ import { COLLAPSE_KEY } from './useNavCollapse.ts';
 import { CreditsMeter } from '../components/CreditsMeter.tsx';
 import { ThemeToggle } from '../components/ThemeToggle.tsx';
 import './side-nav.css';
-
-/* The account the menu is signed in to. Two lines, because they are two
-   different facts: the ORGANISATION is who is paying and it almost never
-   changes, the PROJECT is which of its sites you are looking at and it changes
-   all day. One line saying `frontend.acme.com` made you infer the first from
-   the second. */
-const ORG = 'Acme, Inc.';
-const PROJECT = 'frontend.acme.com';
 
 export interface SideNavProps {
   /** The current destination. An agent's section is `agent/section`, so the
@@ -112,6 +106,14 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
   const toggle = (key: string) =>
     setExpanded((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
+  /* WHICH PROJECT, and it lives here rather than at the shell because nothing
+     outside this column reads it yet - every list in the prototype is the same
+     fixture whichever project is current. See account.ts: the switcher is real,
+     the data behind it is one set, and this is where it moves to the shell on
+     the day a page takes a project. */
+  const [project, setProject] = useState(DEFAULT_PROJECT);
+  const [accountOpen, setAccountOpen] = useState(false);
+
   return (
     <nav className={`m-nav${collapsed ? ' is-collapsed' : ''}`} aria-label="Main">
       {/* ── the logo. Pinned, and it is NOT a control. ─────────────────────
@@ -139,26 +141,41 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
           rest, the row's own fill on hover. The rows below it go somewhere; this
           changes what all of them are about, so it should not look like one of
           them. Narrow, it loses its box and keeps the badge, the way the credits
-          meter loses its box and keeps the measure. */}
-      <NavFlyout enabled={collapsed} label={`${ORG} · ${PROJECT}`}>
+          meter loses its box and keeps the measure.
+
+          AND IT OPENS SOMETHING NOW (Mehdi, 09-02: "nothing happens when
+          clicking"). See AccountMenu. It is the ONE overlay on this control at
+          both widths - no hover tooltip underneath it, unlike the rows - because
+          the card names the organisation and every project in full, so there is
+          nothing left for a tooltip to give back, and two overlays on one
+          control means the hover and the click disagree about what it does. */}
+      <AccountMenu
+        project={project}
+        onProject={setProject}
+        onPreferences={() => onNavigate('preferences')}
+        open={accountOpen}
+        onOpenChange={setAccountOpen}
+      >
         <button
           type="button"
-          className="m-nav__account"
-          aria-label={`Switch project: ${PROJECT}, ${ORG}`}
+          className={`m-nav__account${accountOpen ? ' is-open' : ''}`}
+          aria-label={`Switch project: ${projectName(project)}, ${ORG.name}`}
+          aria-haspopup="menu"
+          aria-expanded={accountOpen}
         >
           {/* A SQUARE, and the person at the foot of the menu is a circle. Two
               initials in one column mean two different kinds of thing, so the
               shape has to say which - an organisation is not somebody. */}
           <span className="m-nav__account-badge" aria-hidden="true">
-            {ORG[0]}
+            {ORG.initial}
           </span>
           <span className="m-nav__account-text">
-            <span className="m-nav__account-name m-truncate">{PROJECT}</span>
-            <span className="m-nav__account-org m-truncate">{ORG}</span>
+            <span className="m-nav__account-name m-truncate">{projectName(project)}</span>
+            <span className="m-nav__account-org m-truncate">{ORG.name}</span>
           </span>
           <ChevronsUpDown size={13} className="m-nav__account-caret" aria-hidden="true" />
         </button>
-      </NavFlyout>
+      </AccountMenu>
 
       {/* HOME IS GONE (Mehdi, 08-28). It was going to carry the weekly review and
           the digest, and both of those are backend work - "otherwise it would be

@@ -56,6 +56,22 @@ const nav = await p.evaluate(() => {
     sep: !!nav.querySelector('.m-nav__sep'),
     groupLabel: nav.querySelector('.m-nav__label')?.textContent?.trim() ?? null,
     groupName: nav.querySelector('.m-nav__scroll [role="group"]')?.getAttribute('aria-label') ?? null,
+    weights: (() => {
+      const rows = [...nav.querySelectorAll('.m-nav__scroll .m-nav-item')];
+      const top = rows.find((e) => !e.classList.contains('is-nested'));
+      const nested = rows.find((e) => e.classList.contains('is-nested'));
+      const on = nav.querySelector('.m-nav-item.is-active');
+      const w = (e) => (e ? getComputedStyle(e).fontWeight : null);
+      return {
+        top: w(top),
+        nested: w(nested),
+        active: w(on),
+        size: top && nested && getComputedStyle(top).fontSize === getComputedStyle(nested).fontSize
+          ? getComputedStyle(top).fontSize : 'two sizes',
+        activeBg: on ? getComputedStyle(on).backgroundColor : null,
+        activeFilled: on ? getComputedStyle(on).backgroundColor !== 'rgba(0, 0, 0, 0)' : false,
+      };
+    })(),
     /* THE WRAP. The ground is the menu's colour, the menu paints nothing of its
        own, and the plane's margin is the same on all four sides - the fourth
        being the menu's own padding, which is what makes the gap look like a
@@ -84,6 +100,16 @@ check('the account says whose workspace and which project, on two lines',
 check('the agents start at a rule rather than a word',
   !!nav && nav.sep && !nav.groupLabel && nav.groupName === 'Agents',
   `rule ${nav?.sep}, label ${nav?.groupLabel ?? 'none'}, group named ${nav?.groupName}`);
+/* THE WEIGHT STEP IS BETWEEN A PARENT AND ITS SECTIONS, not between the current
+   row and the other ten. An agent and one of its sections were the same 13px
+   regular, told apart by an indent, a hairline and a colour but not by the type
+   - which is the thing you actually read. */
+check('an agent is set a weight above its own sections',
+  !!nav && nav.weights && nav.weights.top === '500' && nav.weights.nested === '400',
+  `agent ${nav?.weights?.top}, section ${nav?.weights?.nested}, both ${nav?.weights?.size}`);
+check('and the current row is a fill rather than a third weight',
+  !!nav && nav.weights?.active === nav.weights?.top && nav.weights?.activeFilled,
+  `${nav?.weights?.active} on ${nav?.weights?.activeBg}`);
 check('an agent expands into its sections', !!nav && nav.sections === 3, `${nav?.sections} sections`);
 check('the foot is a row of tools', !!nav && nav.tools >= 4, `${nav?.tools} tools`);
 check('the credits are always on screen', !!nav && /Credits/.test(nav.credits ?? ''), nav?.credits);
@@ -269,6 +295,117 @@ await p.keyboard.press(process.platform === 'darwin' ? 'Meta+\\' : 'Control+\\')
 await p.waitForTimeout(400);
 const back = await geom();
 check('the shortcut opens it again', !back.collapsed && back.width === open0.width, `${back.width}px`);
+
+/* ── 1b. THE ACCOUNT, AND WHAT IT OPENS (2026-09-02) ──────────────────────
+   Three complaints in one control. It did nothing when clicked; it was "weird,
+   very compact"; and it was compact at both settings of the density control
+   because 40px is 40px whatever the tokens say. So: the switch is exercised
+   end to end, and the tile is measured at both densities.
+
+   Run BEFORE the collapse, because the tile is a different object at 52px. */
+const acct = async () => {
+  await p.evaluate(() => document.documentElement.setAttribute('data-density', 'compact'));
+  await p.waitForTimeout(300);
+  const compact = await p.evaluate(() => {
+    const t = document.querySelector('.m-nav__account').getBoundingClientRect();
+    const lines = document.querySelector('.m-nav__account-text').getBoundingClientRect();
+    return { h: Math.round(t.height), lines: Math.round(lines.height) };
+  });
+  await p.evaluate(() => document.documentElement.setAttribute('data-density', 'spaced'));
+  await p.waitForTimeout(400);
+  const spaced = await p.evaluate(() => {
+    const t = document.querySelector('.m-nav__account').getBoundingClientRect();
+    const row = document.querySelector('.m-nav__scroll .m-nav-item').getBoundingClientRect();
+    return { h: Math.round(t.height), row: Math.round(row.height) };
+  });
+  await p.evaluate(() => document.documentElement.setAttribute('data-density', 'compact'));
+  await p.waitForTimeout(400);
+  return { compact, spaced };
+};
+const dens = await acct();
+/* The box is the two lines plus its padding plus its border, and every term is
+   a token - so it answers the density control instead of clipping its own
+   content. It was 40px with 30px of type in a 26px content box. */
+check('the account tile is as tall as what is in it',
+  dens.compact.h >= dens.compact.lines + 12, `${dens.compact.h}px box, ${dens.compact.lines}px of type`);
+check('and it breathes when the density control says Spaced',
+  dens.spaced.h > dens.compact.h, `${dens.compact.h}px compact -> ${dens.spaced.h}px spaced`);
+/* The menu's rows come along, which is the whole reason the height became a
+   token: "a row that keeps its height while the gaps around it grow reads as a
+   spacing bug rather than as a roomier product." */
+check('and so do the rows, which is what the row-height token is for',
+  dens.spaced.row > 32, `32px compact -> ${dens.spaced.row}px spaced`);
+
+const openAccount = async () => {
+  await p.click('.m-nav__account');
+  await p.waitForTimeout(400);
+  return p.evaluate(() => {
+    const card = document.querySelector('.m-account-menu');
+    if (!card) return null;
+    const cont = document.querySelector('.m-account-root .ant-popover-container').getBoundingClientRect();
+    const trig = document.querySelector('.m-nav__account').getBoundingClientRect();
+    const fly = getComputedStyle(document.querySelector('.m-account-root .ant-popover-container'));
+    return {
+      head: [
+        card.querySelector('.m-nav__account-name')?.textContent?.trim(),
+        card.querySelector('.m-nav__account-org')?.textContent?.trim(),
+      ],
+      rows: [...card.querySelectorAll('.m-nav-item__label')].map((n) => n.textContent.trim()),
+      current: card.querySelector('.m-nav-item.is-active .m-nav-item__label')?.textContent?.trim(),
+      ticks: card.querySelectorAll('.anticon-check, [data-icon="check"]').length,
+      left: Math.round(cont.left - trig.left),
+      gap: Math.round(cont.top - trig.bottom),
+      triggerLit: document.querySelector('.m-nav__account').classList.contains('is-open'),
+      chrome: `${fly.borderTopWidth} ${fly.borderTopColor} r${fly.borderTopLeftRadius} p${fly.padding}`,
+    };
+  });
+};
+const card = await openAccount();
+check('the switcher opens its account menu', !!card, card ? `${card.rows.length} rows` : 'nothing opened');
+check('and the card is the tile continued: the same badge and the same two lines',
+  !!card && card.head[0] === 'Acme, Inc.' && /Team plan · 4 projects/.test(card.head[1] ?? ''),
+  card?.head.join(' / '));
+check('it lists the projects and marks the current one with a fill, not a tick',
+  !!card && card.rows.length === 5 && card.current === 'frontend.acme.com' && card.ticks === 0,
+  `${card?.rows.join(', ')} — on ${card?.current}, ${card?.ticks} ticks`);
+check('it hangs under the control it belongs to, on its own left edge',
+  !!card && card.left === 0 && card.gap === 4, `${card?.left}px across, ${card?.gap}px under`);
+check('the trigger stays lit while its card is up', !!card && card.triggerLit);
+/* ONE CARD, TWO OVERLAYS THAT AGREE. The account menu and the row flyout are
+   the same popover chrome, because they are the same card. */
+check('and it is drawn as the menu\'s other card is',
+  !!card && card.chrome === '1px rgb(221, 226, 228) r8px p4px', card?.chrome);
+
+/* THE SWITCH IS REAL. It is mock data, but the control does the thing it says. */
+await p.locator('.m-account-menu .m-nav-item__label', { hasText: 'marketing.acme.com' }).click();
+await p.waitForTimeout(400);
+const switched = await p.evaluate(() => ({
+  tile: document.querySelector('.m-nav__account-name').textContent.trim(),
+  closed: getComputedStyle(document.querySelector('.m-account-root')).display === 'none',
+  lit: document.querySelector('.m-nav__account').classList.contains('is-open'),
+}));
+check('choosing a project switches it and closes the card',
+  switched.tile === 'marketing.acme.com' && switched.closed && !switched.lit,
+  `tile says ${switched.tile}, card ${switched.closed ? 'closed' : 'still up'}`);
+const reopened = await openAccount();
+check('and the fill moves with it, so the menu never disagrees with the tile',
+  reopened?.current === 'marketing.acme.com', reopened?.current);
+/* ⚠ THE ROW YOU ARE ON IS PRIMARY INK AT BOTH LEVELS. `.is-nested` is declared
+   after `.is-active` and both were two classes, so a section you were standing
+   on took the fill and kept the muted ink of the ones you were not - latent
+   since the sections were added, and invisible while `.is-active` also carried
+   a weight change to lean on. */
+const inkOn = await p.evaluate(() => {
+  const on = document.querySelector('.m-account-menu .m-nav-item.is-active');
+  const off = document.querySelector('.m-account-menu .m-nav-item:not(.is-active)');
+  return { on: getComputedStyle(on).color, off: getComputedStyle(off).color };
+});
+check('a selected section is primary ink and not just a fill',
+  inkOn.on !== inkOn.off, `${inkOn.on} selected vs ${inkOn.off}`);
+/* Back where it started, so nothing downstream reads a switched project. */
+await p.locator('.m-account-menu .m-nav-item__label', { hasText: 'frontend.acme.com' }).click();
+await p.waitForTimeout(300);
+
 
 // ── 1c. WHAT YOU HAVE NOT OPENED YET ──────────────────────────────────────
 /* The menu's dot one level down: which of the things the agent found are new to

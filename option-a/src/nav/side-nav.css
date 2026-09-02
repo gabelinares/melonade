@@ -128,7 +128,28 @@
   flex: none;
   align-self: center;
   width: 100%;
-  height: 2.5rem;
+  /* ── THE HEIGHT IS ARITHMETIC, NOT A NUMBER (Mehdi, 2026-09-02) ────────
+     "It's weird, very compact. It should be compact in the compact density and
+     spaced in the spaced." It was 40px flat, which gave the two lines a 26px
+     content box to put 30px of type in - so they were crammed against the
+     border at compact and no roomier at Spaced, because 40 is 40 whatever the
+     density control says.
+
+     So the box is what is IN it: the two lines, the padding around them, and
+     the border. Every term is a token, so the tile answers the density control
+     (44 compact, 48 Spaced) AND the type control - two of the five type
+     systems set `--m-text-sm` a pixel larger, and the tile now grows for them
+     instead of clipping.
+
+     ⚠ It has to be DEFINITE rather than `auto` for two reasons. `auto` is the
+     one value a height transition cannot start from, and the collapse cannot
+     be measured off the content: a line folded to zero WIDTH still occupies
+     its line box, so an auto-height tile would stay 44px tall on a 28px rail. */
+  --m-account-lines: calc(
+    var(--m-text-sm) * var(--m-leading-tight) + var(--m-space-px) +
+    var(--m-text-2xs) * var(--m-leading-tight)
+  );
+  height: calc(var(--m-account-lines) + var(--m-space-3) * 2 + var(--m-border-width) * 2);
   margin-bottom: var(--m-space-7);
   padding: var(--m-space-3);
   border: var(--m-border-width) solid var(--m-border-default);
@@ -142,6 +163,13 @@
     padding var(--m-duration-normal) var(--m-ease-out);
 }
 .m-nav__account:hover {
+  background: var(--m-nav-row-hover);
+  border-color: var(--m-border-strong);
+}
+/* Open, it is holding a card up: it keeps the hover state for as long as the
+   card is on screen, because a trigger that goes quiet under its own menu
+   reads as though the menu belongs to something else. */
+.m-nav__account.is-open {
   background: var(--m-nav-row-hover);
   border-color: var(--m-border-strong);
 }
@@ -169,7 +197,10 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 1px;
+  /* The one gap here that does NOT answer the density control, and the same
+     reason the density note leaves 0-2 alone: this is an optical nudge between
+     two lines of one label, not space between two things. */
+  gap: var(--m-space-px);
   flex: 1;
   min-width: 0;
   max-width: 100%;

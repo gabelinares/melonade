@@ -246,6 +246,7 @@ const SPACED = {
   'control-height-md': '2.125rem', // 34
   'control-height-lg': '2.5rem',   // 40
   'row-height': '2.875rem',        // 46
+  'nav-row-height': '2.375rem',    // 38
   'header-height': '3.25rem',      // 52
 };
 

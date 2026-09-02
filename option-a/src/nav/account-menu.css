@@ -1,0 +1,37 @@
+/* ── WHAT THE SWITCHER OPENS ──────────────────────────────────────────────────
+   The card frame is the flyout's, to the pixel: same 4px inset on the popover
+   container, same hairline between groups, same rows. The two overlays in this
+   menu are one shape, so there is nothing here about surfaces, shadows or
+   radius - antd's popover already carries this app's tokens for all three.
+
+   ⚠ `.ant-popover-container`, NOT `.ant-popover-inner`. antd v6 renders
+   popover > container > content and there is no `-inner` at all, so a rule
+   written against the v5 name matches nothing and fails silently. */
+.m-account-root .ant-popover-container { padding: var(--m-space-2); }
+
+/* As wide as the control it hangs off, near enough: the names are domains and
+   a truncated domain in a list you are choosing FROM is a list you cannot use.
+   `--m-nav-width` minus the menu's two gutters is what the tile itself gets. */
+.m-account-menu { width: calc(var(--m-nav-width) - var(--m-space-5) - var(--m-space-6)); }
+
+/* THE TILE, WITHOUT ITS BOX. Same badge, same two lines, same classes - only
+   the padding is the card's rather than the control's, and there is no border,
+   because in here it is not something you click. */
+.m-account-menu__head {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  padding: var(--m-space-3);
+}
+
+/* A hairline, not a heading: the same call the menu made when AGENTS became a
+   rule. The first group's rule is what separates it from the head; every
+   later group gets one from the same declaration. */
+.m-account-menu__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-space-1);
+  margin-top: var(--m-space-2);
+  padding-top: var(--m-space-2);
+  border-top: var(--m-border-width) solid var(--m-border-subtle);
+}

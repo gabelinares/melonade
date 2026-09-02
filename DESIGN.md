@@ -3185,3 +3185,114 @@ almost none.
 comments (`SideNav.tsx`, `side-nav.css`), three lines of `nav-item.css` for the
 row's height and the words that fold, and `proto-check`'s inventory of what is
 at the top of the menu.
+
+### The batch off it, same day
+
+Three things Mehdi caught looking at the result.
+
+**An agent and its own sections were the same type.** "The type weight of the
+font and the subitem should be different." They were both 13px regular, told
+apart by an indent, a hairline and a colour — not by the type, which is the
+thing you actually read. **A top-level row is now medium and a section row is
+regular**, one step apart, and the parent stops looking like a sibling that
+happens to be higher up.
+
+The consequence is deliberate and it is the more useful arrangement: **the weight
+step moved off the current row and onto the hierarchy**, where it separates
+eleven rows from their sections instead of one row from the other ten. The
+current row was never leaning on it — it is a filled surface in the plane's own
+colour with primary ink, the same selection grammar as the pager and the
+segmented thumb.
+
+**It also exposed a latent defect.** `.is-nested` is declared after `.is-active`
+and both were two classes, so the later one won: a section you were standing on
+took the fill and kept the **muted ink of the ones you were not**. Invisible for
+as long as `.is-active` also carried a weight change to lean on. Fixed with the
+one three-class selector this stylesheet has, and asserted.
+
+**The account tile was "weird, very compact… it should be compact in the compact
+density and spaced in the spaced."** It was 40px flat: 2px of border and 12px of
+padding left a **26px content box holding 30px of type**, so the two lines were
+crammed against the border — and no roomier at Spaced, because 40 is 40 whatever
+the density control says.
+
+So the box is what is IN it, as arithmetic rather than a number:
+
+```
+height = the two lines + padding·2 + border·2
+```
+
+Every term is a token, so the tile answers the density control — **44 compact, 48
+Spaced** — and the type control with it: two of the five type systems set
+`--m-text-sm` a pixel larger, and the tile grows for them instead of clipping.
+It has to be *definite* rather than `auto` for two reasons, both noted in the
+stylesheet: `auto` is the one value a height transition cannot start from, and
+the collapse cannot be measured off the content, since a line folded to zero
+*width* still occupies its line box.
+
+**And the menu's rows came along**, which is why the height became a real token
+(`--m-nav-row-height`, 32 compact / 38 Spaced) rather than a number in
+`side-nav.css`. The density note in `gen-proto-themes` already said why: *"a row
+that keeps its height while the gaps around it grow reads as a spacing bug
+rather than as a roomier product."* It is not `control-height-md`, because a nav
+row is not a control — it went to 32 for the air Mehdi asked for while every
+input and button stayed at 30.
+
+### The switcher opens something
+
+"Nothing happens when clicking, think about that, it should be as simple as
+possible, but all the account feature should work with mock data."
+
+`account.ts` holds the organisation, its plan and its four projects.
+**Switching is real** — the menu holds which one is current and the tile
+redraws — and it is the whole feature, because a switcher's only job is to
+switch.
+
+**The card is the tile, continued.** Its head is the same badge and the same two
+lines as the control you clicked, using literally the same three classes, so
+there is one definition of how an account is set. What changes is which fact
+leads: out on the tile the project does, because that is what you are looking
+at; in the card the organisation does, because that is what the list belongs to.
+The two overlays in this menu are also one card — measured, not assumed: same
+1px `border-default`, same 8px radius, same 4px inset as the row flyout.
+
+Three things are deliberately not in it:
+
+- **No tick on the current project.** Selection in this build is a filled
+  surface plus primary ink — the nav's current row, the pager's current page,
+  the segmented thumb — so a checkmark would be a fourth way of saying what
+  three things already say. The rows are the same `NavItem` the menu draws its
+  own sections with.
+- **No "PROJECTS" heading.** A hairline says where a group starts, which is the
+  call the menu itself just made when AGENTS became a rule.
+- **No invite, no billing, no second organisation.** None of them exist anywhere
+  in this build. A row that opens nothing is worse than a control that did
+  nothing — it promises twice.
+
+The one non-project row is **Preferences**, going to the page the menu's foot
+already goes to. It is here because it is what you come to an account menu
+looking for and it exists.
+
+**It is the only overlay on this control**, at both widths — no hover tooltip
+underneath it, unlike the rows. The card names the organisation and every
+project in full, so there is nothing left for a tooltip to give back, and two
+overlays on one control means the hover and the click disagree about what it
+does.
+
+Behaviour, all asserted: it opens on click and on Enter, closes on select, on
+outside click and on Escape, the trigger stays lit while its card is up, and the
+fill moves with the switch so the card never disagrees with the tile.
+
+### Not done
+
+**The pages do not read the project.** Every list in the prototype is the same
+fixture whichever project is current. `account.ts` says so at the top: the
+switcher works, the data behind it is one set, and that is where the project
+moves to the shell on the day a page takes one.
+
+**The person at the foot of the menu still does nothing when clicked.** It is a
+different control from the switcher — the account at the top is an organisation,
+the avatar is somebody — and giving it the switcher's card would make an
+avatar open an organisation menu. Flagged rather than guessed: it is either its
+own small menu or it is the switcher's second trigger, and that is a call, not
+a detail.
