@@ -81,13 +81,22 @@
    is why a row of them reads as one long string. */
 .m-srow__subject {
   display: inline-flex;
-  align-items: baseline;
+  /* ⚠ `center`, NOT `baseline`. Baseline alignment inside a FIXED-HEIGHT flex
+     box does not centre anything - it aligns the items to each other and then
+     drops the group wherever the first item's baseline lands, which sat the
+     text a couple of pixels high in a 26px pill and read as broken padding.
+     Both spans are the same 13px, so centring them costs nothing and the
+     baselines still agree. */
+  align-items: center;
   gap: var(--m-space-2);
   flex: 0 1 auto;
   min-width: 0;
   max-width: 20rem;
-  height: var(--m-control-height-sm);
-  padding-inline: var(--m-space-3);
+  /* `md` and not `sm`: at 26px a two-word clause looked squeezed against its
+     own border. 30px with 8px of inset is the same proportion every other
+     control on the page has. */
+  height: var(--m-control-height-md);
+  padding-inline: var(--m-space-4);
   border: var(--m-border-width) solid var(--m-border-default);
   border-radius: var(--m-radius-control);
   background: var(--m-surface-default);

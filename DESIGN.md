@@ -3531,3 +3531,149 @@ controller verbs so a story cannot show a state the app cannot produce.
   measured offset, not a constant. Flagged rather than half-built.
 - **Session settings** (timezone) and **Share this search** are menu rows that
   open nothing yet.
+
+### The batch off it, same day (2026-09-02)
+
+Four things Mehdi caught looking at the result, and one of them replaced a
+control rather than adjusting it.
+
+**"Keep only the all sessions and bookmarks, remove the other tabs."** The
+issue-type strip went, and its whole toolbar row went with it.
+
+It lost almost nothing, because `issueType` is already a property in the
+catalogue — an array with the same five values and the same backend key. So all
+five are still reachable through the one button, and the property version is
+strictly better: it composes with *contains / has any / is empty*, and the value
+picker shows each type's **share of traffic** where the strip could only show a
+count. **The state went too** — `issueTypes` on the search was a second path to
+a filter the catalogue already offered, and two paths to one filter is the
+duplication this whole exercise is about deleting.
+
+What it did cost: the counts were visible without opening anything. Noted rather
+than pretended away.
+
+**The tabs were the wrong component.** They were a `FilterStrip` — the pill
+strip — in a slot PageCard describes in as many words: *"text tabs with an ink
+bar, deliberately a different shape from the pill toolbar below, because a
+section replaces the body and a filter only narrows it."* Pills in there made
+the two sections read as two filters, which is the confusion those two shapes
+exist to prevent. It is antd `Tabs` now, the same as the Tests page's three
+sections.
+
+**And the date range and the display menu moved onto the search's own bar**
+rather than staying on a row with nothing else in it. They belong there for a
+better reason than tidiness: **that bar is what sticks**, and a window you
+cannot change without scrolling back up is the same complaint the sticky came
+out of.
+
+### The field, and the ring
+
+> *"The filter section is really simple, it should be something cool, with a
+> cool hover animation, like it should be a nice button, a complex button, maybe
+> with a subtle ring — like something that will be an AI agent for search
+> later."*
+
+**`+ Add filter` became a field.** Ninety pixels of button gave no sign it
+accepted a sentence, so the half of this search nobody expects was invisible
+until you opened it. Something the width of the plane says *type here* without a
+word, and the note on its right says what typing gets you: **"reads plain
+English"**. Four words, not a bare sparkle — the sparkle is the templated
+version of this and it says nothing; the words say the whole feature.
+
+It is still a `<button>`, because it opens a menu and holds no text. It is
+*drawn* as a field.
+
+**The ring** is the one piece of expression on the page, and it is here rather
+than anywhere else because this field is where the search agent will live — a
+control that is about to start answering questions should look like it is
+listening.
+
+Built with the deliberately boring technique: a clipped box over the field's
+border box, a conic gradient at twice its size spinning inside it, and a second
+layer inset by 1px in the field's own colour, leaving a one-pixel rim. No
+`mask`, no `@property`, no registered custom property — so it behaves the same
+everywhere and degrades to a static rim rather than to nothing.
+
+Three rules, and each is the difference between this and the AI-slop version:
+
+1. **Not on at rest**, and the animation is `paused` rather than merely
+   invisible, so it costs nothing while nobody is pointing at it.
+2. **Mostly grey.** The sweep is the border's own two greys with a single accent
+   arc passing through — one accent per view, and the base is the *resting*
+   border colour so the rim never reads lighter than what it replaced. Built on
+   `border-subtle` first, three quarters of the rim came out fainter than the
+   border and pointing at the field read as the border going away.
+3. **It stops being a sweep when it is a focus ring.** On `:focus-visible` the
+   rim holds still in the focus colour: an indicator that moves cannot be
+   located. `prefers-reduced-motion` gets the same static rim.
+
+All three are asserted, because "is it animating" is exactly the kind of claim a
+screenshot cannot settle.
+
+### The proportion bars
+
+> *"There are some filters where you see the proportions of the results with a
+> bar — make sure you have mock data to show everything."*
+
+This is the best control in the production app and the easiest one to lose in a
+redesign, because it looks like an ordinary multi-select until you notice the
+bar. What the bar does: **it tells you whether a filter is worth applying before
+you apply it.** "France 12" turns picking a value from a guess into a decision,
+and a sliver of a bar tells you the filter will empty the list before you watch
+it happen.
+
+The whole value control was a plain antd multi-select. It is `ValuePicker` now,
+and four decisions:
+
+- **The counts are counted, and live.** `userCountry`, `userBrowser`, `plan` and
+  the rest read the 134 sessions against whatever the date range and the *other*
+  filters already left — so they answer "how many would this leave me" rather
+  than "how many exist somewhere", and the menu and the table can never
+  disagree. Asserted: the figures sum to the session count.
+- **Where there is nothing on a session to count** — a URL, a selector, an error
+  string, an event's own properties — the candidates come from `VALUE_FIXTURES`
+  with weights. Same control either way; a value field with no shares is this
+  control with its best feature removed.
+- **The bar is relative to the widest candidate, not to the total.** Sessions
+  spread over nine countries put every share under 20%, and nine slivers compare
+  to nothing. A full bar beside a three-quarter one is readable.
+- **It is `CheckRow`** — the same option row the filter tree, the display menu
+  and the capture popover use — with the bar riding its `meta` slot rather than
+  being a fifth kind of option row.
+
+Production draws its bar as a blue underline hard against the row's left edge,
+beneath the label: a coloured line under text you are trying to read, clipped at
+whatever width the label happened to be. Right-aligned in a fixed column, the
+bars share an axis, so their **lengths are comparable** rather than merely
+present.
+
+Two smaller calls that fell out of it. **An open field takes typed values** — a
+URL that only exists on staging is still a URL you need to filter on, and
+production's autocomplete allows it; Enter commits. And **a number with known
+values gets the picker too**: a status code is a number *and* an enumeration, so
+`status` is a string with options and the picker is used wherever
+`hasValueOptions` is true. A number with nothing to enumerate (`errorsCount >
+5`) keeps the spinner, which is the right shape for a threshold.
+
+### Two more defects that never errored
+
+**`align-items: baseline` on a fixed-height pill never centres anything.** It
+aligns the items to each other and then drops the group wherever the first
+baseline lands, which sat the subject's text a couple of pixels high in a 26px
+box and read as broken padding — Mehdi spotted it before I did. It is `center`
+now, and the pill went from `control-height-sm` to `md`, because at 26px a
+two-word clause was squeezed against its own border.
+
+**The value select was eating the whole line.** `flex: 1` plus `margin-left:
+auto` on the remove meant it absorbed every spare pixel on the plane — a 370px
+empty box beside a three-word clause, with the "needs a value" note stranded at
+the far end of it. A clause is as wide as what it says.
+
+### And the well became a band
+
+Full bleed with an 8px radius is a rounded corner at the plane's own edge, which
+is a radius nobody can see. The plane's body has no horizontal padding — the
+table below is edge to edge and its cells carry their own inset — so the search
+is a **band across the plane** rather than a card floating in it, which is also
+what it is: a region of the page, not an object on it. One hairline closes the
+bottom; the fill does the rest.

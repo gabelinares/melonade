@@ -710,7 +710,13 @@ export const EVENT_PROPERTIES: readonly CatalogueEntry[] = [
   prop('label', 'Label', 'auto_captured'),
   prop('url', 'URL', 'auto_captured'),
   prop('value', 'Value', 'auto_captured'),
-  prop('status', 'Status code', 'auto_captured', 'number'),
+  /* A STRING, not a number, and deliberately: a status code is an enumeration
+     you pick from - "is 404", "is not 500" - and the string operator set is the
+     one that fits. `VALUE_FIXTURES.status` gives it its candidates and their
+     shares. */
+  prop('status', 'Status code', 'auto_captured', 'string', {
+    options: ['200', '301', '400', '401', '404', '429', '500', '502', '503'],
+  }),
   prop('method', 'Method', 'auto_captured', 'string', {
     options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   }),
@@ -735,3 +741,101 @@ export const SAVED_SEGMENTS: readonly SavedSegment[] = [
   { id: 'seg-311', name: 'Trials, week one', mine: false, shared: true },
   { id: 'seg-402', name: 'Crashes, last 24h', mine: false, shared: true },
 ];
+
+/* ── CANDIDATE VALUES ─────────────────────────────────────────────────────────
+   What the value picker offers, and the SHARE each one holds.
+
+   Production's autocomplete draws a proportion bar under every candidate - how
+   much of the traffic that value accounts for - which is the most useful thing
+   on the whole control: it tells you whether a filter is worth applying before
+   you apply it. Mehdi asked for the mock data to show it.
+
+   TWO SOURCES, and the split is the honest one:
+
+   1. WHERE THE FIELD IS REAL, the counts are COUNTED. `userCountry` reads the
+      134 sessions and reports what is actually in them, so the bar in the menu
+      and the rows in the table can never disagree. That is done in
+      `sessions-logic.ts`, against whatever the current date range left.
+   2. WHERE THE FIELD IS NOT ON A SESSION - a URL, a selector, an error string,
+      an event's own properties - there is nothing to count, so the candidates
+      are listed here with a weight. The weights are integers, so the shares
+      are arithmetic rather than decoration.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export interface ValueCandidate {
+  value: string;
+  /** Relative weight. The picker turns weights into a share of their own sum. */
+  weight: number;
+}
+
+export const VALUE_FIXTURES: Record<string, readonly ValueCandidate[]> = {
+  /* the autocapture page event's own URLs, which is the single most-filtered
+     value in any session-replay product */
+  url: [
+    { value: '/checkout', weight: 412 },
+    { value: '/cart', weight: 388 },
+    { value: '/product/:id', weight: 297 },
+    { value: '/search', weight: 213 },
+    { value: '/account/billing', weight: 96 },
+    { value: '/signup', weight: 74 },
+    { value: '/checkout/confirm', weight: 61 },
+    { value: '/account/settings', weight: 33 },
+    { value: '/legal/terms', weight: 8 },
+  ],
+  selector: [
+    { value: 'button.checkout-submit', weight: 264 },
+    { value: '.cart-item__remove', weight: 181 },
+    { value: '#promo-code-apply', weight: 143 },
+    { value: 'a.nav-account', weight: 118 },
+    { value: '.address-form input[name="zip"]', weight: 77 },
+    { value: '.plan-card--pro button', weight: 41 },
+  ],
+  label: [
+    { value: 'Place order', weight: 301 },
+    { value: 'Apply promo code', weight: 172 },
+    { value: 'Remove', weight: 158 },
+    { value: 'Continue to payment', weight: 121 },
+    { value: 'Save address', weight: 64 },
+  ],
+  /* An error string is the ugliest value in the product and it is what people
+     actually paste in, so the fixture holds the real shapes: a bare message, a
+     serialised response, and the classic cross-origin nothing. */
+  value: [
+    { value: 'Script error.', weight: 388 },
+    { value: '{"message":"GET error on /managed-saas/billing"}', weight: 244 },
+    { value: 'Failed to fetch', weight: 196 },
+    { value: 'fromMillis requires a numerical input, but received a string', weight: 88 },
+    { value: 'Cannot read properties of undefined (reading \'total\')', weight: 71 },
+    { value: 'NetworkError when attempting to fetch resource.', weight: 42 },
+    { value: 'Hydration failed because the initial UI does not match', weight: 17 },
+  ],
+  status: [
+    { value: '200', weight: 731 },
+    { value: '404', weight: 168 },
+    { value: '500', weight: 94 },
+    { value: '401', weight: 58 },
+    { value: '429', weight: 21 },
+    { value: '502', weight: 9 },
+  ],
+  method: [
+    { value: 'GET', weight: 688 },
+    { value: 'POST', weight: 241 },
+    { value: 'PUT', weight: 52 },
+    { value: 'PATCH', weight: 31 },
+    { value: 'DELETE', weight: 12 },
+  ],
+  userId: [
+    { value: 'u-4021', weight: 24 },
+    { value: 'u-1187', weight: 19 },
+    { value: 'u-2290', weight: 14 },
+    { value: 'u-7734', weight: 11 },
+    { value: 'u-5512', weight: 7 },
+  ],
+  'meta.accountId': [
+    { value: 'acc-1188', weight: 38 },
+    { value: 'acc-0042', weight: 26 },
+    { value: 'acc-3310', weight: 21 },
+    { value: 'acc-7781', weight: 12 },
+    { value: 'acc-2204', weight: 6 },
+  ],
+};

@@ -1,0 +1,128 @@
+/* ── THE VALUE FIELD ─────────────────────────────────────────────────────────
+   Same card as every other popover here, so nothing about depth. */
+.m-vp-root .ant-popover-container { padding: var(--m-space-2); }
+
+/* 20rem: an error string and a serialised response both have to be readable on
+   one line before the ellipsis, and the counts need a column of their own on
+   the right. Production's is 380px and clips at about the same place. */
+.m-vp { display: flex; flex-direction: column; width: 20rem; max-width: 88vw; }
+
+/* ── the trigger ─────────────────────────────────────────────────────────────
+   The row's value, drawn as the same shape as the row's subject so a clause is
+   made of one kind of part. Empty it is a placeholder; set, it says WHAT is set
+   rather than how many - the row is the one place the whole search has to be
+   legible without opening anything. */
+.m-vp__trigger {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 18rem;
+  height: var(--m-control-height-md);
+  padding-inline: var(--m-space-4);
+  border: var(--m-border-width) solid var(--m-border-default);
+  border-radius: var(--m-radius-control);
+  background: var(--m-surface-default);
+  color: var(--m-content-placeholder);
+  font-size: var(--m-text-sm);
+  text-align: left;
+  transition: border-color var(--m-duration-instant) var(--m-ease-out),
+    color var(--m-duration-instant) var(--m-ease-out);
+}
+.m-vp__trigger:hover { border-color: var(--m-border-strong); }
+.m-vp__trigger.is-set { color: var(--m-content-primary); font-weight: var(--m-weight-medium); }
+
+/* ── the field at the top of the menu ── */
+.m-vp__search {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  padding: var(--m-space-2) var(--m-space-3);
+  border-bottom: var(--m-border-width) solid var(--m-border-subtle);
+}
+.m-vp__search .ant-input { font-size: var(--m-text-sm); }
+.m-vp__search .ant-input:focus-visible,
+.m-vp__search .ant-input:focus { outline: none; box-shadow: none; }
+.m-vp__search:focus-within {
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: -3px;
+  border-radius: var(--m-radius-control);
+}
+
+/* USE WHAT YOU TYPED. An open field has to accept a value nobody has seen yet -
+   a URL that only exists on staging is still a URL you need to filter on - and
+   production's autocomplete allows it. The affordance appears only once there
+   is something to commit, and it names the thing rather than saying "add". */
+.m-vp__commit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  flex: none;
+  max-width: 9rem;
+  overflow: hidden;
+  padding-inline: var(--m-space-2);
+  border-radius: var(--m-radius-chip);
+  background: var(--m-surface-active);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-2xs);
+  white-space: nowrap;
+}
+.m-vp__commit:hover { color: var(--m-content-primary); }
+
+.m-vp__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 19rem;
+  overflow-y: auto;
+  padding: var(--m-space-2);
+}
+
+.m-vp__none {
+  padding: var(--m-space-6) var(--m-space-3);
+  color: var(--m-content-muted);
+  font-size: var(--m-text-sm);
+  text-align: center;
+}
+
+/* ── THE SHARE ───────────────────────────────────────────────────────────────
+   The figure and the bar, stacked in the row's own meta column. Both, not one:
+   the figure is what you compare when two options are close, the bar is what
+   you scan when you are looking down a list of nine.
+
+   Production draws the bar as a blue underline hard against the row's left
+   edge, under the label - which puts a coloured line under text you are trying
+   to read, and clips at whatever width the label happened to be. Right-aligned
+   in a fixed column, the bars share a baseline and an axis, so their lengths
+   are comparable rather than merely present. */
+.m-vp__share {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex: none;
+  width: 3.25rem;
+}
+
+.m-vp__n {
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-2xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--m-content-muted);
+}
+
+/* The app's own bar, at the one size a menu row has room for. Its fill is the
+   accent, which is the same colour every measure in this build uses. */
+.m-vp__bar { width: 100%; height: 3px; }
+
+.m-checkrow--on .m-vp__n { color: var(--m-content-secondary); }
+
+/* A value that is in the search but not in the candidate list: typed by hand,
+   or no longer present in the current range. It has to stay visible and
+   removable or the filter cannot be undone from here. */
+.m-vp__typed {
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+  font-style: italic;
+}

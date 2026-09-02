@@ -4,14 +4,17 @@ import {
   EVENT_PROPERTIES,
   categoryLabel,
   entryOf,
+  hasValueOptions,
   isIncomplete,
   isNullary,
   operatorsFor,
   type CatalogueEntry,
   type SearchFilter,
 } from '@shared/sessions-logic.ts';
+import type { SessionRow } from '@shared/sessions-logic.ts';
 import { noNativeTooltip } from '../components/selectOptions.ts';
 import { FilterPicker } from './FilterPicker.tsx';
+import { ValuePicker } from './ValuePicker.tsx';
 import './search-row.css';
 
 export interface SearchRowProps {
@@ -24,6 +27,9 @@ export interface SearchRowProps {
   draggable?: boolean;
   /** Every property already in the search, so the picker can disable them. */
   taken?: readonly string[];
+  /** The sessions the value counts are computed against. Passed down rather
+   *  than imported, so a row in a story counts the story's own rows. */
+  rows: readonly SessionRow[];
 
   onReplace: (entry: CatalogueEntry) => void;
   onUpdate: (patch: Partial<SearchFilter>) => void;
@@ -78,6 +84,7 @@ export function SearchRow({
   index,
   draggable,
   taken = [],
+  rows,
   onReplace,
   onUpdate,
   onRemove,
@@ -179,7 +186,7 @@ export function SearchRow({
               )}
               aria-label={`Operator for ${entry.displayName}`}
             />
-            <ValueField filter={filter} entry={entry} onUpdate={onUpdate} />
+            <ValueField filter={filter} entry={entry} onUpdate={onUpdate} rows={rows} />
           </>
         )}
 
@@ -247,6 +254,7 @@ export function SearchRow({
                   filter={p}
                   entry={pe}
                   onUpdate={(patch) => onUpdateProperty?.(p.key, patch)}
+                  rows={rows}
                 />
                 <button
                   type="button"
@@ -281,10 +289,12 @@ function ValueField({
   filter,
   entry,
   onUpdate,
+  rows,
 }: {
   filter: SearchFilter;
   entry: CatalogueEntry;
   onUpdate: (patch: Partial<SearchFilter>) => void;
+  rows: readonly SessionRow[];
 }) {
   if (isNullary(entry.dataType, filter.operator)) return null;
 
@@ -317,7 +327,13 @@ function ValueField({
     );
   }
 
-  if (entry.dataType === 'number') {
+  /* A NUMBER WITH KNOWN VALUES STILL GETS THE SHARE PICKER. A status code is a
+     number and also an enumeration - "404" is a value you pick, not one you
+     type - and a picker that showed 404's share of traffic and then handed the
+     next such field a bare spinner would be the good control appearing at
+     random. A number with nothing to enumerate (`errorsCount > 5`) gets the
+     spinner, which is the right shape for a threshold. */
+  if (entry.dataType === 'number' && !hasValueOptions(entry.id)) {
     return (
       <InputNumber
         className="m-srow__num-input"
@@ -330,21 +346,19 @@ function ValueField({
     );
   }
 
+  /* EVERY OTHER VALUE GOES THROUGH THE SHARE PICKER, closed set or open. That
+     is the point of it: the share of traffic a value holds is the thing that
+     makes choosing one a decision instead of a guess, and a plain multi-select
+     is what production's autocomplete stops being the moment you take the bar
+     off it. A closed set takes no typed values; an open one does. */
   return (
-    <Select
-      className="m-srow__value"
-      size="small"
-      /* `tags` where the set is open and `multiple` where it is closed: a
-         Browser is one of four things and a URL is anything at all, and a field
-         that lets you type a value the backend has never seen is not a help. */
-      mode={entry.options ? 'multiple' : 'tags'}
-      popupMatchSelectWidth={false}
-      maxTagCount="responsive"
+    <ValuePicker
+      entryId={entry.id}
       value={filter.value}
-      onChange={(v: string[]) => onUpdate({ value: v })}
-      options={entry.options ? noNativeTooltip(entry.options.map((o) => ({ value: o, label: o }))) : undefined}
-      placeholder="value"
-      aria-label={`Value for ${entry.displayName}`}
+      onChange={(v) => onUpdate({ value: v })}
+      rows={rows}
+      name={entry.displayName}
+      freeText={!entry.options}
     />
   );
 }

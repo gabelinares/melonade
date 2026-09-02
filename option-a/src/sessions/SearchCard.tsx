@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button, Select, Tooltip } from 'antd';
-import { Plus } from 'lucide-react';
+import { Search, Sparkles } from 'lucide-react';
 import {
   describeFilter,
   translate,
   type CatalogueEntry,
   type EventsOrder,
   type SearchFilter,
+  type SessionRow,
 } from '@shared/sessions-logic.ts';
 import { noNativeTooltip } from '../components/selectOptions.ts';
 import { FilterPicker } from './FilterPicker.tsx';
@@ -45,6 +46,15 @@ export interface SearchCardProps {
   onTogglePropertyOrder: (eventKey: string) => void;
   onEventsOrder: (order: EventsOrder) => void;
   onClear: () => void;
+  /** The sessions the value counts are computed against — everything the date
+   *  range and the other filters already left. */
+  rows: readonly SessionRow[];
+  /** The controls that belong to the LIST rather than to the search - the date
+   *  range and the display menu. They ride the search's own bar because the
+   *  bar is what sticks: a window you cannot change without scrolling back up
+   *  is the same complaint the sticky came out of. A slot rather than props,
+   *  because the search has no business knowing what a date range is. */
+  trailing?: ReactNode;
 }
 
 /**
@@ -99,6 +109,8 @@ export function SearchCard({
   onTogglePropertyOrder,
   onEventsOrder,
   onClear,
+  rows,
+  trailing,
 }: SearchCardProps) {
   const [drag, setDrag] = useState<{ from: number; over: number | null; at: 'top' | 'bottom' | null }>({
     from: -1,
@@ -122,59 +134,84 @@ export function SearchCard({
 
   return (
     <section className="m-sc" aria-label="Session search">
-      {/* ── the bar ───────────────────────────────────────────────────────────
-          One button on the left; the two things that act on the whole search on
-          the right. Nothing else, and in particular no "Events" or "Filters"
-          heading - the list says which is which. */}
+      {/* ── THE FIELD ─────────────────────────────────────────────────────────
+          It is a FIELD, not a button, and that is the change: "+ Add filter"
+          was a 90px control that gave no sign it accepted a sentence, so the
+          half of this search nobody expects was invisible until you opened it.
+          A field the width of the plane says "type here" without a word, and
+          the note on its right says what typing gets you.
+
+          THE RING is the one piece of expression on this page. It sweeps once
+          around the field on hover and on focus - a slow conic pass, mostly the
+          border's own grey with a single accent arc in it - because this field
+          is where the search agent will live and a control that is about to
+          become an agent should look like it is listening. It is not on at
+          rest: a permanently animated border is a page you cannot read. */}
       <div className="m-sc__bar">
         <FilterPicker taken={takenProperties} onPick={onAdd} onTranslate={onAddMany}>
-          <Button size="small" icon={<Plus size={14} />}>
-            Add filter
-          </Button>
+          <button type="button" className="m-sc__field" aria-label="Search events and filters">
+            <span className="m-sc__ring" aria-hidden="true" />
+            <Search size={15} className="m-sc__field-glyph" aria-hidden="true" />
+            <span className="m-sc__field-text">
+              Search events and filters, or describe a session
+            </span>
+            <span className="m-sc__field-note">
+              <Sparkles size={12} aria-hidden="true" />
+              reads plain English
+            </span>
+          </button>
         </FilterPicker>
+        {trailing}
+      </div>
 
-        {/* TWO events, not one: with a single event there is no gap for an
-            operator to sit in, and a control that cannot change the result is
-            a control that teaches you to ignore controls. */}
-        {events.length > 1 && (
-          <span className="m-sc__order">
-            <Tooltip title="How the events relate to each other, across the whole search.">
-              <span className="m-sc__order-label">matching</span>
-            </Tooltip>
-            <Select
-              className="m-sc__order-select"
-              size="small"
-              variant="borderless"
-              popupMatchSelectWidth={false}
-              value={eventsOrder}
-              onChange={onEventsOrder}
-              options={noNativeTooltip(
-                ORDER_OPTIONS.map((o) => ({
-                  value: o.value,
-                  label: (
-                    <span className="m-sc__order-option">
-                      <span>{o.label}</span>
-                      <span className="m-sc__order-hint">{o.hint}</span>
-                    </span>
-                  ),
-                })),
-              )}
-              /* The closed control shows the word alone; the open list shows
-                 the word and what it means. A dropdown whose closed state
-                 repeats its own explanation is a dropdown twice as wide as it
-                 needs to be. */
-              labelRender={({ value }) => <span>{String(value)}</span>}
-              aria-label="How the events relate"
-            />
-          </span>
-        )}
+      {/* ── what the search is doing, once it is doing something ─────────────
+          The order control and Clear act on the WHOLE search, so they sit above
+          the rows rather than in the field's line: the field is where you add,
+          this strip is where you change your mind. Absent until there is a
+          search to change. */}
+      {any && (
+        <div className="m-sc__strip">
+          {/* TWO events, not one: with a single event there is no gap for an
+              operator to sit in, and a control that cannot change the result is
+              a control that teaches you to ignore controls. */}
+          {events.length > 1 && (
+            <span className="m-sc__order">
+              <Tooltip title="How the events relate to each other, across the whole search.">
+                <span className="m-sc__order-label">matching</span>
+              </Tooltip>
+              <Select
+                className="m-sc__order-select"
+                size="small"
+                variant="borderless"
+                popupMatchSelectWidth={false}
+                value={eventsOrder}
+                onChange={onEventsOrder}
+                options={noNativeTooltip(
+                  ORDER_OPTIONS.map((o) => ({
+                    value: o.value,
+                    label: (
+                      <span className="m-sc__order-option">
+                        <span>{o.label}</span>
+                        <span className="m-sc__order-hint">{o.hint}</span>
+                      </span>
+                    ),
+                  })),
+                )}
+                /* The closed control shows the word alone; the open list shows
+                   the word and what it means. A dropdown whose closed state
+                   repeats its own explanation is a dropdown twice as wide as it
+                   needs to be. */
+                labelRender={({ value }) => <span>{String(value)}</span>}
+                aria-label="How the events relate"
+              />
+            </span>
+          )}
 
-        {any && (
           <Button type="text" size="small" className="m-sc__clear" onClick={onClear}>
             Clear
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── the list ── */}
       {any ? (
@@ -186,6 +223,7 @@ export function SearchCard({
               index={i + 1}
               draggable={events.length > 1}
               taken={takenProperties}
+              rows={rows}
               onReplace={(e) => onReplace(f.key, e)}
               onUpdate={(p) => onUpdate(f.key, p)}
               onRemove={() => onRemove(f.key)}
@@ -212,6 +250,7 @@ export function SearchCard({
               key={f.key}
               filter={f}
               taken={takenProperties}
+              rows={rows}
               onReplace={(e) => onReplace(f.key, e)}
               onUpdate={(p) => onUpdate(f.key, p)}
               onRemove={() => onRemove(f.key)}
@@ -227,9 +266,7 @@ export function SearchCard({
            field that accepts prose has to show you the shape of prose it
            accepts. */
         <div className="m-sc__empty">
-          <p className="m-sc__hint">
-            Pick an event or a property, or describe the session you are looking for.
-          </p>
+          <p className="m-sc__hint">Try</p>
           <div className="m-sc__examples">
             {EXAMPLES.map((ex) => (
               <ExampleChip key={ex} text={ex} onUse={onAddMany} />

@@ -1,4 +1,4 @@
-import { Button, Dropdown, Pagination, Select, Table, Tooltip } from 'antd';
+import { Button, Dropdown, Pagination, Select, Table, Tabs, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
   Bookmark,
@@ -12,12 +12,10 @@ import {
 import {
   DATE_RANGES,
   FIELD_CHOICES,
-  ISSUE_TABS,
   SAVED_SEGMENTS,
   SORT_CHOICES,
   entryOf,
   formatDuration,
-  type IssueType,
   type SessionField,
   type SessionRow,
 } from '@shared/sessions-logic.ts';
@@ -25,7 +23,6 @@ import type { useSessions } from '../state/useSessions.ts';
 import { PageCard } from '../components/PageCard.tsx';
 import { DisplayShell } from '../components/DisplayMenu.tsx';
 import { EmptyState } from '../components/EmptyState.tsx';
-import { FilterStrip } from '../components/FilterStrip.tsx';
 import { IconButton } from '../components/IconButton.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
@@ -295,15 +292,21 @@ export function SessionsPage({ model }: SessionsPageProps) {
     <PageCard
       title="Sessions"
       subtitle="Every session the tracker recorded on this project. Search by what people did, then watch the ones that matter."
+      /* ⚠ antd `Tabs`, NOT `FilterStrip`. The `tabs` slot is text tabs with an
+         ink bar, and PageCard says so in as many words: "deliberately a
+         different shape from the pill toolbar below, because a section replaces
+         the body and a filter only narrows it". A pill strip in here made the
+         two sections read as two filters, which is the confusion those two
+         shapes exist to prevent - and text tabs are what the Tests page's three
+         sections already use. */
       tabs={
-        <FilterStrip
-          label="Which sessions"
+        <Tabs
+          activeKey={model.tab}
+          onChange={(k) => model.setTab(k as 'all' | 'bookmarks')}
           items={[
             { key: 'all', label: 'All sessions' },
             { key: 'bookmarks', label: 'Bookmarked' },
           ]}
-          selected={[model.tab]}
-          onSelect={(k) => model.setTab(k as 'all' | 'bookmarks')}
         />
       }
       actions={
@@ -375,82 +378,19 @@ export function SessionsPage({ model }: SessionsPageProps) {
           </Dropdown>
         </>
       }
-      toolbar={
-        <>
-          {/* THE ISSUE TYPES, and they are a filter rather than a tab: picking
-              two is a sensible thing to want, and production's Segmented cannot
-              express it. `FilterStrip` draws pressed state and lets the page
-              decide what pressing means - exclusive on the tabs above,
-              independent here, one control either way. */}
-          <FilterStrip
-            label="Filter by issue type"
-            items={[
-              { key: 'all', label: 'Any issue' },
-              ...ISSUE_TABS.map((t) => ({
-                key: t.value,
-                label: t.label,
-                count: model.issueTypeCount(t.value),
-              })),
-            ]}
-            selected={model.issueTypes.length === 0 ? ['all'] : model.issueTypes}
-            onSelect={(k) => model.toggleIssueType(k as IssueType | 'all')}
-          />
-          <div className="m-ss__controls">
-            <Select
-              className="m-ss__range"
-              size="small"
-              value={model.range}
-              onChange={model.setRange}
-              options={noNativeTooltip(DATE_RANGES.map((d) => ({ value: d.value, label: d.label })))}
-              aria-label="Date range"
-            />
-            <DisplayShell
-              changeCount={model.displayChangeCount}
-              onReset={model.resetDisplay}
-              rows={[
-                {
-                  id: 'sort',
-                  label: 'Order',
-                  control: (
-                    <Select
-                      id="sort"
-                      size="small"
-                      value={display.sort}
-                      onChange={(v) => model.setDisplay('sort', v)}
-                      options={noNativeTooltip(
-                        SORT_CHOICES.map((c) => ({ value: c.value, label: c.label })),
-                      )}
-                    />
-                  ),
-                },
-                {
-                  id: 'viewed',
-                  label: 'Watched',
-                  control: (
-                    <Select
-                      id="viewed"
-                      size="small"
-                      value={display.viewed}
-                      onChange={(v) => model.setDisplay('viewed', v)}
-                      options={noNativeTooltip([
-                        { value: 'show', label: 'Show all' },
-                        { value: 'hide', label: 'Hide watched' },
-                        { value: 'only', label: 'Only watched' },
-                      ])}
-                    />
-                  ),
-                },
-              ]}
-              fields={FIELD_CHOICES.map((f) => ({
-                value: f.value,
-                label: f.label,
-                on: has(f.value),
-              }))}
-              onToggleField={(v) => model.toggleField(v as SessionField)}
-            />
-          </div>
-        </>
-      }
+      /* NO TOOLBAR ROW. The issue-type strip went (Mehdi, 2026-09-02: keep only
+         the two tabs) and it lost almost nothing: `issueType` is a property in
+         the catalogue, so all five are still reachable through the one button -
+         and now with their share of traffic beside them, which the strip's bare
+         count could not give. What it did cost is the count being visible
+         without opening anything; noted in DESIGN.md rather than pretended
+         away.
+
+         The date range and the display menu moved onto the search's own bar
+         rather than staying on a row of their own with nothing else in it. They
+         belong there for a better reason than tidiness: THAT BAR IS WHAT
+         STICKS, and a window you cannot change without scrolling back up is
+         the same complaint the sticky came out of. */
     >
       <div className="m-ss__sticky">
         <SearchCard
@@ -469,6 +409,65 @@ export function SessionsPage({ model }: SessionsPageProps) {
           onTogglePropertyOrder={model.togglePropertyOrder}
           onEventsOrder={model.setEventsOrder}
           onClear={model.clearSearch}
+          /* The value counts are computed against everything the OTHER filters
+             already left, so the menu and the table can never disagree. */
+          rows={model.matched}
+          trailing={
+            <>
+              <Select
+                className="m-ss__range"
+                size="small"
+                value={model.range}
+                onChange={model.setRange}
+                options={noNativeTooltip(DATE_RANGES.map((d) => ({ value: d.value, label: d.label })))}
+                aria-label="Date range"
+              />
+              <DisplayShell
+                changeCount={model.displayChangeCount}
+                onReset={model.resetDisplay}
+                rows={[
+                  {
+                    id: 'sort',
+                    label: 'Order',
+                    control: (
+                      <Select
+                        id="sort"
+                        size="small"
+                        value={display.sort}
+                        onChange={(v) => model.setDisplay('sort', v)}
+                        options={noNativeTooltip(
+                          SORT_CHOICES.map((c) => ({ value: c.value, label: c.label })),
+                        )}
+                      />
+                    ),
+                  },
+                  {
+                    id: 'viewed',
+                    label: 'Watched',
+                    control: (
+                      <Select
+                        id="viewed"
+                        size="small"
+                        value={display.viewed}
+                        onChange={(v) => model.setDisplay('viewed', v)}
+                        options={noNativeTooltip([
+                          { value: 'show', label: 'Show all' },
+                          { value: 'hide', label: 'Hide watched' },
+                          { value: 'only', label: 'Only watched' },
+                        ])}
+                      />
+                    ),
+                  },
+                ]}
+                fields={FIELD_CHOICES.map((f) => ({
+                  value: f.value,
+                  label: f.label,
+                  on: has(f.value),
+                }))}
+                onToggleField={(v) => model.toggleField(v as SessionField)}
+              />
+            </>
+          }
         />
       </div>
 

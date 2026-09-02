@@ -25,13 +25,15 @@ import {
   CATEGORY_ORDER,
   EVENT_PROPERTIES,
   SESSIONS,
+  VALUE_FIXTURES,
   type CatalogueEntry,
   type DataType,
   type IssueType,
   type SessionRow,
+  type ValueCandidate,
 } from './sessions-data.ts';
 
-export type { CatalogueEntry, DataType, IssueType, SessionRow };
+export type { CatalogueEntry, DataType, IssueType, SessionRow, ValueCandidate };
 export {
   CATALOGUE,
   CATEGORY_LABELS,
@@ -39,6 +41,7 @@ export {
   EVENT_PROPERTIES,
   SESSIONS,
   SAVED_SEGMENTS,
+  VALUE_FIXTURES,
   bookmarked,
 } from './sessions-data.ts';
 
@@ -159,15 +162,18 @@ export const SORT_CHOICES: ReadonlyArray<{ value: SessionSortKey; label: string 
   { value: 'duration', label: 'Longest' },
 ];
 
-/** The issue-type tab strip. `all` is the empty selection, not a sixth type -
- *  the same call the Issues page made about Category. */
-export const ISSUE_TABS: ReadonlyArray<{ value: IssueType; label: string }> = [
-  { value: 'js_exception', label: 'JS exception' },
-  { value: 'bad_request', label: 'Bad request' },
-  { value: 'click_rage', label: 'Click rage' },
-  { value: 'crash', label: 'Crash' },
-  { value: 'incident', label: 'Incident' },
-];
+/* ⚠ THE ISSUE-TYPE STRIP IS GONE (Mehdi, 2026-09-02: keep only the two tabs)
+   AND SO IS ITS STATE. It used to be `issueTypes: IssueType[]` on the search,
+   filtered separately in `filterSessions` - which was a SECOND path to a filter
+   the catalogue already offers as `issueType`, an array property with the same
+   five values and the same backend key. Two paths to one filter is the
+   duplication this whole exercise is about deleting, and the property version
+   is strictly better: it arrives through the one button, it composes with
+   contains / has any / is empty, and the value picker shows each type's share
+   of traffic where the strip could only show a count.
+
+   The five labels now live in `sessions-data.ts` as that property's `options`.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 export type SessionField =
   | 'started'
@@ -211,11 +217,13 @@ export type SessionTab = 'all' | 'bookmarks';
 
 export interface SessionsState {
   tab: SessionTab;
-  /** ONE array. Events and properties, in order, exactly as the store keeps it. */
+  /** ONE array. Events and properties, in order, exactly as the store keeps it.
+   *  ONE array is also all there is: there is no second filter field on this
+   *  state, which is what makes "why is my list short" answerable by reading
+   *  the card. */
   filters: SearchFilter[];
   eventsOrder: EventsOrder;
   range: DateRange;
-  issueTypes: IssueType[];
   display: SessionDisplay;
   page: number;
   /** The saved segment currently loaded, if any. */
@@ -230,7 +238,6 @@ export const INITIAL_SESSIONS_STATE: SessionsState = {
   filters: [],
   eventsOrder: 'then',
   range: '30d',
-  issueTypes: [],
   display: DEFAULT_DISPLAY,
   page: 1,
   dataState: 'ready',
@@ -577,7 +584,6 @@ export function filterSessions(state: SessionsState, rows: readonly SessionRow[]
   const out = rows.filter((s) => {
     if (state.tab === 'bookmarks' && !s.favorite) return false;
     if (s.startedAgoMin > window) return false;
-    if (state.issueTypes.length && !state.issueTypes.some((t) => s.issueTypes.includes(t))) return false;
     if (state.display.viewed === 'hide' && s.viewed) return false;
     if (state.display.viewed === 'only' && !s.viewed) return false;
     if (!properties.every((f) => matchProperty(s, f))) return false;
@@ -606,9 +612,6 @@ export function sortSessions(rows: SessionRow[], key: SessionSortKey): SessionRo
 
 export const pageOf = (rows: readonly SessionRow[], page: number): SessionRow[] =>
   rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-export const issueTypeCount = (rows: readonly SessionRow[], t: IssueType): number =>
-  rows.filter((s) => s.issueTypes.includes(t)).length;
 
 /* ── describing the search ────────────────────────────────────────────────── */
 
@@ -698,7 +701,7 @@ export function emptyReason(state: SessionsState, shown: number): EmptyReason {
   if (shown > 0) return 'none';
   if (state.dataState === 'empty') return 'no-data';
   if (state.tab === 'bookmarks' && state.filters.length === 0) return 'bookmarks';
-  if (state.filters.length || state.issueTypes.length) return 'filters';
+  if (state.filters.length) return 'filters';
   return 'range';
 }
 
@@ -852,3 +855,92 @@ export function looksLikeSentence(query: string, matches: number): boolean {
   const words = query.trim().split(/\s+/).filter(Boolean);
   return words.length >= 2 && matches === 0;
 }
+
+/* ── WHAT A VALUE FIELD OFFERS ────────────────────────────────────────────────
+   Every candidate, with the SHARE of sessions it accounts for.
+
+   The share is the most useful thing on the control and the reason production
+   draws a bar under every row: it tells you whether a filter is worth applying
+   BEFORE you apply it. "France 41" turns picking a value from a guess into a
+   decision.
+
+   COUNTED WHERE THE FIELD IS REAL. `userCountry`, `userBrowser`, `plan` and the
+   rest read the sessions themselves, against whatever the date range and the
+   other filters already left - so the menu and the table can never disagree,
+   and the numbers move as the search narrows, which is what makes them worth
+   reading. Where there is nothing on a session to count - a URL, a selector, an
+   error string - the candidates come from `VALUE_FIXTURES` with weights.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export interface ValueOption {
+  value: string;
+  /** How many sessions carry it. */
+  count: number;
+  /** 0..1 of the widest candidate, so the bars are comparable to each other
+   *  rather than to the whole. A 4% winner next to a 3% runner-up says more as
+   *  a full bar beside a three-quarter one than as two slivers. */
+  share: number;
+  /** Counted from the sessions, or listed in the fixture. Printed nowhere; it
+   *  is here so a reviewer can tell which is which. */
+  counted: boolean;
+}
+
+/** Which session field an entry reads, or null if it reads nothing. */
+const COUNTABLE = new Set([
+  'userCountry',
+  'userCity',
+  'userState',
+  'userBrowser',
+  'userOs',
+  'userDeviceType',
+  'platform',
+  'issueType',
+  'meta.plan',
+  'meta.cohort',
+]);
+
+export function valueOptions(
+  entryId: string,
+  rows: readonly SessionRow[],
+  query = '',
+): ValueOption[] {
+  const q = query.trim().toLowerCase();
+  let out: ValueOption[];
+
+  if (COUNTABLE.has(entryId)) {
+    const tally = new Map<string, number>();
+    for (const s of rows) {
+      const v = fieldValue(s, entryId);
+      if (v == null) continue;
+      /* an array field contributes each of its members, which is what makes
+         "issue type" answer "how many sessions have a crash" rather than "how
+         many have exactly this set" */
+      for (const one of Array.isArray(v) ? v : [String(v)]) {
+        tally.set(one, (tally.get(one) ?? 0) + 1);
+      }
+    }
+    out = [...tally.entries()]
+      .map(([value, count]) => ({ value, count, share: 0, counted: true }))
+      .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+  } else {
+    const fixture: readonly ValueCandidate[] = VALUE_FIXTURES[entryId] ?? [];
+    out = fixture.map((c) => ({ value: c.value, count: c.weight, share: 0, counted: false }));
+    /* A closed option set with no fixture still has to offer its options - a
+       value field that lists nothing is worse than one that lists no counts. */
+    if (out.length === 0) {
+      const entry = entryOf(entryId);
+      out = (entry?.options ?? []).map((v) => ({ value: v, count: 0, share: 0, counted: false }));
+    }
+  }
+
+  const top = out.reduce((m, o) => Math.max(m, o.count), 0);
+  const withShare = out.map((o) => ({ ...o, share: top ? o.count / top : 0 }));
+  return q ? withShare.filter((o) => o.value.toLowerCase().includes(q)) : withShare;
+}
+
+/** Whether a value field has anything to offer at all. A free-text field with
+ *  no fixture takes typed values only, and the picker says so rather than
+ *  opening an empty menu. */
+export const hasValueOptions = (entryId: string): boolean =>
+  COUNTABLE.has(entryId) || (VALUE_FIXTURES[entryId]?.length ?? 0) > 0 ||
+  (entryOf(entryId)?.options?.length ?? 0) > 0;

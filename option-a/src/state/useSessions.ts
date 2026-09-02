@@ -20,7 +20,6 @@ import {
   emptyReason,
   filterSessions,
   incompleteCount,
-  issueTypeCount,
   makeFilter,
   pageOf,
   splitFilters,
@@ -29,7 +28,6 @@ import {
   type CatalogueEntry,
   type DateRange,
   type EventsOrder,
-  type IssueType,
   type SearchFilter,
   type SessionDisplay,
   type SessionField,
@@ -163,21 +161,8 @@ export function useSessions() {
   const setTab = useCallback((t: SessionTab) => patch({ tab: t }), [patch]);
   const setPage = useCallback((p: number) => setState((s) => ({ ...s, page: p })), []);
 
-  const toggleIssueType = useCallback(
-    (t: IssueType | 'all') =>
-      patch({
-        issueTypes:
-          t === 'all'
-            ? []
-            : state.issueTypes.includes(t)
-              ? state.issueTypes.filter((x) => x !== t)
-              : [...state.issueTypes, t],
-      }),
-    [patch, state.issueTypes],
-  );
-
   const clearSearch = useCallback(
-    () => patch({ filters: [], issueTypes: [], savedSegmentId: undefined }),
+    () => patch({ filters: [], savedSegmentId: undefined }),
     [patch],
   );
 
@@ -243,6 +228,10 @@ export function useSessions() {
     incomplete: incompleteCount(state),
     /* the list */
     rows,
+    /* Everything the search left, not just this page of it: the value picker's
+       counts are computed against this, so they answer "how many would this
+       leave me" rather than "how many are on screen". */
+    matched,
     total: matched.length,
     pageSize: PAGE_SIZE,
     page: state.page,
@@ -253,9 +242,6 @@ export function useSessions() {
     setTab,
     range: state.range,
     setRange,
-    issueTypes: state.issueTypes,
-    toggleIssueType,
-    issueTypeCount: useCallback((t: IssueType) => issueTypeCount(all, t), [all]),
     /* display */
     display: state.display,
     setDisplay,

@@ -9,10 +9,11 @@
    rule belongs in a shared stylesheet, not copied. Two tables that drift by a
    pixel is the thing this system keeps deleting. */
 
-.m-ss__controls { display: flex; align-items: center; gap: var(--m-space-3); margin-left: auto; }
-
-.m-ss .m-ss__range.ant-select,
-.m-ss__controls .m-ss__range.ant-select { min-width: 9rem; }
+/* The date range, on the search's own bar. `none` and a width rather than a
+   min-width: it is beside a field that takes every spare pixel, and a control
+   that grows with the plane would put "Past 30 days" in the middle of a 200px
+   box. */
+.m-sc__bar .m-ss__range.ant-select { flex: none; width: 9.25rem; }
 
 /* ── THE SEARCH STAYS AT THE TOP (Mehdi, 2026-09-02) ────────────────────────
    The plane's body is the scroll container, so the search holds still while a

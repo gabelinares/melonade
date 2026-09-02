@@ -75,6 +75,7 @@ function CardHarness({ preset }: { preset: Preset }) {
         onTogglePropertyOrder={model.togglePropertyOrder}
         onEventsOrder={model.setEventsOrder}
         onClear={model.clearSearch}
+        rows={model.matched}
       />
       <p
         style={{

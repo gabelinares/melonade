@@ -41,7 +41,15 @@ await p.waitForTimeout(500);
 const shell = await p.evaluate(() => ({
   title: document.querySelector('.m-page__title')?.textContent,
   meta: document.querySelector('.m-page__meta')?.textContent,
-  tabs: [...document.querySelectorAll('.m-page__tabs .m-seg__item')].map((e) => e.textContent.trim()),
+  tabs: [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')].map((e) => e.textContent.trim()),
+  /* ⚠ TEXT TABS WITH AN INK BAR, not the pill strip. PageCard's `tabs` slot is
+     "deliberately a different shape from the pill toolbar below, because a
+     section replaces the body and a filter only narrows it" - and it held a
+     FilterStrip for one build, which made the two sections read as two
+     filters. */
+  tabsArePills: !!document.querySelector('.m-page__tabs .m-seg__item'),
+  /* the issue-type strip and its whole toolbar row are gone */
+  hasToolbar: !!document.querySelector('.m-page__toolbar'),
   columns: [...document.querySelectorAll('.m-ss__table th')].map((e) => e.textContent.trim()).filter(Boolean),
   rows: document.querySelectorAll('.m-ss__table tbody tr').length,
   foot: document.querySelector('.m-ss__range-label')?.textContent,
@@ -52,6 +60,12 @@ const shell = await p.evaluate(() => ({
 }));
 check('the page renders with the shell every other page uses',
   shell.title === 'Sessions' && shell.tabs.length === 2, `${shell.title}, tabs ${shell.tabs.join('/')}`);
+check('and the two sections are text tabs, not the pill strip',
+  !shell.tabsArePills && shell.tabs.join('/') === 'All sessions/Bookmarked', shell.tabs.join('/'));
+/* Mehdi, 2026-09-02: keep only the two tabs. The issue-type strip went and its
+   toolbar row went with it - the date range and the display menu moved onto the
+   search's own bar, which is the row that STICKS. */
+check('the issue-type strip is gone, and so is the row it was on', !shell.hasToolbar);
 check('the list is a table and it pages',
   shell.rows === 12 && /1–12 of 134/.test(shell.foot ?? ''), `${shell.rows} rows, ${shell.foot}`);
 check('errorsCount is finally on screen, which the payload has always carried',
@@ -81,11 +95,15 @@ check('every figure in a column shares one right edge and one face',
 /* ── 2. ONE BUTTON ───────────────────────────────────────────────────────────
    The claim, and the whole reason this is a cheap change: one picker holds both
    kinds, so nobody has to know which kind a thing is before looking for it. */
-const addBtn = p.locator('.m-sc__bar button', { hasText: 'Add filter' });
-check('there is exactly ONE add button on the search',
-  (await p.locator('.m-sc__bar button', { hasText: /Add/ }).count()) === 1);
+check('there is exactly ONE way into the search, and it is a field',
+  (await p.locator('.m-sc__field').count()) === 1
+    && /describe a session/.test((await p.locator('.m-sc__field-text').textContent()) ?? ''),
+  (await p.locator('.m-sc__field-text').textContent()) ?? 'no field');
+/* WHAT TYPING GETS YOU, said on the field rather than discovered inside it. */
+check('and the field says it takes plain English',
+  /plain English/.test((await p.locator('.m-sc__field-note').textContent()) ?? ''));
 
-await addBtn.click();
+await p.locator('.m-sc__field').click();
 await p.waitForTimeout(400);
 const picker = await p.evaluate(() => {
   const el = document.querySelector('.m-pick');
@@ -162,7 +180,7 @@ await p.locator('.m-sc__clear').click();
 await p.waitForTimeout(300);
 
 const addEntry = async (name) => {
-  await p.locator('.m-sc__bar button', { hasText: 'Add filter' }).click();
+  await p.locator('.m-sc__field').click();
   await p.waitForTimeout(300);
   await p.fill('.m-pick__search input', name);
   await p.waitForTimeout(300);
@@ -265,7 +283,7 @@ check('and the joint is a control: clicking it switches every one of them',
 await p.locator('.m-sc__clear').click();
 await p.waitForTimeout(400);
 /* turn the column on first: it is off by default */
-await p.locator('.m-page__toolbar [aria-label="Display"], .m-page__toolbar button').last().click();
+await p.locator('.m-sc__bar [aria-label="Display"]').first().click();
 await p.waitForTimeout(300);
 const hasMetaPill = await p.locator('.m-dm__pill', { hasText: 'Metadata' }).count();
 if (hasMetaPill) {
@@ -279,7 +297,7 @@ if (hasMetaPill) {
   const wrote = await p.evaluate(() => ({
     rows: document.querySelectorAll('.m-srow').length,
     subject: document.querySelector('.m-srow__name')?.textContent?.trim(),
-    value: document.querySelector('.m-srow .ant-select-selection-item')?.textContent?.trim(),
+    value: document.querySelector('.m-srow .m-vp__trigger')?.textContent?.trim(),
   }));
   check('clicking a metadata value on a row searches for it',
     wrote.rows === 1 && !!wrote.subject, `${wrote.subject} = ${wrote.value}`);
@@ -288,7 +306,7 @@ if (hasMetaPill) {
 }
 
 /* ── 7. bookmarks is a tab, and everything keeps working inside it ───────── */
-await p.locator('.m-page__tabs .m-seg__item', { hasText: 'Bookmarked' }).click();
+await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'Bookmarked' }).click();
 await p.waitForTimeout(450);
 const vault = await p.evaluate(() => ({
   rows: document.querySelectorAll('.m-ss__table tbody tr').length,
@@ -296,16 +314,20 @@ const vault = await p.evaluate(() => ({
   foot: document.querySelector('.m-ss__range-label')?.textContent?.trim(),
   empty: document.querySelector('.m-empty__title')?.textContent?.trim(),
   searchStillThere: !!document.querySelector('.m-sc'),
-  toolbarStillThere: !!document.querySelector('.m-page__toolbar'),
+  tabsStillThere: document.querySelectorAll('.m-page__tabs .ant-tabs-tab').length === 2,
+  columnsStillThere: document.querySelectorAll('.m-ss__table th').length > 4,
 }));
+/* A TAB, not a page: the search, the tabs and the columns all keep working
+   inside it. A section replaces the body; it does not replace the page. */
 check('bookmarked is a tab of the same list, not a different page',
-  vault.searchStillThere && vault.toolbarStillThere);
+  vault.searchStillThere && vault.tabsStillThere,
+  `search ${vault.searchStillThere}, tabs ${vault.tabsStillThere}, columns ${vault.columnsStillThere}`);
 check('and it shows only bookmarked sessions',
   vault.rows === 0 ? !!vault.empty : vault.marks === vault.rows,
   vault.rows === 0 ? vault.empty : `${vault.marks}/${vault.rows} marked, ${vault.foot}`);
 
 /* ── 8. the empty search is not an empty state ───────────────────────────── */
-await p.locator('.m-page__tabs .m-seg__item', { hasText: 'All sessions' }).click();
+await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'All sessions' }).click();
 await p.waitForTimeout(400);
 /* step 6 left a filter in, from the metadata chip. */
 if (await p.locator('.m-sc__clear').count()) {
@@ -369,6 +391,127 @@ const well = await p.evaluate(() => ({
 }));
 check('and the well still steps off the plane rather than matching it',
   well.sc !== well.plane, `${well.sc} in ${well.plane}`);
+
+/* ── 10. THE RING ────────────────────────────────────────────────────────────
+   The one piece of expression on this page, and three rules it has to keep: it
+   is not on at rest, its animation is PAUSED rather than merely invisible while
+   nobody is pointing at it, and it stops moving when it is a focus ring. */
+await p.setViewportSize({ width: 1560, height: 940 });
+await p.waitForTimeout(400);
+const ringState = async () =>
+  p.evaluate(() => {
+    const r = document.querySelector('.m-sc__ring');
+    const before = getComputedStyle(r, '::before');
+    return {
+      opacity: getComputedStyle(r).opacity,
+      play: before.animationPlayState,
+      name: before.animationName,
+      /* the rim sits on the field's own border box, so it replaces the border
+         rather than sitting inside or outside it */
+      onBorder: (() => {
+        const a = r.getBoundingClientRect();
+        const f = document.querySelector('.m-sc__field').getBoundingClientRect();
+        return Math.round(a.left - f.left) === 0 && Math.round(a.width - f.width) === 0;
+      })(),
+    };
+  });
+const ringRest = await ringState();
+check('the ring is off at rest, and paused rather than merely invisible',
+  ringRest.opacity === '0' && ringRest.play === 'paused',
+  `opacity ${ringRest.opacity}, ${ringRest.play}`);
+await p.hover('.m-sc__field');
+await p.waitForTimeout(400);
+const ringHover = await ringState();
+check('it sweeps on hover, on the field\'s own border box',
+  ringHover.opacity === '1' && ringHover.play === 'running' && ringHover.onBorder,
+  `opacity ${ringHover.opacity}, ${ringHover.play}, on the border ${ringHover.onBorder}`);
+await p.focus('.m-sc__field');
+await p.keyboard.press('Tab');
+await p.keyboard.press('Shift+Tab');
+await p.waitForTimeout(300);
+const ringFocus = await ringState();
+check('and it HOLDS STILL as a focus ring, because one that moves cannot be located',
+  ringFocus.opacity === '1' && ringFocus.name === 'none',
+  `opacity ${ringFocus.opacity}, animation ${ringFocus.name}`);
+
+/* ── 11. THE PROPORTION BARS ────────────────────────────────────────────────
+   Mehdi, 2026-09-02: "there are some filters that you see the proportions of
+   the results with a bar, make sure you have mock data to show everything."
+   The share is what turns picking a value from a guess into a decision, so it
+   has to be there for a COUNTED field and for a FIXTURE one alike. */
+await p.mouse.click(900, 40);
+await p.waitForTimeout(300);
+await addEntry('Country');
+await p.waitForTimeout(300);
+await p.locator('.m-vp__trigger').first().click();
+await p.waitForTimeout(500);
+const counted = await p.evaluate(() => {
+  const rows = [...document.querySelectorAll('.m-vp .m-checkrow')];
+  return {
+    n: rows.length,
+    top: rows[0]?.textContent?.trim(),
+    /* every row carries a figure AND a bar: the figure is what you compare when
+       two are close, the bar is what you scan down a list of nine */
+    figures: rows.filter((r) => r.querySelector('.m-vp__n')).length,
+    bars: rows.filter((r) => r.querySelector('.m-vp__bar .m-bar__fill')).length,
+    /* widest candidate is a full bar, so the lengths are comparable to each
+       other rather than to the whole */
+    widest: rows[0] ? getComputedStyle(rows[0].querySelector('.m-bar__fill')).width : null,
+    barBox: rows[0] ? Math.round(rows[0].querySelector('.m-vp__bar').getBoundingClientRect().width) : 0,
+    /* and they share one axis, which is what a right-aligned column buys */
+    edges: new Set(rows.map((r) => Math.round(r.querySelector('.m-vp__bar').getBoundingClientRect().right))).size,
+  };
+});
+check('a counted value field offers its values with a figure and a bar',
+  counted.n > 4 && counted.figures === counted.n && counted.bars === counted.n,
+  `${counted.n} values, ${counted.figures} figures, ${counted.bars} bars — top is ${counted.top}`);
+check('the widest candidate is a full bar, so the lengths compare to each other',
+  counted.barBox > 0 && parseFloat(counted.widest ?? '0') >= counted.barBox - 1,
+  `${counted.widest} of ${counted.barBox}px`);
+check('and every bar shares one axis',
+  counted.edges === 1, `${counted.edges} right edges`);
+
+/* THE COUNTS ARE COUNTED. Country is a real session field, so the menu and the
+   table cannot disagree - and it narrows with the rest of the search. */
+const tally = await p.evaluate(() => {
+  const rows = [...document.querySelectorAll('.m-vp .m-checkrow')];
+  const sum = rows.reduce((n, r) => n + (Number(r.querySelector('.m-vp__n')?.textContent) || 0), 0);
+  const total = Number((document.querySelector('.m-ss__range-label')?.textContent ?? '').replace(/.*of /, ''))
+    || document.querySelectorAll('.m-ss__table tbody tr').length;
+  return { sum, total };
+});
+check('and they are counted off the sessions rather than invented',
+  tally.sum > 0 && tally.sum <= tally.total, `${tally.sum} across the values, ${tally.total} sessions`);
+
+/* A FIXTURE FIELD gets them too - a URL is not on a session, so there is
+   nothing to count, and a value field with no shares is the control with its
+   best feature removed. */
+await p.keyboard.press('Escape');
+await p.waitForTimeout(300);
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(300);
+await addEntry('Network request');
+await p.waitForTimeout(300);
+await p.hover('.m-srow');
+await p.waitForTimeout(200);
+await p.locator('.m-srow__prop-add').first().click();
+await p.waitForTimeout(350);
+await p.fill('.m-pick__search input', 'Status');
+await p.waitForTimeout(300);
+await p.locator('.m-pick__row').first().click();
+await p.waitForTimeout(400);
+await p.locator('.m-vp__trigger').first().click();
+await p.waitForTimeout(500);
+const fixture = await p.evaluate(() => {
+  const rows = [...document.querySelectorAll('.m-vp .m-checkrow')];
+  return {
+    values: rows.map((r) => r.querySelector('.m-checkrow__label')?.textContent?.trim()),
+    bars: rows.filter((r) => Number.parseFloat(getComputedStyle(r.querySelector('.m-bar__fill')).width) > 0).length,
+  };
+});
+check('a fixture value field has shares too, so nothing in the picker is bare',
+  fixture.values.includes('200') && fixture.bars === fixture.values.length,
+  `${fixture.values.join(', ')} — ${fixture.bars} bars`);
 
 check('no console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 

@@ -14,8 +14,12 @@
    which is also the honest colour for a hole in the plane, and it steps
    properly in both themes (#f0f3f4 on white, #030506 under #1a2023).
 
-   NO BORDER. The fill is the edge. A hairline as well would be an outline
-   around a hole. */
+   NO RADIUS EITHER, and no side borders. The plane's body has no horizontal
+   padding - the table below is edge to edge, and its cells carry their own
+   inset - so this is full bleed too, and a rounded corner at the plane's own
+   edge is a radius nobody can see. It is a BAND across the plane rather than a
+   card floating in it, which is also what it is: a region of the page, not an
+   object on it. One hairline closes the bottom; the fill does the rest. */
 /* ⚠ NOT `.m-search`. That class already exists - it is the page header's
    SearchField, and it is a WIDTH (`13rem`). A section that borrowed it came out
    208px wide inside a 1410px plane, with the empty state stacked into a column,
@@ -24,8 +28,8 @@
 .m-sc {
   display: flex;
   flex-direction: column;
-  border-radius: var(--m-radius-surface);
   background: var(--m-surface-canvas);
+  border-bottom: var(--m-border-width) solid var(--m-border-subtle);
 }
 
 /* THE STICKY IS A WRAPPER, NOT THIS. See `.m-ss__sticky` in sessions-page.css.
@@ -36,15 +40,10 @@
    colour means something. */
 
 /* ── the bar ─────────────────────────────────────────────────────────────────
-   The button, and the two things that act on the whole search. No headings:
-   the rows say which kind they are, and "Events" over a numbered draggable row
-   is a label on a thing that has already said it.
-
-   ⚠ ITS INSET IS THE ROWS' INSET. `space-5` here is the list's `space-3` plus
-   the row's own `space-3`, so the button that MAKES a row sits in the same
-   column as the numbers of the rows it made. It was `space-4` and landed 4px
-   left of them - which is the kind of gap nobody can name and everybody can
-   see.
+   The field, and the two controls that belong to the LIST rather than to the
+   search - the date range and the display menu, handed in as `trailing`. They
+   are here because THIS is what sticks: a window you cannot change without
+   scrolling back up is the same complaint the sticky came out of.
 
    A HAIRLINE UNDER IT, because the well needs a head and a body to read as a
    container at all: it is a 6% step off the plane, and 6% plus three loose
@@ -55,9 +54,175 @@
   display: flex;
   align-items: center;
   gap: var(--m-space-4);
-  flex-wrap: wrap;
   padding: var(--m-space-4) var(--m-space-5);
   border-bottom: var(--m-border-width) solid var(--m-border-default);
+}
+
+/* ── THE FIELD ───────────────────────────────────────────────────────────────
+   A FIELD and not a button. "+ Add filter" was 90px of control that gave no
+   sign it took a sentence, so the half of this search nobody expects was
+   invisible until you opened it. Something the width of the plane says "type
+   here" without a word, and the note on its right says what typing gets you.
+
+   It is still a `<button>` - it opens a menu, it does not hold text - so it
+   gets a real focus ring and real keyboard behaviour, and it is DRAWN as a
+   field. The placeholder is the picker's own placeholder, so the two never
+   disagree about what the field accepts. */
+.m-sc__field {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: 1;
+  min-width: 0;
+  height: var(--m-control-height-lg);
+  padding-inline: var(--m-space-5);
+  border: var(--m-border-width) solid var(--m-border-default);
+  border-radius: var(--m-radius-control);
+  background: var(--m-surface-default);
+  text-align: left;
+  transition: border-color var(--m-duration-fast) var(--m-ease-out);
+}
+/* The ring paints OVER the field's own border (a negative-z child paints after
+   its stacking context's background and borders), so the resting border is
+   simply what shows when the ring is not there. */
+.m-sc__field:hover { border-color: var(--m-border-strong); }
+
+.m-sc__field-glyph {
+  flex: none;
+  color: var(--m-content-decorative);
+  transition: color var(--m-duration-fast) var(--m-ease-out);
+}
+.m-sc__field:hover .m-sc__field-glyph { color: var(--m-content-secondary); }
+
+.m-sc__field-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--m-text-sm);
+  color: var(--m-content-placeholder);
+  transition: color var(--m-duration-fast) var(--m-ease-out);
+}
+.m-sc__field:hover .m-sc__field-text { color: var(--m-content-secondary); }
+
+/* WHAT TYPING GETS YOU, stated as a fact about the field rather than as a
+   decoration on it. A bare sparkle would be the templated version of this and
+   it would say nothing; four words say the whole feature. It is the quietest
+   type on the page, because it is a note and not a control. */
+.m-sc__field-note {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  flex: none;
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+  transition: color var(--m-duration-fast) var(--m-ease-out);
+}
+.m-sc__field:hover .m-sc__field-note { color: var(--m-content-accent); }
+
+/* ── THE RING ────────────────────────────────────────────────────────────────
+   The one piece of expression on this page, and it is here rather than
+   anywhere else for a reason: this field is where the search agent will live,
+   and a control that is about to start answering questions should look like it
+   is listening.
+
+   HOW IT IS BUILT, and it is deliberately the boring technique. A clipped box
+   sits over the field's border; a conic gradient twice the box's size spins
+   inside it; a second layer inset by 1px covers the middle in the field's own
+   colour, leaving a one-pixel rim. No `mask`, no `@property`, no registered
+   custom property - so it behaves the same in every browser and degrades to a
+   static rim rather than to nothing.
+
+   THREE RULES it follows, and each one is the difference between this and the
+   AI-slop version of itself:
+
+   1. NOT ON AT REST. A permanently animated border is a page you cannot read,
+      and the animation is `paused` rather than merely invisible so it costs
+      nothing while nobody is pointing at it.
+   2. MOSTLY GREY. The sweep is the border's own two greys with a SINGLE accent
+      arc passing through it - Graphite rations colour, and one accent per view
+      is the rule. It is not a rainbow and it is not purple.
+   3. IT STOPS BEING A SWEEP WHEN IT IS A FOCUS RING. On `:focus-visible` the
+      rim holds still in the accent: a focus indicator that moves is a focus
+      indicator you cannot locate. */
+.m-sc__ring {
+  position: absolute;
+  inset: calc(var(--m-border-width) * -1);
+  z-index: -1;
+  border-radius: inherit;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--m-duration-fast) var(--m-ease-out);
+}
+
+.m-sc__ring::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 220%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  /* ⚠ THE BASE IS THE RESTING BORDER'S OWN COLOUR, not something lighter.
+     Built on `border-subtle` the sweep made three quarters of the rim FAINTER
+     than the border it replaced, so pointing at the field read as the border
+     going away. It never drops below where it started; the accent arc is the
+     only thing that changes. */
+  background: conic-gradient(
+    var(--m-border-default) 0deg,
+    var(--m-border-default) 180deg,
+    var(--m-border-strong) 245deg,
+    var(--m-content-accent) 295deg,
+    var(--m-content-accent) 310deg,
+    var(--m-border-strong) 350deg,
+    var(--m-border-default) 360deg
+  );
+  animation: m-sc-sweep 2.6s linear infinite;
+  animation-play-state: paused;
+}
+
+/* the hole, in the field's own colour: what is left is the rim */
+.m-sc__ring::after {
+  content: '';
+  position: absolute;
+  inset: var(--m-border-width);
+  border-radius: inherit;
+  background: var(--m-surface-default);
+}
+
+@keyframes m-sc-sweep {
+  to { rotate: 1turn; }
+}
+
+.m-sc__field:hover .m-sc__ring { opacity: 1; }
+.m-sc__field:hover .m-sc__ring::before { animation-play-state: running; }
+
+/* Focus holds still, and in the focus colour. */
+.m-sc__field:focus-visible { outline: none; border-color: transparent; }
+.m-sc__field:focus-visible .m-sc__ring { opacity: 1; }
+.m-sc__field:focus-visible .m-sc__ring::before {
+  animation: none;
+  background: var(--m-focus-ring);
+}
+
+/* A ring that only exists as a movement is a ring that is not there for
+   somebody who has turned movement off. It becomes a plain accent rim. */
+@media (prefers-reduced-motion: reduce) {
+  .m-sc__ring::before { animation: none; background: var(--m-border-accent); }
+}
+
+/* ── the strip: what acts on the whole search ────────────────────────────────
+   The field is where you ADD; this is where you change your mind about what is
+   already there. It is absent until there is something to change, which is why
+   it is not part of the bar. */
+.m-sc__strip {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  padding: var(--m-space-3) var(--m-space-5) 0;
 }
 
 /* ── the order control ───────────────────────────────────────────────────────
@@ -112,9 +277,9 @@
 .m-sc__order-option { display: flex; flex-direction: column; gap: 1px; padding-block: 2px; }
 .m-sc__order-hint { font-size: var(--m-text-2xs); color: var(--m-content-muted); }
 
-/* Clear sits at the far right of the bar, away from Add: they are the two ends
-   of the same action and putting them side by side is how a search gets wiped
-   by somebody aiming for the picker. */
+/* Clear sits at the far right, away from the field: they are the two ends of
+   the same action and putting them side by side is how a search gets wiped by
+   somebody aiming for the picker. */
 .m-sc__clear { margin-left: auto; }
 
 /* ── the rows ────────────────────────────────────────────────────────────────
@@ -146,9 +311,9 @@
 }
 
 /* ── the empty search ────────────────────────────────────────────────────────
-   NOT an empty state - nothing is wrong and nothing is missing. One line about
-   what the field takes, and three sentences that demonstrate the half of it
-   nobody expects. */
+   NOT an empty state - nothing is wrong and nothing is missing. The field above
+   already says what it takes, so all that is left is three sentences
+   demonstrating the half of it nobody expects. */
 .m-sc__empty {
   display: flex;
   align-items: center;
@@ -158,8 +323,9 @@
 }
 
 .m-sc__hint {
+  flex: none;
   color: var(--m-content-muted);
-  font-size: var(--m-text-sm);
+  font-size: var(--m-text-xs);
 }
 
 .m-sc__examples { display: flex; flex-wrap: wrap; gap: var(--m-space-2); }
