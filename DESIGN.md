@@ -3044,3 +3044,144 @@ from a previous round and reversing it is Gabriel's call.
 
 **No Storybook story for the flyout**, and the collapsed nav's stories cover the
 two states but not the transition.
+
+
+## 21. The top of the menu, and the word that became a rule (2026-09-02)
+
+Mehdi asked for a redesign of the sidebar, "always aligning with the collapsed
+version". Five changes, and they are one change: **the column now says what the
+product is, then whose account you are in, then where you can go** — three
+things in that order, with air between them, instead of one crowded row that was
+doing the first two at once and a heading doing none of them.
+
+Everything below is a REDUCTION of itself at 52px, which is the rule the narrow
+menu has had since 08-31 and the reason this did not need a second nav: the logo
+keeps its mark, the account keeps its badge, the rule keeps its rule.
+
+### The logo is its own row, and the product finally has its name on screen
+
+The mark used to sit inside the project switcher, standing in for the logo. Two
+things were wrong with that. The product was **unnamed on its own first screen**
+— the only word at the top of the app was a customer's domain — and the one
+permanent thing in the column was drawn as part of a control you change all day,
+which made the mark read as a project's favicon.
+
+So: the mark and the word, on a row of their own, and **it is not a control**
+(`data-mark-host` on a plain div, which is what `brand-mark.css` was already
+written to support). It still turns on hover and once on mount.
+
+**It sits in the glyph column.** Same 15px glyph and same 8px inset as every row,
+so the mark, Search's glyph and every agent's share one centre — measured at 32
+in both, with the wordmark's left edge and the row labels' at 47 — and at 52px
+all six glyphs sit on the rail's own centre. That is asserted in `proto-check`
+rather than looked at: the collapsed-rail centre check went from four objects to
+six, and it caught the first version, where the pair's 8px gap survived the
+collapse and pulled the mark 4px left of the rail.
+
+**15px in both widths.** The collapse takes words. A logo that also changed size
+would be the collapse taking the brand with them.
+
+### The account is a control with an edge, and two lines
+
+It was one line: mark, `frontend.acme.com`, chevron. You had to infer the
+organisation from the domain. It is now a badge, the project, the organisation
+under it, and the chevron — because those are two different facts. The
+organisation is who is paying and almost never changes; the project is which of
+its sites you are looking at and changes all day.
+
+**A hairline at rest, the row's own fill on hover.** It is the only thing in this
+column drawn as a control, and deliberately: every row under it *goes* somewhere,
+this changes what all of them are *about*. A switcher with no edge is a switcher
+somebody has to be told about.
+
+**The badge is a square, and the person at the foot of the menu is a circle.**
+Two sets of initials in one column mean two different kinds of thing, and after
+the labels are gone the shape is all that is left to say which. An organisation
+is not somebody.
+
+Narrow, it loses its box and keeps the badge — the same move the credits meter
+makes when it loses its box and keeps the measure — and it keeps its hover,
+because it is still a control that simply has no edge to draw at that width.
+
+### Search is a row
+
+Section 20 flagged this and left it: *"the search button is the loudest thing in
+the collapsed rail… flagged, not changed: the fill is a deliberate decision from
+a previous round and reversing it is Gabriel's call."* It has been called. Mehdi:
+"the search item should also be an item of the menu, instead of a button, and it
+shouldn't be as highlighted as it is right now."
+
+It was an accent-filled tile, which is a shape that says *this is the thing to do
+next* about something you reach for when you already know what you are looking
+for. It is a destination, like Sessions, so it is drawn like Sessions — and
+because it is now a `NavItem` it collapses, flies out and highlights with the
+same code as every other row, instead of being a shape of its own to keep in
+agreement with them.
+
+### "AGENTS" is a rule
+
+It was the only uppercase type in the column, and it was labelling the obvious:
+eleven rows carrying agent glyphs and open counts do not need to be told what
+they are. What a group needs is a START, and a start is a line — **one pixel of
+ink instead of six letters**, with the air around it reading as room rather than
+as a heading nobody reads.
+
+Three consequences worth stating:
+
+- **It is one object at both widths now.** The label had to *become* a rule when
+  the menu narrowed — animating height, padding, colour and background to fake
+  it. Now only its length changes: full bleed to 28px.
+- **It sits above the scroller, not inside it.** So it stays put and the list
+  scrolls under it, which is what a boundary should do.
+- **The group keeps its name for anyone who cannot see a hairline.** `role="group"`
+  and `aria-label="Agents"` on the list. A rule is a visual affordance and it
+  should not cost a screen reader the heading.
+
+### The vertical distribution, in five numbers
+
+"Increase a little bit" — so the gaps that already existed were opened, and no
+element was added to hold air:
+
+| between | was | is |
+| --- | --- | --- |
+| logo → account | — (one row) | 20 |
+| account → Search | 16 | 20 |
+| Sessions → the rule | 16, then a 24px label | 16, then 1px, then 16 |
+| row height | 30 | 32 |
+| row to row | 1 | 2 |
+
+The two pixels on the row are bought where a menu should buy air: **inside the
+thing you are aiming at**, so the hit target grows with the breathing room. And
+the three margins are declared in exactly three places — the logo, the account
+and the separator — so the rhythm has one definition to change.
+
+### The type hierarchy is three sizes and two weights
+
+Mehdi: "the text hierarchy is not good enough, but the changes should be simple,
+for example change a little bit the weight, but keeping consistent and well
+tokenized." So nothing was added to the type scale and no size was invented:
+
+| | | |
+| --- | --- | --- |
+| the product | 16 medium, primary | `--m-text-lg` |
+| the project, and the row you are on | 13 medium, primary | `--m-text-sm` |
+| every other row | 13 regular, secondary | `--m-text-sm` |
+| the organisation, a section row | 11 / 13 regular, muted | `--m-text-2xs` |
+
+**The one size step in the column belongs to the logo.** Below it, hierarchy is
+weight and colour — which is why the project name came DOWN from 14 to 13, to
+sit on the rows' own size rather than between them and the logo. Four levels,
+three sizes, two weights, no uppercase and no tracking anywhere in the menu.
+
+### What this cost
+
+**Two class names went** — `.m-nav__project*` and `.m-nav__new` — and
+`.m-nav__label` with them. `git show` has all three if any of this reopens; the
+switcher is the closest thing to a decision that could be argued back, since a
+bordered control is one more edge in a shell whose whole argument is that it has
+almost none.
+
+**Nothing else in the app was touched.** The change is two files and their
+comments (`SideNav.tsx`, `side-nav.css`), three lines of `nav-item.css` for the
+row's height and the words that fold, and `proto-check`'s inventory of what is
+at the top of the menu.

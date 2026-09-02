@@ -57,8 +57,9 @@
    What each thing becomes, and it is always a REDUCTION of itself rather than
    a substitute for itself:
      row          the glyph, with its count as a chip on its shoulder
-     "Products"   a hairline the width of the glyph column
-     switcher     the mark; search folds underneath it
+     logo         the mark, at the same size; the name folds away beside it
+     account      the badge; the tile loses its box, its lines and its chevron
+     separator    the same rule, the width of the glyph column
      tools        the same five glyphs, folded into one column
      credits      the bar, turned a quarter turn so it has room to be read
    ────────────────────────────────────────────────────────────────────────── */
@@ -67,139 +68,208 @@
   padding-inline: var(--m-space-5);
 }
 
-/* ── project ── */
+/* ── THE LOGO, AND THEN THE ACCOUNT ──────────────────────────────────────────
+   TWO OBJECTS SINCE 2026-09-02, and the split is the change: the LOGO never
+   changes and is not a control, the SWITCHER changes all day and is one. They
+   were one row - the mark standing in for the logo inside the switcher - which
+   left the product unnamed on its own first screen and made its mark read as a
+   project's favicon.
 
-/* `flex-wrap` and a minimum, not a second layout. The switcher will not go
-   under 6rem, so somewhere around 160px the search button has nowhere left to
-   sit on this line and drops to the next one by itself - continuously, on the
-   same frames the width is already animating. */
+   The logo sits in the same glyph column as the rows: 15px glyph, 8px inset, so
+   the mark, Search's glyph and every agent's share one centre at both widths.
+   The switcher does NOT - it is a bordered control that spans the column, which
+   is the point of it. */
+
 .m-nav__brand {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--m-space-3);
-  flex: none;
-  margin-bottom: var(--m-space-6);
-}
-
-.m-nav__project {
   display: flex;
   align-items: center;
   gap: var(--m-space-4);
-  flex: 1;
-  min-width: 6rem;
-  height: 2rem;
-  padding-inline: var(--m-space-3);
+  flex: none;
+  height: 1.75rem;
+  padding-inline: var(--m-space-4);
+  /* The three gaps Mehdi asked to open up are stated in exactly three places:
+     here, on the switcher, and on the separator. Nothing else in this column
+     carries vertical margin. */
+  margin-bottom: var(--m-space-7);
+  transition: gap var(--m-duration-normal) var(--m-ease-out),
+    padding-inline var(--m-duration-normal) var(--m-ease-out);
+}
+
+/* The one chromatic thing in the whole shell, and it is 15px at BOTH widths:
+   the collapse takes words. A logo that also changed size would be the collapse
+   taking the brand as well. */
+.m-nav__mark { flex: none; }
+
+/* THE TOP OF THE TYPE RAMP, and the only place it is set. 16px medium over the
+   rows' 13px regular is one clear step and no second voice - it is not
+   uppercase, not tracked out, not semibold. Lowercase, because that is the
+   logotype: the landing page sets the same word the same way. */
+.m-nav__brand-name {
+  min-width: 0;
+  font-size: var(--m-text-lg);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-tight);
+  color: var(--m-content-primary);
+  white-space: nowrap;
+}
+
+/* ── the account ─────────────────────────────────────────────────────────────
+   A CONTROL, not a row: a hairline at rest, the row's own fill on hover. Every
+   row under it goes somewhere; this changes what all of them are ABOUT, so it
+   must not be drawn as one of them - and a switcher with no edge is a switcher
+   you have to be told about.
+
+   `align-self` and a width rather than the flex column's default stretch, so
+   the narrow state can take it to the 28px rail and animate the whole way. */
+.m-nav__account {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: none;
+  align-self: center;
+  width: 100%;
+  height: 2.5rem;
+  margin-bottom: var(--m-space-7);
+  padding: var(--m-space-3);
+  border: var(--m-border-width) solid var(--m-border-default);
   border-radius: var(--m-radius-control);
   overflow: hidden;
   transition: background-color var(--m-duration-instant) var(--m-ease-out),
-    min-width var(--m-duration-normal) var(--m-ease-out),
-    padding-inline var(--m-duration-normal) var(--m-ease-out),
-    gap var(--m-duration-normal) var(--m-ease-out);
+    border-color var(--m-duration-instant) var(--m-ease-out),
+    width var(--m-duration-normal) var(--m-ease-out),
+    height var(--m-duration-normal) var(--m-ease-out),
+    gap var(--m-duration-normal) var(--m-ease-out),
+    padding var(--m-duration-normal) var(--m-ease-out);
 }
-.m-nav__project:hover { background: var(--m-nav-row-hover); }
-
-.m-nav.is-collapsed .m-nav__project {
-  min-width: 1.75rem;
-  gap: 0;
-  padding-inline: 0;
+.m-nav__account:hover {
+  background: var(--m-nav-row-hover);
+  border-color: var(--m-border-strong);
 }
 
-/* Everything in the narrow menu centres on the rail, not on its left gutter:
-   the row already does it with `justify-content`, and these four have to be
-   told. proto-check asserts all four centres against the rail's own. */
-.m-nav.is-collapsed .m-nav__brand,
-.m-nav.is-collapsed .m-nav__project,
-.m-nav.is-collapsed .m-nav__tools { justify-content: center; }
-.m-nav.is-collapsed .m-nav__label,
-.m-nav.is-collapsed .m-credits { margin-inline: auto; }
-
-/* Expanded it is just the mark; narrow it is the glyph column, like every
-   other icon box in the menu. */
-.m-nav__mark {
+/* A SQUARE, where the person at the foot of the menu is a circle. Two sets of
+   initials in one column mean two different kinds of thing, and only the shape
+   is left to say which: an organisation is not somebody. */
+.m-nav__account-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 1.0625rem; /* 17 */
-  transition: width var(--m-duration-normal) var(--m-ease-out);
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--m-radius-control);
+  background: var(--m-surface-active);
+  color: var(--m-content-secondary);
+  font-size: var(--m-text-xs);
+  font-weight: var(--m-weight-medium);
+  line-height: 1;
 }
-.m-nav.is-collapsed .m-nav__mark { width: 1.75rem; }
 
-.m-nav__project-name {
+.m-nav__account-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
   flex: 1;
   min-width: 0;
   max-width: 100%;
-  font-size: var(--m-text-md);
-  font-weight: var(--m-weight-medium);
-  color: var(--m-content-primary);
+  overflow: hidden;
   text-align: left;
 }
 
-.m-nav__project-caret { flex: none; width: 0.8125rem; color: var(--m-content-decorative); }
+/* 13px MEDIUM: the same size as a row's label, one weight above it. The size
+   step in this column belongs to the logo; from here down the hierarchy is
+   weight and colour, which is what keeps the menu at three type sizes rather
+   than five. */
+.m-nav__account-name {
+  max-width: 100%;
+  font-size: var(--m-text-sm);
+  font-weight: var(--m-weight-medium);
+  line-height: var(--m-leading-tight);
+  color: var(--m-content-primary);
+}
 
-.m-nav.is-collapsed :is(.m-nav__project-name, .m-nav__project-caret) {
+.m-nav__account-org {
+  max-width: 100%;
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-regular);
+  line-height: var(--m-leading-tight);
+  color: var(--m-content-muted);
+}
+
+.m-nav__account-caret { flex: none; width: 0.8125rem; color: var(--m-content-decorative); }
+
+/* Narrow it loses its box and keeps the badge, the way the credits meter loses
+   its box and keeps the measure. The hover stays, because the thing is still a
+   control - it just has no edge to draw at this width. */
+.m-nav.is-collapsed .m-nav__account {
+  width: 1.75rem;
+  height: 1.75rem;
+  gap: 0;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+.m-nav.is-collapsed .m-nav__account:hover { background: var(--m-nav-row-hover); }
+
+/* The pair's own gap has to go with the word it was separating, or the mark
+   ends up centred on 15+8 rather than on 15 - which is 4px left of the rail and
+   the exact defect the collapsed rail is asserted against. */
+.m-nav.is-collapsed .m-nav__brand { gap: 0; padding-inline: 0; }
+
+.m-nav.is-collapsed :is(.m-nav__brand-name, .m-nav__account-text, .m-nav__account-caret) {
   max-width: 0;
   width: 0;
   opacity: 0;
   transition-delay: 0s;
 }
 
-/* The one filled control in the column. It is the only thing here that MAKES
-   something rather than going somewhere, which is what earns it the accent. */
-.m-nav__new {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: var(--m-radius-control);
-  background: var(--m-action-primary-bg);
-  color: var(--m-action-primary-fg);
-  transition: background-color var(--m-duration-instant) var(--m-ease-out);
-}
-.m-nav__new:hover { background: var(--m-action-primary-bg-hover); }
+/* Everything in the narrow menu centres on the rail, not on its left gutter:
+   the row already does it with `justify-content`, and these have to be told.
+   proto-check asserts every one of these centres against the rail's own. */
+.m-nav.is-collapsed .m-nav__brand,
+.m-nav.is-collapsed .m-nav__account,
+.m-nav.is-collapsed .m-nav__tools { justify-content: center; }
+.m-nav.is-collapsed .m-nav__sep,
+.m-nav.is-collapsed .m-nav__account,
+.m-nav.is-collapsed .m-credits { margin-inline: auto; }
 
 /* ── the groups ── */
 
-.m-nav__group { display: flex; flex-direction: column; gap: 1px; }
+/* 2px between rows rather than 1. Mehdi, 2026-09-02: "increase a little bit the
+   vertical distribution" - and the whole of that increase is here, on the row's
+   own height, and on the three margins above. A menu gets airier by opening the
+   gaps it already has, not by adding elements to hold air. */
+.m-nav__group { display: flex; flex-direction: column; gap: var(--m-space-1); }
 
-.m-nav__group--top { flex: none; margin-bottom: var(--m-space-6); }
+/* No margin of its own: the separator below it carries that gap, so the space
+   between Sessions and the first agent is declared once. */
+.m-nav__group--top { flex: none; }
 
-.m-nav__label {
-  display: flex;
-  align-items: center;
-  gap: var(--m-space-3);
-  height: 1.5rem;
-  padding: var(--m-space-2) var(--m-space-4) var(--m-space-3);
-  background: transparent;
-  font-size: var(--m-text-2xs);
-  font-weight: var(--m-weight-medium);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--m-content-muted);
-  overflow: hidden;
-  transition: height var(--m-duration-normal) var(--m-ease-out),
-    width var(--m-duration-normal) var(--m-ease-out),
-    margin var(--m-duration-normal) var(--m-ease-out),
-    padding var(--m-duration-normal) var(--m-ease-out),
-    color var(--m-duration-fast) var(--m-ease-out) var(--m-duration-fast),
-    background-color var(--m-duration-fast) var(--m-ease-out) var(--m-duration-fast);
-}
+/* ── WHERE THE AGENTS START ──────────────────────────────────────────────────
+   A RULE, NOT A WORD (Mehdi, 2026-09-02). "AGENTS" was the only uppercase type
+   in the column and it was labelling the obvious: eleven rows carrying agent
+   glyphs and open counts do not need to be told what they are. What the group
+   needs is a START, and a start is a line - one pixel of ink instead of six
+   letters, with the air around it reading as room rather than as a heading.
 
-/* The label reduced to what a label is for: a rule where the group starts. The
-   text is not hidden, it is set in nothing - which is what lets one element be
-   both states and animate between them. */
-.m-nav.is-collapsed .m-nav__label {
-  height: 1px;
-  width: 1.75rem;
-  margin: var(--m-space-4) 0;
-  padding: 0;
+   It is also ONE OBJECT AT BOTH WIDTHS now, where the label had to become a
+   rule when the menu narrowed: only its length changes. And it sits above the
+   scroller rather than inside it, so it stays put and the list scrolls under
+   it. The group keeps the name for anyone who cannot see a hairline - it is on
+   `aria-label` in SideNav. */
+.m-nav__sep {
+  flex: none;
+  width: 100%;
+  height: var(--m-border-width);
+  margin: var(--m-space-6) 0;
+  border: 0;
   background: var(--m-border-default);
-  color: transparent;
-  transition-delay: 0s, 0s, 0s, 0s, 0s, 0s;
+  transition: width var(--m-duration-normal) var(--m-ease-out),
+    margin var(--m-duration-normal) var(--m-ease-out);
 }
+
+.m-nav.is-collapsed .m-nav__sep { width: 1.75rem; }
 
 /* the only region that scrolls: growth pushes on the products, never on the
    things pinned above and below them */

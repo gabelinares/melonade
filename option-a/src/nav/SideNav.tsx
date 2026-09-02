@@ -20,6 +20,12 @@ import { CreditsMeter } from '../components/CreditsMeter.tsx';
 import { ThemeToggle } from '../components/ThemeToggle.tsx';
 import './side-nav.css';
 
+/* The account the menu is signed in to. Two lines, because they are two
+   different facts: the ORGANISATION is who is paying and it almost never
+   changes, the PROJECT is which of its sites you are looking at and it changes
+   all day. One line saying `frontend.acme.com` made you infer the first from
+   the second. */
+const ORG = 'Acme, Inc.';
 const PROJECT = 'frontend.acme.com';
 
 export interface SideNavProps {
@@ -47,14 +53,14 @@ export interface SideNavProps {
  *
  * Four decisions carry the scaling argument:
  *
- * 1. AGENTS ARE PEERS UNDER ONE LABEL. They are a flat list under "Products",
+ * 1. AGENTS ARE PEERS UNDER ONE RULE. They are a flat list below one separator,
  *    so a new agent costs exactly one row and nothing has to be expanded to
  *    reach it. Only an agent with more than one body expands, and what it
  *    expands into is data (`AgentEntry.sections`), not a special case here.
- * 2. THE SHOULDERS ARE PINNED. Only the products list scrolls. Sessions sits
- *    above it, the tools and the credits below, so neither can be pushed
- *    off-screen by growth - which is exactly what happens to a nav that is one
- *    long scrolling column.
+ * 2. THE SHOULDERS ARE PINNED. Only the agents list scrolls. The logo, the
+ *    account, Search and Sessions sit above it, the tools and the credits
+ *    below, so none of them can be pushed off-screen by growth - which is
+ *    exactly what happens to a nav that is one long scrolling column.
  * 3. THE NAV IS THE QUEUE. Each agent carries its open count, so eleven agents
  *    read as a worklist rather than eleven doors. Length is only a problem when
  *    the rows say nothing.
@@ -78,10 +84,22 @@ export interface SideNavProps {
  * geometry in side-nav.css does all of it. There is no collapsed variant of a
  * row to keep in agreement with the open one.
  *
- * The third is that the layout FOLDS rather than switching: the brand pair and
- * the tool bar are a wrap and a grid whose track count falls out of the width
- * the browser is already animating, so there is no second arrangement snapping
- * into place halfway through a 180ms transition.
+ * The third is that the layout FOLDS rather than switching: every object here
+ * is a reduction of itself at the narrower width - the logo keeps its mark, the
+ * account keeps its badge, the separator keeps its rule, and the tool bar is a
+ * grid whose track count falls out of the width the browser is already
+ * animating. There is no second arrangement snapping into place halfway
+ * through a 180ms transition.
+ *
+ * ── AND THE TOP OF IT WAS REDRAWN 2026-09-02 (Mehdi) ────────────────────────
+ * Five things, and each one is noted where it happens: the logo and the name
+ * are their own row and not a stand-in inside the switcher; the switcher is a
+ * two-line control with an edge; Search is a row rather than the one filled
+ * button in the column; "AGENTS" is a rule rather than a word; and the gaps
+ * between those three objects and the rows are opened up. The type ramp came
+ * out of it at three sizes - 16 medium for the name, 13 medium for the account
+ * and the row you are on, 13 regular for the rest - so hierarchy is carried by
+ * weight and colour rather than by a fourth and fifth size.
  * ════════════════════════════════════════════════════════════════════════════
  */
 export function SideNav({ active, onNavigate, agentCount, collapsed = false, onToggleCollapsed }: SideNavProps) {
@@ -96,45 +114,76 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
 
   return (
     <nav className={`m-nav${collapsed ? ' is-collapsed' : ''}`} aria-label="Main">
-      {/* ── project. Pinned. ──────────────────────────────────────────────
-          A switcher, not a logo lockup: the mark, the project it belongs to,
-          and the control that changes it. The mark is the only chromatic thing
-          in this column and it sits on the nav itself with no plate behind it.
+      {/* ── the logo. Pinned, and it is NOT a control. ─────────────────────
+          The mark and the name, and nothing else on the row. Until 09-02 the
+          mark stood in for the logo INSIDE the switcher, which made the one
+          permanent thing in the column look like part of a control you change
+          all day - and left the product unnamed on its own first screen.
 
-          The pair WRAPS rather than rearranging: as the menu narrows, search
-          drops under the switcher on its own, because the switcher has a
-          minimum width and flex-wrap does the rest. */}
-      <div className="m-nav__brand">
-        <NavFlyout enabled={collapsed} label={PROJECT}>
-          <button type="button" className="m-nav__project" aria-label={`Switch project: ${PROJECT}`} data-mark-host>
-            {/* The mark grows into the glyph column the way every other icon
-                does, so its centre lands on the same x rather than 0.5px off
-                it. A logo that is nearly in the column is worse than one that
-                is obviously not. */}
-            <span className="m-nav__mark" aria-hidden="true">
-              <BrandMark size={17} playOnMount />
-            </span>
-            <span className="m-nav__project-name m-truncate">{PROJECT}</span>
-            <ChevronsUpDown size={13} className="m-nav__project-caret" aria-hidden="true" />
-          </button>
-        </NavFlyout>
-        {/* SEARCH, not "new". The `+` was a create-your-own-agent affordance that
-            sat against the product's own argument - people want it working by
-            itself - and the thing you actually reach for from anywhere is
-            finding something. The search itself is the next piece. */}
-        <Tooltip title="Search" placement="right">
-          <button type="button" className="m-nav__new" aria-label="Search" onClick={() => onNavigate('search')}>
-            <Search size={15} aria-hidden="true" />
-          </button>
-        </Tooltip>
+          It sits in the glyph column like every other icon here: same 15px
+          glyph, same 8px inset, so the mark, Search's glyph and every agent's
+          share one centre in both widths. A logo that is nearly in the column
+          is worse than one that is obviously not. */}
+      <div className="m-nav__brand" data-mark-host>
+        <BrandMark size={15} playOnMount className="m-nav__mark" />
+        <span className="m-nav__brand-name">melonade</span>
       </div>
+
+      {/* ── the account. Pinned. ───────────────────────────────────────────
+          TWO LINES AND A BADGE, because it answers two questions: whose
+          workspace this is and which of its projects you are in. It was one
+          line - `frontend.acme.com`, mark on the left, chevron on the right -
+          and you had to infer the organisation from the domain.
+
+          It is the only thing in this column drawn as a CONTROL: a hairline at
+          rest, the row's own fill on hover. The rows below it go somewhere; this
+          changes what all of them are about, so it should not look like one of
+          them. Narrow, it loses its box and keeps the badge, the way the credits
+          meter loses its box and keeps the measure. */}
+      <NavFlyout enabled={collapsed} label={`${ORG} · ${PROJECT}`}>
+        <button
+          type="button"
+          className="m-nav__account"
+          aria-label={`Switch project: ${PROJECT}, ${ORG}`}
+        >
+          {/* A SQUARE, and the person at the foot of the menu is a circle. Two
+              initials in one column mean two different kinds of thing, so the
+              shape has to say which - an organisation is not somebody. */}
+          <span className="m-nav__account-badge" aria-hidden="true">
+            {ORG[0]}
+          </span>
+          <span className="m-nav__account-text">
+            <span className="m-nav__account-name m-truncate">{PROJECT}</span>
+            <span className="m-nav__account-org m-truncate">{ORG}</span>
+          </span>
+          <ChevronsUpDown size={13} className="m-nav__account-caret" aria-hidden="true" />
+        </button>
+      </NavFlyout>
 
       {/* HOME IS GONE (Mehdi, 08-28). It was going to carry the weekly review and
           the digest, and both of those are backend work - "otherwise it would be
           a project that would be too long to implement". Sessions stays, and it
           is the one destination above the agents because every agent's evidence
-          is a session. */}
+          is a session.
+
+          SEARCH IS A ROW HERE, not a filled button beside the switcher
+          (2026-09-02). It was the one accent-filled control in the whole column,
+          which said "this is the thing to do next" about a thing you reach for
+          when you already know what you are looking for. It is a destination
+          like Sessions, so it is drawn like Sessions - and being a NavItem it
+          collapses, flies out and highlights with the same code as the rest,
+          instead of being a shape of its own that has to be maintained. */}
       <div className="m-nav__group m-nav__group--top">
+        <NavFlyout enabled={collapsed} label="Search">
+          <div className="m-nav__row">
+            <NavItem
+              icon={<Search size={15} />}
+              label="Search"
+              active={active === 'search'}
+              onClick={() => onNavigate('search')}
+            />
+          </div>
+        </NavFlyout>
         <NavFlyout enabled={collapsed} label="Sessions">
           <div className="m-nav__row">
             <NavItem
@@ -147,16 +196,25 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
         </NavFlyout>
       </div>
 
+      {/* ── WHERE THE AGENTS START ─────────────────────────────────────────
+          A RULE, NOT A WORD (Mehdi, 2026-09-02). "AGENTS" was the only piece of
+          uppercase type in the column, and it was labelling the obvious: eleven
+          rows carrying agent glyphs and open counts do not need to be told what
+          they are. What the group actually needs is a START, and a start is a
+          line. One pixel of ink instead of six letters, and the air around it
+          reads as room rather than as a heading nobody reads.
+
+          It is also the same object in both widths now - it only changes length
+          - where the label had to become a rule when the menu narrowed. And it
+          sits ABOVE the scroller rather than inside it, so it stays put and the
+          list scrolls under it. */}
+      <hr className="m-nav__sep" />
+
       {/* ── the scrolling middle ── */}
       <div className="m-nav__scroll">
-        <div className="m-nav__group">
-          {/* AGENTS, not "Products" (Gabriel, 2026-08-31). They were called
-              products while the question was how the company sells them; the
-              menu's question is what is working for you, and every row here is
-              an agent doing something. Narrow, this becomes a hairline the
-              width of the glyph column - a group label's job is to say where a
-              group starts, and a rule says that in 28px; six letters do not. */}
-          <p className="m-nav__label">Agents</p>
+        {/* The rule says where the group starts to anyone LOOKING at it; the
+            name still has to exist for anyone who is not. */}
+        <div className="m-nav__group" role="group" aria-label="Agents">
           {agents.map((a) => {
             const Icon = AGENT_ICONS[a.icon];
             const open = expanded.includes(a.key);

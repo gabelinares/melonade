@@ -46,6 +46,16 @@ const nav = await p.evaluate(() => {
     sections: nav.querySelectorAll('.m-nav__sections .m-nav-item').length,
     tools: nav.querySelectorAll('.m-nav__tools button').length,
     credits: nav.querySelector('.m-credits')?.textContent?.trim() ?? null,
+    brand: nav.querySelector('.m-nav__brand-name')?.textContent?.trim() ?? null,
+    hasMark: !!nav.querySelector('.m-nav__brand .m-mark'),
+    searchButton: !!nav.querySelector('.m-nav__new'),
+    account: [
+      nav.querySelector('.m-nav__account-name')?.textContent?.trim(),
+      nav.querySelector('.m-nav__account-org')?.textContent?.trim(),
+    ].filter(Boolean),
+    sep: !!nav.querySelector('.m-nav__sep'),
+    groupLabel: nav.querySelector('.m-nav__label')?.textContent?.trim() ?? null,
+    groupName: nav.querySelector('.m-nav__scroll [role="group"]')?.getAttribute('aria-label') ?? null,
     /* THE WRAP. The ground is the menu's colour, the menu paints nothing of its
        own, and the plane's margin is the same on all four sides - the fourth
        being the menu's own padding, which is what makes the gap look like a
@@ -62,6 +72,18 @@ const nav = await p.evaluate(() => {
   };
 });
 check('the menu renders with labels', !!nav && nav.labels.length >= 5, nav?.labels.join(' | '));
+/* 2026-09-02: the top of the menu is the product, then the account, then the
+   destinations - and Search is one of those rather than the one filled button
+   in the column. */
+check('the logo names the product, and it is not the switcher',
+  !!nav && nav.brand === 'melonade' && nav.hasMark && !nav.searchButton,
+  `${nav?.brand}, mark ${nav?.hasMark}, old search button ${nav?.searchButton}`);
+check('the account says whose workspace and which project, on two lines',
+  !!nav && nav.account?.length === 2 && nav.account[1] === 'Acme, Inc.',
+  nav?.account?.join(' / '));
+check('the agents start at a rule rather than a word',
+  !!nav && nav.sep && !nav.groupLabel && nav.groupName === 'Agents',
+  `rule ${nav?.sep}, label ${nav?.groupLabel ?? 'none'}, group named ${nav?.groupName}`);
 check('an agent expands into its sections', !!nav && nav.sections === 3, `${nav?.sections} sections`);
 check('the foot is a row of tools', !!nav && nav.tools >= 4, `${nav?.tools} tools`);
 check('the credits are always on screen', !!nav && /Credits/.test(nav.credits ?? ''), nav?.credits);
@@ -100,10 +122,13 @@ const geom = () =>
       collapsed: nav.classList.contains('is-collapsed'),
       labels: rows.map((r) => shown(r.querySelector('.m-nav-item__label'))).filter(Boolean).length,
       counts: rows.map((r) => shown(r.querySelector('.m-nav-item__count'))).filter(Boolean),
-      /* every glyph in the column, measured by its centre: the switcher's mark,
-         an agent, the add row and a foot tool have to agree on one x. */
+      /* every glyph in the column, measured by its centre: the logo's mark, the
+         account's badge, the separator, an agent, the credits bar and a foot
+         tool have to agree on one x. */
       centres: [
-        glyph('.m-nav__project svg'),
+        glyph('.m-nav__brand svg'),
+        glyph('.m-nav__account-badge'),
+        glyph('.m-nav__sep'),
         glyph('.m-nav__scroll .m-nav-item__icon'),
         glyph('.m-nav__foot .m-credits .m-bar'),
         glyph('.m-nav__tools button'),
@@ -173,8 +198,8 @@ check('every glyph in the narrow menu shares one column',
    travel: a collapse where the glyphs stay put reads as the labels leaving
    rather than as two different navs. */
 check('the glyphs drift rather than travel between the two widths',
-  Math.abs(shut.centres[1] - open0.centres[1]) <= 8,
-  `${open0.centres[1]} -> ${shut.centres[1]}`);
+  Math.abs(shut.centres[3] - open0.centres[3]) <= 8,
+  `${open0.centres[3]} -> ${shut.centres[3]}`);
 check('the tool bar folds into one column rather than switching to one',
   open0.toolsBox.tracks > 1 && shut.toolsBox.tracks === 1 && shut.toolsBox.h > open0.toolsBox.h * 3,
   `${open0.toolsBox.tracks} tracks/${open0.toolsBox.h}px -> ${shut.toolsBox.tracks} track/${shut.toolsBox.h}px`);
