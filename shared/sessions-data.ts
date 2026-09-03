@@ -21,14 +21,31 @@
 
 export type Plan = 'paid' | 'trial' | 'free';
 
-/** The issue types the list payload tags a session with. Same five the
- *  production segmented control offers, minus the ones it platform-gates. */
+/** The issue types the list payload tags a session with. Production's own set
+ *  (`Types/session/issue`) minus `mouse_thrashing`, which production hides.
+ *
+ *  ⚠ `click_rage` AND `tap_rage` are both here, and they are the same
+ *  behaviour on two kinds of device - production platform-gates the two so a
+ *  web project only ever sees one. `rageType()` below assigns by device, so a
+ *  phone's rage is a tap and a desktop's is a click. That matters because the
+ *  issue-type strip offers both tabs: this fixture is one project holding
+ *  desktop and mobile together, and a tab that can never match anything reads
+ *  as broken rather than as empty. */
 export type IssueType =
   | 'js_exception'
   | 'bad_request'
   | 'click_rage'
+  | 'tap_rage'
   | 'crash'
   | 'incident';
+
+/** Rage, by device. See the note on IssueType. */
+const rageType = (deviceType: string): IssueType =>
+  deviceType === 'desktop' ? 'click_rage' : 'tap_rage';
+
+/** A generated set, with its rage put on the right device. */
+const forDevice = (types: readonly IssueType[], deviceType: string): IssueType[] =>
+  types.map((t) => (t === 'click_rage' ? rageType(deviceType) : t));
 
 export interface SessionRow {
   sessionId: string;
@@ -111,7 +128,7 @@ const LEAD: SessionRow[] = [
     countryCode: 'FR',
     city: 'Lyon',
     metadata: { plan: 'paid', cohort: 'beta', accountId: 'acc-1188' },
-    issueTypes: ['bad_request', 'click_rage'],
+    issueTypes: ['bad_request', 'click_rage'],  // desktop lead
     live: false,
     plan: 'paid',
   },
@@ -423,6 +440,18 @@ const BROWSERS: ReadonlyArray<[string, string, SessionRow['deviceType']]> = [
   ['Safari', 'iPadOS', 'tablet'],
 ];
 
+/* ⚠ INDEXED WITH `i * 4`, NOT `i * 3`, and the difference is nine sets against
+   three. `gcd(3, 9) = 3`, so `(i * 3) % 9` only ever reached indices 0, 3 and
+   6 - `[]`, `['bad_request']`, `['crash']` - and SIX OF THESE NINE SETS WERE
+   DEAD CODE from the day the fixture was written. Every `click_rage` set was
+   among them, which is why the issue-type strip came back reading "Click Rage
+   3" (the three hand-written leads) and "Tap Rage 0".
+
+   The stride has to be COPRIME WITH THE LENGTH to walk the whole list; 4 is.
+   ⚠ And this was invisible until 2026-09-02, because nothing had ever drawn a
+   count per issue type - the errors column showed a number per session and the
+   strip shows a number per KIND. A fixture defect is only as visible as the
+   least aggregated view of it. */
 const ISSUE_SETS: ReadonlyArray<IssueType[]> = [
   [],
   [],
@@ -494,11 +523,14 @@ function derive(i: number): SessionRow {
       : n % 7 === 0
         ? {}
         : { plan: 'free' },
-    issueTypes: errors > 0
-      ? (ISSUE_SETS[(i * 3) % ISSUE_SETS.length]!.length
-          ? ISSUE_SETS[(i * 3) % ISSUE_SETS.length]!
-          : ['js_exception'])
-      : ISSUE_SETS[(i * 3) % ISSUE_SETS.length]!.filter((t) => t === 'click_rage' || t === 'incident'),
+    issueTypes: forDevice(
+      errors > 0
+        ? (ISSUE_SETS[(i * 4) % ISSUE_SETS.length]!.length
+            ? ISSUE_SETS[(i * 4) % ISSUE_SETS.length]!
+            : ['js_exception'])
+        : ISSUE_SETS[(i * 4) % ISSUE_SETS.length]!.filter((t) => t === 'click_rage' || t === 'incident'),
+      deviceType,
+    ),
     live: false,
     plan: lead.plan,
   };

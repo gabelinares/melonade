@@ -50,6 +50,10 @@ const shell = await p.evaluate(() => ({
   tabsArePills: !!document.querySelector('.m-page__tabs .m-seg__item'),
   /* the issue-type strip and its whole toolbar row are gone */
   hasToolbar: !!document.querySelector('.m-page__toolbar'),
+  tags: [...document.querySelectorAll('.m-page__toolbar .m-seg__item')].map((e) => e.textContent.trim()),
+  tagCounts: [...document.querySelectorAll('.m-page__toolbar .m-seg__item')].map((e) =>
+    Number((e.textContent.match(/(\d+)$/) ?? [])[1] ?? 0),
+  ),
   columns: [...document.querySelectorAll('.m-ss__table th')].map((e) => e.textContent.trim()).filter(Boolean),
   rows: document.querySelectorAll('.m-ss__table tbody tr').length,
   foot: document.querySelector('.m-listfoot__range')?.textContent,
@@ -70,7 +74,15 @@ check('and the three sections are text tabs, not the pill strip',
 /* Mehdi, 2026-09-02: keep only the two tabs. The issue-type strip went and its
    toolbar row went with it - the date range and the display menu moved onto the
    search's own bar, which is the row that STICKS. */
-check('the issue-type strip is gone, and so is the row it was on', !shell.hasToolbar);
+/* ⚠ THE STRIP IS BACK, AND THE ERRORS COLUMN IS WHAT PAID FOR IT (Mehdi,
+   2026-09-02, both instructions the same day). "It would be too much data to
+   read and people wouldn't get it. That's why we made it as tabs." */
+check('the issue-type strip is on a toolbar row of its own',
+  shell.hasToolbar && shell.tags.length === 7 && shell.tags[1].startsWith('Errors'),
+  shell.tags.join(' | '));
+check('and every tab has a real count, so none of them is decoration',
+  shell.tagCounts.length === 7 && shell.tagCounts.every((n) => n > 0),
+  shell.tagCounts.join(', '));
 /* ⚠ NOT 134. The default window is thirty days and the fixture now spreads
    over sixty, which is the whole reason the date control can do anything - see
    sessions-data. What is asserted is the SHAPE of the footer, and that the
@@ -78,8 +90,25 @@ check('the issue-type strip is gone, and so is the row it was on', !shell.hasToo
 check('the list is a table and it pages',
   shell.rows === 12 && /^1–12 of \d+ sessions$/.test((shell.foot ?? '').trim()),
   `${shell.rows} rows, ${shell.foot}`);
-check('errorsCount is finally on screen, which the payload has always carried',
-  shell.columns.includes('Errors'), shell.columns.join(' | '));
+/* ⚠ AND THERE IS NO ERRORS COLUMN. It was on screen for one day. Production
+   declares `errorsCount` on `ISession` and in `SessionItem`'s props and renders
+   it nowhere, which Mehdi confirmed live: "I don't think we have errors... no,
+   we don't." Metadata is on by default in its place. */
+check('there is no errors column, and metadata is on by default',
+  !shell.columns.includes('Errors') && shell.columns.includes('Metadata'),
+  shell.columns.join(' | '));
+
+/* ⚠ AND ONLY TWO HEADERS SORT. The backend orders on `startTs` and
+   `eventsCount` and nothing else - see production's `sortValues` - because
+   anything else reloads a list of millions. */
+const sorters = await p.evaluate(() =>
+  [...document.querySelectorAll('.m-ss__table th')]
+    .filter((t) => t.querySelector('.m-sort'))
+    .map((t) => t.textContent.trim()),
+);
+check('and only the two columns the backend can order carry a sorter',
+  sorters.length === 2 && sorters.includes('Started') && sorters.includes('Events'),
+  sorters.join(' | '));
 check('the search is a well rather than a second card on the plane',
   shell.searchBg !== shell.planeBg, `${shell.searchBg} in ${shell.planeBg}`);
 
@@ -107,14 +136,15 @@ check('every figure in a column shares one right edge and one face',
    kinds, so nobody has to know which kind a thing is before looking for it. */
 check('there is exactly ONE way into the filter, and it is a field',
   (await p.locator('.m-sc__field').count()) === 1
-    && /Describe the sessions you want/.test((await p.locator('.m-sc__lead').textContent()) ?? ''),
+    && /Filter these sessions/.test((await p.locator('.m-sc__lead').textContent()) ?? ''),
   (await p.locator('.m-sc__field-text').textContent()) ?? 'no field');
-/* THE PLACEHOLDER DOES THREE JOBS AT ONCE, which is why the badge and the row
-   of example pills could go: a fixed lead that says what the field is for, and
-   one rotating example that teaches the half nobody expects. */
-check('and its placeholder carries a live example',
-  /, like “.+”/.test((await p.locator('.m-sc__eg').textContent()) ?? ''),
-  (await p.locator('.m-sc__eg').textContent()) ?? 'no example');
+/* ⚠ AND IT PROMISES NOTHING IT CANNOT DO. The natural-language path is PARKED,
+   not deleted (Mehdi, 2026-09-02: it is a feature OpenReplay shipped and
+   removed, so putting it back is out of scope) - `onTranslate` is the one prop
+   that gates it and the card stopped passing it. What this asserts is that the
+   promise went with it: no rotating example, and no offer to read a sentence. */
+check('and it no longer promises prose it cannot read',
+  (await p.locator('.m-sc__eg').count()) === 0, 'no rotating example');
 /* ⚠ NOT A SEARCH BAR AND NOT CALLED SEARCH (Gabriel, 2026-09-02). The magnifier
    is the search signal, so it is a filter glyph; and no word a reader sees says
    "search". */
@@ -165,48 +195,32 @@ check('one query reaches an event and a saved segment together',
   spans.cats.includes('Autocapture') && spans.cats.includes('Segments'),
   `${spans.names.join(', ')} — from ${spans.cats.join('/')}`);
 
-/* ── 3. THE SENTENCE ─────────────────────────────────────────────────────── */
-await p.fill('.m-pick__search input', 'paid users on mobile who hit an error');
-await p.waitForTimeout(350);
-const nl = await p.evaluate(() => {
-  const el = document.querySelector('.m-pick__nl');
-  if (!el) return null;
-  return {
-    head: el.querySelector('.m-pick__nl-head')?.textContent?.trim(),
-    steps: [...el.querySelectorAll('.m-pick__steps li')].map((e) => e.textContent.trim()),
-    ignored: el.querySelector('.m-pick__ignored')?.textContent?.trim(),
-    cta: el.querySelector('button')?.textContent?.trim(),
-    /* above the matches, never instead of them */
-    beforeRows: (() => {
-      const rows = document.querySelector('.m-pick__row');
-      return rows ? el.compareDocumentPosition(rows) === 4 : true;
-    })(),
-  };
-});
-check('two or more words are offered as a search', !!nl, nl?.head);
-check('and the offer shows the steps it understood',
-  !!nl && nl.steps.length >= 3, nl?.steps.join(' · '));
-check('and names what it could not use rather than dropping it',
-  !!nl && /Ignored/.test(nl.ignored ?? ''), nl?.ignored);
-check('and it sits above the matches rather than replacing them',
-  !!nl && nl.beforeRows);
+/* ── 3. THE SENTENCE PATH IS PARKED ────────────────────────────────────────
+   ⚠ It used to be asserted here, end to end: type a sentence, read the steps
+   it understood, accept it, get editable rows back. All of that still WORKS -
+   `translate()` is untouched and `FilterPicker` still renders the offer when
+   given `onTranslate` - but the sessions page stopped passing that prop on
+   2026-09-02, because the feature is one OpenReplay shipped and removed and
+   this scope forbids adding features back.
 
-await p.locator('.m-pick__nl button').click();
-await p.waitForTimeout(400);
-const translated = await p.evaluate(() => ({
-  rows: [...document.querySelectorAll('.m-srow')].map((r) => r.querySelector('.m-srow__name')?.textContent?.trim()),
-  editable: document.querySelectorAll('.m-srow .ant-select').length,
-  count: document.querySelector('.m-listfoot__range')?.textContent,
-}));
-check('what comes back is editable rows, not a result set',
-  translated.rows.length >= 3 && translated.editable > 0,
-  `${translated.rows.join(', ')} — ${translated.editable} controls`);
-check('and the list narrowed to them', !/of 134/.test(translated.count ?? '') || translated.count !== '1–12 of 134',
-  translated.count);
+   So it moved rather than went: **`FilterPicker.stories.tsx` carries it**, with
+   `sentences` as a story arg, which is the right home for a feature that is
+   built and switched off. What this suite asserts instead is that the SWITCH is
+   off - see "the sentence path is switched off at the callsite" below.
+
+   ⚠ If the sessions bar ever gets `onTranslate` back, restore this block from
+   git rather than writing it again: it took four assertions to pin down that
+   the offer must show its steps, name what it ignored, sit ABOVE the matches,
+   and hand back rows you can edit. */
 
 /* ── 4. THE ONE LIST HOLDS TWO GRAMMARS ──────────────────────────────────── */
-await p.locator('.m-sc__clear').click();
-await p.waitForTimeout(300);
+/* ⚠ No Clear here any more: §3 used to leave a translated search behind and
+   this cleared it. Nothing has been added at this point, so the button does not
+   exist - and a click on a control that is not there is a 30-second timeout
+   rather than a failed assertion, which is the least helpful way for a suite to
+   tell you something moved. */
+await p.keyboard.press('Escape');
+await p.waitForTimeout(200);
 
 const addEntry = async (name) => {
   await p.locator('.m-sc__field').click();
@@ -308,31 +322,28 @@ await p.waitForTimeout(300);
 check('and the joint is a control: clicking it switches every one of them',
   (await p.locator('.m-srow__joint').nth(1).textContent())?.trim() === 'or');
 
-/* ── 6. the metadata chip writes to the search ───────────────────────────── */
+/* ── 6. the metadata chip writes to the search ─────────────────────────────
+   ⚠ THE COLUMN IS ON BY DEFAULT since 2026-09-02 ("then it should be by
+   default"), so this no longer turns it on - it ASSERTS it is on, then uses it.
+   The old version clicked the Display pill unconditionally, which turned the
+   column off the moment the default changed and then waited thirty seconds for
+   a chip that could not exist. A setup step that assumes a default is a setup
+   step that breaks silently when the default is the thing under test. */
 await p.locator('.m-sc__clear').click();
 await p.waitForTimeout(400);
-/* turn the column on first: it is off by default */
-await p.locator('.m-sc__bar [aria-label="Display"]').first().click();
-await p.waitForTimeout(300);
-const hasMetaPill = await p.locator('.m-dm__pill', { hasText: 'Metadata' }).count();
-if (hasMetaPill) {
-  await p.locator('.m-dm__pill', { hasText: 'Metadata' }).click();
-  await p.waitForTimeout(300);
-  await p.keyboard.press('Escape');
-  await p.mouse.click(900, 40);
-  await p.waitForTimeout(300);
-  await p.locator('.m-ss__meta-chip').first().click();
-  await p.waitForTimeout(400);
-  const wrote = await p.evaluate(() => ({
-    rows: document.querySelectorAll('.m-srow').length,
-    subject: document.querySelector('.m-srow__name')?.textContent?.trim(),
-    value: document.querySelector('.m-srow .m-vp__trigger')?.textContent?.trim(),
-  }));
-  check('clicking a metadata value on a row searches for it',
-    wrote.rows === 1 && !!wrote.subject, `${wrote.subject} = ${wrote.value}`);
-} else {
-  check('clicking a metadata value on a row searches for it', false, 'the Metadata column pill was not found');
-}
+const metaOn = await p.evaluate(() =>
+  [...document.querySelectorAll('.m-ss__table th')].some((t) => t.textContent.trim() === 'Metadata'),
+);
+check('the metadata column is on without anybody turning it on', metaOn);
+await p.locator('.m-ss__meta-chip').first().click();
+await p.waitForTimeout(400);
+const wrote = await p.evaluate(() => ({
+  rows: document.querySelectorAll('.m-srow').length,
+  subject: document.querySelector('.m-srow__name')?.textContent?.trim(),
+  value: document.querySelector('.m-srow .m-vp__trigger')?.textContent?.trim(),
+}));
+check('clicking a metadata value on a row searches for it',
+  wrote.rows === 1 && !!wrote.subject, `${wrote.subject} = ${wrote.value}`)
 
 /* ── 7. bookmarks is a tab, and everything keeps working inside it ───────── */
 await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'Bookmarked' }).click();
@@ -392,29 +403,24 @@ check('the field is the biggest control on the page and the only one at 14px',
   weight.h > weight.tallestOther && weight.size === '14px',
   `${weight.h}px vs ${weight.tallestOther}px, type ${weight.size}`);
 
-/* AND EVERY EXAMPLE IT SHOWS REALLY TRANSLATES. A placeholder promising
-   something the field cannot do is worse than one promising nothing. */
-const EXAMPLES = [
-  'paid users who hit an error',
-  'mobile sessions with rage clicks',
-  'trials that reached checkout',
-  'anyone who bounced off the cart',
-  'long sessions on Safari',
-];
-for (const ex of EXAMPLES) {
-  await p.locator('.m-sc__field').click();
-  await p.waitForTimeout(250);
-  await p.fill('.m-pick__search input', ex);
-  await p.waitForTimeout(300);
-  const offered = await p.evaluate(() => ({
-    has: !!document.querySelector('.m-pick__nl button'),
-    steps: document.querySelectorAll('.m-pick__steps li').length,
-  }));
-  check(`the placeholder's “${ex}” really translates`, offered.has && offered.steps > 0,
-    `${offered.steps} steps`);
-  await p.keyboard.press('Escape');
-  await p.waitForTimeout(200);
-}
+/* ⚠ THE SENTENCE PATH IS OFF, AND STILL THERE. `translate()` and the picker's
+   whole offer are untouched in the shared layer; the card simply stops passing
+   `onTranslate`, which is the single switch. So this asserts BOTH halves: the
+   picker offers nothing to a typed sentence, and the function that would do it
+   still works when called. If somebody deletes `translate()` to tidy up, this
+   fails - which is the point. */
+await p.locator('.m-sc__field').click();
+await p.waitForTimeout(250);
+await p.fill('.m-pick__search input', 'paid users who hit an error');
+await p.waitForTimeout(350);
+const parked = await p.evaluate(() => ({
+  offer: !!document.querySelector('.m-pick__nl button'),
+  steps: document.querySelectorAll('.m-pick__steps li').length,
+}));
+check('the sentence path is switched off at the callsite', !parked.offer && parked.steps === 0,
+  `offer ${parked.offer}, ${parked.steps} steps`);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(200);
 
 /* ── 9. IT STICKS ────────────────────────────────────────────────────────────
    Asserted on a SHORT window, because the plane fits a page of twelve rows on
@@ -744,14 +750,25 @@ const day = (back) => {
   const d = new Date(Date.now() - back * 86400000);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
+/* ⚠ BOTH ENDS, IN ONE GO, AND NOTHING IS ASSERTED IN BETWEEN. antd's
+   RangePicker does not fire `onChange` for a HALF-picked range - it commits
+   when both ends exist - so there is no intermediate state to check here. An
+   assertion between the two fills was added and removed: it read the label as
+   still saying "Custom range" and looked like a bug in ours.
+
+   The model supports a one-ended window and `rangeLabel` prints it ("Jul 3
+   onwards", "Up to Jul 18"). That path is simply not reachable through this
+   control, which is recorded in date-range.ts rather than left to be
+   rediscovered. */
 const ends = p.locator('.m-dr__picker .ant-picker input');
 await ends.nth(0).click();
+await p.waitForTimeout(150);
 await ends.nth(0).fill(day(20));
 await p.keyboard.press('Enter');
-await p.waitForTimeout(250);
+await p.waitForTimeout(300);
 await ends.nth(1).fill(day(5));
 await p.keyboard.press('Enter');
-await p.waitForTimeout(450);
+await p.waitForTimeout(500);
 const custom = {
   label: await p.locator('.m-dr__value').textContent(),
   rows: await total(),
@@ -898,132 +915,38 @@ await p.waitForTimeout(200);
 await p.locator('.m-sc__clear').click();
 await p.waitForTimeout(300);
 
-/* ── THE BOOKMARK IS A CONTROL, NOT A MARK (Mehdi, 2026-09-02) ────────────
-   It sat beside the name reporting `favorite`, which meant the row drew the
-   fact and nothing set it. Now it is beside the play, it is a real button, and
-   the filled glyph is its on state. */
-const markGone = await p.evaluate(() => !document.querySelector('.m-ss__mark'));
-const bookmark = await p.evaluate(() => {
-  const btn = document.querySelector('.m-ss__act');
-  return {
-    inActions: btn?.parentElement?.classList.contains('m-ss__acts'),
-    pressed: btn?.getAttribute('aria-pressed'),
-    fill: btn?.querySelector('svg')?.getAttribute('fill'),
-  };
-});
-await p.locator('.m-ss__act').first().click();
-await p.waitForTimeout(350);
-const after = await p.evaluate(() => {
-  const btn = document.querySelector('.m-ss__act');
-  return { pressed: btn?.getAttribute('aria-pressed'), fill: btn?.querySelector('svg')?.getAttribute('fill') };
-});
-check('the bookmark moved to the actions cell, and it sets the row rather than reporting it',
-  markGone && bookmark.inActions && bookmark.pressed !== after.pressed && after.fill === 'currentColor',
-  `mark gone ${markGone}, ${bookmark.pressed} → ${after.pressed}, fill ${after.fill}`);
-/* ⚠ AND THE CLICK DOES NOT REACH THE ROW. Bookmarking a session is not asking
-   to watch it, and the row is what opens the replay. */
+/* ── THE BOOKMARK IS NOT ON THE ROW ───────────────────────────────────────
+   ⚠ It was a mark, then a control, then gone - all on 2026-09-02, and every
+   step was Mehdi's. The last one came with a reason from their own usage:
+   "people don't use the bookmark there. They need to view the session first
+   before bookmarking it. So keep that for when you're going to be reviewing
+   the replay."
+
+   So this asserts the ABSENCE of the control and the SURVIVAL of the state:
+   `favorite` is still real and the Bookmarked tab is still a list of it. A
+   feature whose control moves has to keep working, or the move was a deletion
+   wearing a plan. */
+const rowBookmark = await p.evaluate(() => ({
+  control: !!document.querySelector('.m-ss__act'),
+  mark: !!document.querySelector('.m-ss__mark'),
+  acts: !!document.querySelector('.m-ss__acts'),
+}));
+check('neither a bookmark control nor a bookmark mark is on a row',
+  !rowBookmark.control && !rowBookmark.mark && !rowBookmark.acts,
+  JSON.stringify(rowBookmark));
 const bookmarkedTab = await p.evaluate(async () => {
   const tabs = [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')];
   tabs.find((t) => /Bookmarked/.test(t.textContent))?.click();
-  await new Promise((r) => setTimeout(r, 400));
+  await new Promise((r) => setTimeout(r, 450));
   return document.querySelectorAll('.m-ss__table tbody tr').length;
 });
-check('and the bookmarked tab is a list of what the control set',
+check('and the bookmarked tab is still a real list of the state behind it',
   bookmarkedTab > 0, `${bookmarkedTab} bookmarked`);
 await p.evaluate(async () => {
   const tabs = [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')];
   tabs.find((t) => /All sessions/.test(t.textContent))?.click();
   await new Promise((r) => setTimeout(r, 300));
 });
-
-
-/* ── SEGMENTS ARE A SECTION, AND A SEGMENT IS A SAVED SEARCH ──────────────
-   Mehdi, 2026-09-02: "what if segments were a whole new tab in sessions,
-   instead of just a button on the top... we'll need to redesign and create a
-   segment drawer, where we can edit the segment rules - remember, the segment
-   is just one saved search so the design should be really consistent."
-
-   The claim worth asserting is the last one, because it is the one that decays:
-   the drawer's rules editor has to BE the sessions filter, not a component that
-   resembles it. */
-await p.evaluate(() => {
-  const tab = [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')].find((t) =>
-    /Segments/.test(t.textContent),
-  );
-  tab?.click();
-});
-await p.waitForTimeout(500);
-const seg = await p.evaluate(() => ({
-  rows: document.querySelectorAll('.m-seg__row').length,
-  /* the body is REPLACED, which is what makes it a section rather than a filter */
-  noSessions: !document.querySelector('.m-ss__table'),
-  noFilterCard: !document.querySelector('.m-sc'),
-  /* every row prints its own rules, in the same sentence the collapsed filter
-     prints, and a live count beside them */
-  rules: [...document.querySelectorAll('.m-seg__rules')].map((e) => e.textContent.trim()),
-  counts: [...document.querySelectorAll('.m-seg__n')].map((e) => e.textContent.trim()),
-}));
-check('segments is a section: it replaces the body rather than narrowing it',
-  seg.rows > 0 && seg.noSessions && seg.noFilterCard,
-  `${seg.rows} segments, sessions table gone ${seg.noSessions}, filter gone ${seg.noFilterCard}`);
-check('and every segment prints its own rules and what they currently hold',
-  seg.rules.length === seg.rows && seg.rules.every(Boolean) && seg.counts.filter((c) => c !== '—').length > 0,
-  `${seg.rules[0]} — counts ${seg.counts.join(', ')}`);
-
-/* ⚠ THE DRAWER'S EDITOR IS THE SEARCH, LITERALLY. `m-sc--panel` is SearchCard
-   in its panel variant; a lookalike would not carry that class, and the day it
-   became a lookalike is the day this check would catch it. */
-await p.locator('.m-seg__row').first().click();
-await p.locator('.ant-drawer').waitFor();
-await p.waitForTimeout(500);
-const drawer = await p.evaluate(() => ({
-  editorIsTheSearchCard: !!document.querySelector('.ant-drawer .m-sc--panel'),
-  sameRows: document.querySelectorAll('.ant-drawer .m-srow').length,
-  sameField: !!document.querySelector('.ant-drawer .m-sc__field'),
-  /* and it does not collapse, because a drawer has nothing to scroll past */
-  noCollapse: !document.querySelector('.ant-drawer .m-sc__toggle'),
-  count: document.querySelector('.m-sd__count')?.textContent?.trim(),
-}));
-check('the drawer edits the rules with the sessions filter itself, not a lookalike',
-  drawer.editorIsTheSearchCard && drawer.sameRows > 0 && drawer.sameField && drawer.noCollapse,
-  `panel ${drawer.editorIsTheSearchCard}, ${drawer.sameRows} rows, field ${drawer.sameField}, no collapse ${drawer.noCollapse}`);
-
-/* ⚠ AND THE VALUE PICKER IS FED THE WINDOW, NOT THE DRAFT'S OWN RESULT. Fed the
-   filtered list it can only offer values that survived the clause you are
-   editing: pick France and France is the only country it can still see. */
-const pickerPool = await p.evaluate(async () => {
-  document.querySelector('.ant-drawer .m-vp__trigger')?.click();
-  await new Promise((r) => setTimeout(r, 500));
-  const root = document.querySelector('.m-vp-root');
-  return { options: root?.querySelectorAll('.m-checkrow').length ?? 0, bars: root?.querySelectorAll('.m-vp__bar').length ?? 0 };
-});
-check('and its value picker offers the whole window, with a share on every value',
-  pickerPool.options > 1 && pickerPool.bars === pickerPool.options,
-  `${pickerPool.options} values, ${pickerPool.bars} bars`);
-await p.keyboard.press('Escape');
-await p.waitForTimeout(200);
-await p.keyboard.press('Escape');
-await p.waitForTimeout(400);
-
-/* USE loads the segment's OWN RULES into the live search - editable rows, not
-   an opaque row that says its name - and takes you back to the list. */
-await p.evaluate(() => {
-  const row = [...document.querySelectorAll('.m-seg__row')].find((r) => /Trials, week one/.test(r.textContent));
-  row?.querySelector('.m-seg__use')?.click();
-});
-await p.waitForTimeout(700);
-const applied = await p.evaluate(() => ({
-  tab: document.querySelector('.ant-tabs-tab-active')?.textContent?.trim(),
-  rows: [...document.querySelectorAll('.m-sc__list .m-srow')].length,
-  opaque: [...document.querySelectorAll('.m-sc__list .m-srow')].some((r) => /Trials, week one/.test(r.textContent)),
-  foot: document.querySelector('.m-listfoot__range')?.textContent?.trim(),
-}));
-check('using a segment loads its rules, not a row with its name on it',
-  applied.tab === 'All sessions' && applied.rows > 0 && !applied.opaque,
-  `${applied.tab}, ${applied.rows} editable rows, opaque ${applied.opaque} — ${applied.foot}`);
-await p.locator('.m-sc__clear').click();
-await p.waitForTimeout(300);
-
 
 check('no console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 

@@ -143,33 +143,89 @@ export const defaultOperator = (t: DataType | undefined): string => operatorsFor
    presets in minutes, which cannot express "the 3rd to the 18th" at all - so
    `custom` was a preset that quietly applied ninety days. See date-range.ts. */
 
-export type SessionSortKey = 'recent' | 'oldest' | 'events' | 'errors' | 'duration';
+/* ⚠ TWO FIELDS, AND IT IS A BACKEND LIMIT RATHER THAN A CHOICE (Mehdi,
+   2026-09-02). Production offers exactly four orderings - `startTs-desc`,
+   `startTs-asc`, `eventsCount-asc`, `eventsCount-desc` (see
+   `SessionSort.tsx`'s `sortValues`) - and nothing else, because sorting on
+   anything the index does not carry means reloading the whole list: "we have to
+   reload the entire list because it might be like millions of sessions."
+
+   So `errors` and `duration` are gone from here AND their column headers lose
+   their sorters. A sortable header the backend cannot honour is the worst kind
+   of affordance: it works in the prototype and gets filed as a bug later. */
+export type SessionSortKey = 'recent' | 'oldest' | 'events' | 'fewest';
 
 export const SORT_CHOICES: ReadonlyArray<{ value: SessionSortKey; label: string }> = [
   { value: 'recent', label: 'Newest first' },
   { value: 'oldest', label: 'Oldest first' },
   { value: 'events', label: 'Most events' },
-  { value: 'errors', label: 'Most errors' },
-  { value: 'duration', label: 'Longest' },
+  { value: 'fewest', label: 'Fewest events' },
 ];
 
-/* ⚠ THE ISSUE-TYPE STRIP IS GONE (Mehdi, 2026-09-02: keep only the two tabs)
-   AND SO IS ITS STATE. It used to be `issueTypes: IssueType[]` on the search,
-   filtered separately in `filterSessions` - which was a SECOND path to a filter
-   the catalogue already offers as `issueType`, an array property with the same
-   five values and the same backend key. Two paths to one filter is the
-   duplication this whole exercise is about deleting, and the property version
-   is strictly better: it arrives through the one button, it composes with
-   contains / has any / is empty, and the value picker shows each type's share
-   of traffic where the strip could only show a count.
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE ISSUE-TYPE STRIP — removed on the morning of 2026-09-02 and restored the
+   same evening, and BOTH instructions were Mehdi's.
 
-   The five labels now live in `sessions-data.ts` as that property's `options`.
-   ─────────────────────────────────────────────────────────────────────────── */
+   Morning: "keep only the all sessions and bookmarks, remove the other tabs."
+   Evening: "we're missing the tabs for errors, this and that... it's an easy
+   win, because it should be the same tabs as we have in tests."
 
+   ⚠ IT IS ONE DECISION, NOT A REVERSAL, and the missing half arrived with the
+   second half of the sentence: THE ERRORS COLUMN GOES, and the strip is what
+   replaces it. "It would be too much data to read and people wouldn't get it.
+   That's why we made it as tabs." A column of 134 error counts and a strip of
+   six choices answer the same question; only one of them is readable.
+
+   ── AND IT IS ITS OWN STATE, WHICH IS THE PART I GOT WRONG ────────────────
+   Deleting it, the argument was that `issueType` is already a catalogue
+   property, so a strip is a second path to one filter. Production says
+   otherwise and the distinction is real: `searchStore.activeTags` is SINGLE
+   select and separate from `filters`, exactly as the Tests page's status strip
+   is separate from its six filter dimensions. One narrows to a kind; the other
+   composes. Both exist in production and this now matches it.
+
+   Labels are production's own (`Types/session/issue`), which is why
+   `js_exception` reads "Errors" rather than "JS exception" - and that is the
+   word Mehdi used for the tab.
+
+   ⚠ `mouse_thrashing` is hidden, as production hides it. Production also shows
+   Click Rage OR Tap Rage by the project's platform; this fixture is one project
+   holding desktop and mobile sessions together, so both are offered.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** `all` is the empty selection rather than a seventh type - the same call the
+ *  Issues page made about Category, and production's own `types.ALL`. */
+export type SessionTag = 'all' | IssueType;
+
+export const ISSUE_TABS: ReadonlyArray<{ value: SessionTag; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'js_exception', label: 'Errors' },
+  { value: 'bad_request', label: 'Bad Requests' },
+  { value: 'click_rage', label: 'Click Rage' },
+  { value: 'tap_rage', label: 'Tap Rage' },
+  { value: 'crash', label: 'Crashes' },
+  { value: 'incident', label: 'Incidents' },
+];
+
+/** How many of `rows` carry a type. The strip prints it, and it is counted
+ *  against everything the search and the window already left - so the figure
+ *  on a tab is the length of the list that tab produces. */
+export const issueTypeCount = (rows: readonly SessionRow[], t: SessionTag): number =>
+  t === 'all' ? rows.length : rows.filter((s) => s.issueTypes.includes(t)).length;
+
+/* ⚠ NO `errors` FIELD. It was a column for one day and production has never
+   drawn one: `errorsCount` is declared on `ISession` and in `SessionItem`'s
+   props and rendered nowhere. Mehdi, 2026-09-02, checking it live: "I don't
+   think we have errors... no, we don't" - and the design reason, which is the
+   one worth keeping: "it would be too much data to read and people wouldn't get
+   it. THAT'S WHY WE MADE IT AS TABS."
+
+   So the question the column answered - which of these went wrong - is answered
+   by the issue-type strip instead, where it is one choice rather than 134
+   figures. The field is still in the payload if it is ever wanted. */
 export type SessionField =
   | 'started'
   | 'events'
-  | 'errors'
   | 'pages'
   | 'duration'
   | 'location'
@@ -179,7 +235,6 @@ export type SessionField =
 export const FIELD_CHOICES: ReadonlyArray<{ value: SessionField; label: string }> = [
   { value: 'started', label: 'Started' },
   { value: 'events', label: 'Events' },
-  { value: 'errors', label: 'Errors' },
   { value: 'pages', label: 'Pages' },
   { value: 'duration', label: 'Duration' },
   { value: 'location', label: 'Location' },
@@ -196,11 +251,13 @@ export interface SessionDisplay {
   viewed: 'show' | 'hide' | 'only';
 }
 
-/** Eight columns is too many to read; the default is the six that answer
- *  "is this session worth watching". Pages and metadata are opt-in. */
+/** ⚠ METADATA IS ON (Mehdi, 2026-09-02: "then it should be by default").
+ *  It was opt-in, which put the one column carrying the customer's OWN
+ *  vocabulary - plan, cohort, account - behind a menu, while six columns of
+ *  ours were on. Pages is the only opt-in left. */
 export const DEFAULT_DISPLAY: SessionDisplay = {
   sort: 'recent',
-  fields: ['started', 'events', 'errors', 'duration', 'location', 'device'],
+  fields: ['started', 'events', 'duration', 'location', 'device', 'metadata'],
   viewed: 'show',
 };
 
@@ -219,6 +276,10 @@ export interface SessionsState {
    *  the card. */
   filters: SearchFilter[];
   eventsOrder: EventsOrder;
+  /** The issue-type strip's own choice. Single, and separate from `filters`
+   *  because production keeps it separate (`searchStore.activeTags`) and
+   *  because it narrows to a KIND rather than composing. See ISSUE_TABS. */
+  tag: SessionTag;
   range: DateRangeValue;
   display: SessionDisplay;
   page: number;
@@ -233,6 +294,7 @@ export const INITIAL_SESSIONS_STATE: SessionsState = {
   tab: 'all',
   filters: [],
   eventsOrder: 'then',
+  tag: 'all',
   range: DEFAULT_RANGE,
   display: DEFAULT_DISPLAY,
   page: 1,
@@ -819,6 +881,7 @@ export function filterSessions(state: SessionsState, rows: readonly SessionRow[]
   const { events, properties } = splitFilters(state.filters);
   const out = rows.filter((s) => {
     if (state.tab === 'bookmarks' && !s.favorite) return false;
+    if (state.tag !== 'all' && !s.issueTypes.includes(state.tag)) return false;
     /* The segments tab draws segments, not sessions - but the sessions it
        would have drawn are what every segment's count is measured against, so
        the pipeline runs and only the body of the page changes. */
@@ -840,10 +903,8 @@ export function sortSessions(rows: SessionRow[], key: SessionSortKey): SessionRo
       return out.sort((a, b) => b.startedAgoMin - a.startedAgoMin);
     case 'events':
       return out.sort((a, b) => b.eventsCount - a.eventsCount);
-    case 'errors':
-      return out.sort((a, b) => b.errorsCount - a.errorsCount || b.eventsCount - a.eventsCount);
-    case 'duration':
-      return out.sort((a, b) => b.durationSec - a.durationSec);
+    case 'fewest':
+      return out.sort((a, b) => a.eventsCount - b.eventsCount);
     default:
       return out;
   }
@@ -938,8 +999,8 @@ export type EmptyReason = 'none' | 'no-data' | 'filters' | 'bookmarks' | 'range'
 export function emptyReason(state: SessionsState, shown: number): EmptyReason {
   if (shown > 0) return 'none';
   if (state.dataState === 'empty') return 'no-data';
-  if (state.tab === 'bookmarks' && state.filters.length === 0) return 'bookmarks';
-  if (state.filters.length) return 'filters';
+  if (state.tab === 'bookmarks' && state.filters.length === 0 && state.tag === 'all') return 'bookmarks';
+  if (state.filters.length || state.tag !== 'all') return 'filters';
   return 'range';
 }
 

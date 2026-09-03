@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button, Select, Tooltip } from 'antd';
 import { ListFilter } from 'lucide-react';
 import {
@@ -16,61 +16,26 @@ import { useFilterCollapse } from './useFilterCollapse.ts';
 import './search-card.css';
 
 /* ── THE PLACEHOLDER ─────────────────────────────────────────────────────────
-   IT IS NOT A SEARCH BAR AND IT IS NOT CALLED SEARCH (Gabriel, 2026-09-02:
-   "it's still really looking like a search bar, and that's something else, and
-   I don't even like to call it search - maybe it's just a field with a very
-   nice objective concise placeholder, maybe we can rotate examples").
+   ⚠ IT NO LONGER OFFERS PROSE, AND THE FEATURE IS PARKED RATHER THAN CUT
+   (Mehdi, 2026-09-02): *"'Describe the sessions you want' - we used to have it
+   as a feature. We removed it. So we won't have something like this. It's a new
+   feature. We can have it. Not saying we don't."*
 
-   He is right about the word. You are not searching a corpus, you are SAYING
-   WHICH SESSIONS YOU WANT - a description that then becomes rows you can edit.
-   So the magnifier went, because a magnifier IS the search signal; the "reads
-   plain English" badge went; and the row of example pills went with them.
+   So this is not a rejection. It is out because **it is a feature OpenReplay
+   once shipped and removed**, and the whole scope this week forbids adding
+   features. He is warm on it for later and said why it is cheap now: two years
+   ago it needed a trained model, *"today you would ask an LLM."*
 
-   WHAT REPLACED ALL THREE IS THE PLACEHOLDER. A fixed lead that never changes,
-   so the field always says what it is for, and one example that rotates, so it
-   teaches the half nobody expects without a badge, a row of pills, or a word of
-   explanation. Everything those three were doing, done by the one thing you
-   were going to read anyway.
+   WHAT WENT: the rotating example, the `useRotatingExample` hook, and the
+   `onTranslate` prop at the callsite. WHAT STAYED: `translate()` and the
+   picker's whole sentence path, untouched, in `sessions-logic.ts` -
+   `onTranslate` is optional and gates all of it, so the feature is ONE PROP
+   from returning. Deleting it would have thrown away the part that is hard.
 
-   Every example really translates - `sessions-check` runs all of them - because
-   a placeholder promising something the field cannot do is worse than a
-   placeholder that promises nothing. */
-const LEAD = 'Describe the sessions you want';
-
-const EXAMPLES: readonly string[] = [
-  'paid users who hit an error',
-  'mobile sessions with rage clicks',
-  'trials that reached checkout',
-  'anyone who bounced off the cart',
-  'long sessions on Safari',
-];
-
-/** 4.2s: long enough to read a sentence and look away, short enough that a
- *  second one arrives before you have stopped noticing the field. */
-const ROTATE_MS = 4200;
-
-/**
- * The example the placeholder is currently showing.
- *
- * IT PAUSES WHILE YOU ARE THERE. Text that changes under a cursor aiming at it
- * is the most irritating thing a placeholder can do, and somebody hovering is
- * somebody reading.
- *
- * It does not rotate at all under `prefers-reduced-motion`. A cycling line of
- * text is motion in every sense that matters, whatever the spec counts.
- */
-function useRotatingExample(paused: boolean): string {
-  const [i, setI] = useState(0);
-
-  useEffect(() => {
-    if (paused) return undefined;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const id = window.setInterval(() => setI((n) => (n + 1) % EXAMPLES.length), ROTATE_MS);
-    return () => window.clearInterval(id);
-  }, [paused]);
-
-  return EXAMPLES[i]!;
-}
+   The field says what it does and nothing else. A control that promises a
+   sentence and cannot read one is worse than a plain button, which is the
+   whole reason this line is now four words long. */
+const LEAD = 'Filter these sessions';
 
 const ORDER_OPTIONS: ReadonlyArray<{ value: EventsOrder; label: string; hint: string }> = [
   { value: 'then', label: 'then', hint: 'In this order, one after another' },
@@ -84,7 +49,12 @@ export interface SearchCardProps {
   eventsOrder: EventsOrder;
 
   onAdd: (entry: CatalogueEntry) => void;
-  onAddMany: (filters: SearchFilter[]) => void;
+  /** ⚠ KEPT AND CURRENTLY UNUSED, deliberately. It is what the sentence path
+   *  hands its whole translation to, and passing it to `FilterPicker` as
+   *  `onTranslate` is the single switch that turns that path back on. The
+   *  callers still supply it; the card stopped forwarding it on 2026-09-02.
+   *  See the note above LEAD. */
+  onAddMany?: (filters: SearchFilter[]) => void;
   onReplace: (key: string, entry: CatalogueEntry) => void;
   onUpdate: (key: string, patch: Partial<SearchFilter>) => void;
   onRemove: (key: string) => void;
@@ -182,7 +152,6 @@ export function SearchCard({
   properties,
   eventsOrder,
   onAdd,
-  onAddMany,
   onReplace,
   onUpdate,
   onRemove,
@@ -203,11 +172,6 @@ export function SearchCard({
     over: null,
     at: null,
   });
-
-  /* Hovered or focused: the placeholder stops rotating while you are reading
-     it. See useRotatingExample. */
-  const [here, setHere] = useState(false);
-  const example = useRotatingExample(here);
 
   const any = events.length > 0 || properties.length > 0;
   const takenProperties = properties.map((f) => f.entryId);
@@ -256,17 +220,13 @@ export function SearchCard({
           Still a `<button>`, because it opens a menu and holds no text of its
           own. It is DRAWN as a field. */}
       <div className="m-sc__bar">
-        <FilterPicker taken={takenProperties} onPick={onAdd} onTranslate={onAddMany}>
+        {/* ⚠ NO `onTranslate`. That one prop is the sentence path's only switch
+            (see FilterPicker), so the feature is off and intact. */}
+        <FilterPicker taken={takenProperties} onPick={onAdd}>
           <button
             type="button"
             className="m-sc__field"
-            /* The rotating example goes in the accessible name too, or the
-               field says less to a screen reader than it does on screen. */
-            aria-label={`${LEAD}. For example, ${example}`}
-            onMouseEnter={() => setHere(true)}
-            onMouseLeave={() => setHere(false)}
-            onFocus={() => setHere(true)}
-            onBlur={() => setHere(false)}
+            aria-label={LEAD}
           >
             {/* ⚠ AN SVG STROKE, not a gradient (Mehdi, 2026-09-02: "the ring
                 should be a circle, and have a nice modern effect of increasing
@@ -291,12 +251,8 @@ export function SearchCard({
               </svg>
             </span>
             <ListFilter size={16} className="m-sc__field-glyph" aria-hidden="true" />
-            {/* The lead never moves and the example is keyed on itself, so only
-                the example crossfades. A placeholder whose whole line changed
-                every four seconds would be a page with a pulse. */}
             <span className="m-sc__field-text" aria-hidden="true">
               <span className="m-sc__lead">{LEAD}</span>
-              <span className="m-sc__eg" key={example}>, like “{example}”</span>
             </span>
           </button>
         </FilterPicker>

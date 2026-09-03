@@ -1,29 +1,37 @@
 import { Button, Dropdown, Table, Tabs, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
-  Bookmark,
+  Angry,
   BookOpen,
-  MoreHorizontal,
+  CircleAlert,
   CirclePlay,
+  MessageCircleWarning,
+  MoreHorizontal,
+  Plus,
   Settings2,
   Share2,
-  Plus,
+  Skull,
+  WifiOff,
 } from 'lucide-react';
 import {
   FIELD_CHOICES,
+  ISSUE_TABS,
   SORT_CHOICES,
   entryOf,
+  issueTypeCount,
   formatDuration,
   type SessionDisplay,
   type SessionField,
-  type SessionTab,
   type SessionRow,
+  type SessionTab,
+  type SessionTag,
 } from '@shared/sessions-logic.ts';
 import type { useSessions } from '../state/useSessions.ts';
 import { DateRange } from '../components/DateRange.tsx';
 import { PageCard } from '../components/PageCard.tsx';
 import { DisplayShell, MenuSelect } from '../components/DisplayMenu.tsx';
 import { EmptyState } from '../components/EmptyState.tsx';
+import { FilterStrip } from '../components/FilterStrip.tsx';
 import { IconButton } from '../components/IconButton.tsx';
 import { ListFooter } from '../components/ListFooter.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
@@ -33,6 +41,25 @@ import { SearchCard } from './SearchCard.tsx';
 import { SegmentDrawer } from './SegmentDrawer.tsx';
 import { SegmentsPanel } from './SegmentsPanel.tsx';
 import './sessions-page.css';
+
+/* ⚠ PRODUCTION'S OWN GLYPHS, from `SessionTags.tsx`'s `tagIcons` map. Reused
+   rather than re-chosen: which icon means "rage" is a decision this product
+   already made, and picking a different one would make the same word mean two
+   things across two builds of the same app. `all` gets none - it is the empty
+   selection, not a kind of issue. */
+const ISSUE_ICONS: Partial<Record<SessionTag, typeof CircleAlert>> = {
+  js_exception: CircleAlert,
+  bad_request: WifiOff,
+  click_rage: Angry,
+  tap_rage: Angry,
+  crash: Skull,
+  incident: MessageCircleWarning,
+};
+
+const iconFor = (t: SessionTag) => {
+  const Icon = ISSUE_ICONS[t];
+  return Icon ? <Icon size={13} aria-hidden="true" /> : undefined;
+};
 
 /** Written out rather than inlined so the control and its type agree: the
  *  three values are `SessionDisplay['viewed']`, and an inline array of object
@@ -136,27 +163,14 @@ export function SessionsPage({ model }: SessionsPageProps) {
           },
         ]
       : []),
-    ...(has('errors')
-      ? [
-          {
-            title: 'Errors',
-            key: 'errors',
-            width: 78,
-            align: 'right' as const,
-            ...sortable,
-            /* A zero is drawn as nothing. A column of "0" is a column of noise,
-               and the only question this column answers is "which of these went
-               wrong" - which a sparse column answers at a glance and a dense
-               one hides. */
-            render: (_: unknown, s: SessionRow) =>
-              s.errorsCount > 0 ? (
-                <span className="m-ss__fig m-ss__fig--bad">{s.errorsCount}</span>
-              ) : (
-                <span className="m-ss__fig is-zero">—</span>
-              ),
-          },
-        ]
-      : []),
+    /* ⚠ NO ERRORS COLUMN, and it was the cheapest-looking win in the whole
+       rebuild: `errorsCount` is in the payload and drawn nowhere, so putting it
+       on screen cost nothing. Mehdi checked production live on 2026-09-02 - "I
+       don't think we have errors... no, we don't" - and gave the reason it was
+       never drawn: "it would be too much data to read and people wouldn't get
+       it. THAT'S WHY WE MADE IT AS TABS." The issue-type strip above answers
+       the same question as one choice instead of 134 figures. See
+       ISSUE_TABS. */
     ...(has('pages')
       ? [
           {
@@ -175,7 +189,12 @@ export function SessionsPage({ model }: SessionsPageProps) {
             key: 'duration',
             width: 96,
             align: 'right' as const,
-            ...sortable,
+            /* ⚠ NOT SORTABLE, and neither is anything but Started and Events.
+               The backend orders on `startTs` and `eventsCount` only - see
+               SORT_CHOICES - because anything else means reloading a list that
+               "might be like millions of sessions". A sortable header the
+               backend cannot honour works in a prototype and gets filed as a
+               bug later. */
             render: (_: unknown, s: SessionRow) => (
               <span className="m-ss__fig">{formatDuration(s.durationSec)}</span>
             ),
@@ -247,7 +266,7 @@ export function SessionsPage({ model }: SessionsPageProps) {
                       </button>
                     </Tooltip>
                   ))}
-                  {pairs.length > 2 && <span className="m-ss__quiet">+{pairs.length - 2}</span>}
+                  {pairs.length > 2 && <span className="m-ss__more">+{pairs.length - 2}</span>}
                 </span>
               );
             },
@@ -255,6 +274,14 @@ export function SessionsPage({ model }: SessionsPageProps) {
         ]
       : []),
     /* ── THE PLAY, PINNED TO THE RIGHT EDGE (Mehdi, 2026-09-02) ──────────────
+       ⚠ AND IT IS ALONE HERE NOW. The bookmark sat beside it for one morning,
+       on Mehdi's own ask, and came off the same evening with a reason from
+       their own usage: "people don't use the bookmark there. They need to view
+       the session first before bookmarking it. So keep that for when you're
+       going to be reviewing the replay." So it moves to the replay page, and
+       `favorite` plus the Bookmarked tab stay exactly as they were - the state
+       is real, only the control on the row is gone.
+
        Third position for this glyph in a day, and the two rejected ones are
        worth keeping because each was wrong for its own reason.
 
@@ -276,36 +303,17 @@ export function SessionsPage({ model }: SessionsPageProps) {
        fades out under the glyph instead of colliding with it. */
     {
       title: '',
-      key: 'actions',
-      width: 88,
+      key: 'play',
+      /* Narrower by the bookmark's width, and the glyph is a size down: with
+         nothing beside it there is no pair to hold an edge against, and Mehdi's
+         last word on it was "keep the play button, but make it much smaller". */
+      width: 52,
       className: 'm-ss__playcell',
-      render: (_: unknown, s: SessionRow) => (
-        <span className="m-ss__acts">
-          {/* ⚠ A CONTROL, not a mark. It carries the row's own state and sets
-              it, so it is a real button with `aria-pressed` and it stops the
-              click reaching the row - bookmarking a session is not asking to
-              watch it. The filled glyph IS the on state: two lucide glyphs of
-              the same shape, one hollow and one solid, which is the only pair
-              of states a bookmark has ever needed. */}
-          <Tooltip title={s.favorite ? 'Remove bookmark' : 'Bookmark this session'} mouseEnterDelay={0.3}>
-            <button
-              type="button"
-              className={`m-ss__act${s.favorite ? ' is-on' : ''}`}
-              aria-pressed={s.favorite}
-              aria-label={s.favorite ? `Remove bookmark from ${s.displayName}` : `Bookmark ${s.displayName}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                model.toggleBookmark(s.sessionId);
-              }}
-            >
-              <Bookmark size={15} strokeWidth={1.75} fill={s.favorite ? 'currentColor' : 'none'} />
-            </button>
-          </Tooltip>
-          <span className="m-ss__play" aria-hidden="true">
-            <CirclePlay size={16} strokeWidth={1.75} />
-          </span>
+      render: () => (
+        <span className="m-ss__play" aria-hidden="true">
+          <CirclePlay size={15} strokeWidth={1.75} />
         </span>
-      ),
+            ),
     },
   ];
 
@@ -424,19 +432,41 @@ export function SessionsPage({ model }: SessionsPageProps) {
           </Dropdown>
         </>
       }
-      /* NO TOOLBAR ROW. The issue-type strip went (Mehdi, 2026-09-02: keep only
-         the two tabs) and it lost almost nothing: `issueType` is a property in
-         the catalogue, so all five are still reachable through the one button -
-         and now with their share of traffic beside them, which the strip's bare
-         count could not give. What it did cost is the count being visible
-         without opening anything; noted in DESIGN.md rather than pretended
-         away.
+      toolbar={
+        model.tab === 'segments' ? undefined : (
+          <FilterStrip
+            label="Filter by issue type"
+            items={ISSUE_TABS.map((t) => ({
+              key: t.value,
+              label: t.label,
+              icon: iconFor(t.value),
+              /* Counted against everything the search and the window already
+                 left, so the figure on a tab is the length of the list that tab
+                 produces. */
+              count: issueTypeCount(model.inScope, t.value),
+            }))}
+            selected={[model.tag]}
+            onSelect={(key) => model.setTag(key as SessionTag)}
+          />
+        )
+      }
+      /* ⚠ THE ISSUE-TYPE STRIP IS BACK ON A TOOLBAR ROW (Mehdi, 2026-09-02:
+         "we're missing the tabs for errors, this and that... it should be the
+         same tabs as we have in tests"). It was deleted the same morning, on
+         his ask, and the reason it returns arrived with the rest of his
+         sentence: THE ERRORS COLUMN GOES, and this is what answers the question
+         it was answering. See ISSUE_TABS for why it is its own state rather
+         than a second path to the `issueType` property.
 
-         The date range and the display menu moved onto the search's own bar
-         rather than staying on a row of their own with nothing else in it. They
-         belong there for a better reason than tidiness: THAT BAR IS WHAT
-         STICKS, and a window you cannot change without scrolling back up is
-         the same complaint the sticky came out of. */
+         ⚠ ONLY ON THE SESSION TABS. Segments is a list of a different thing, so
+         a strip that narrows sessions has nothing to narrow there - and
+         PageCard's toolbar is one row for the whole page, so it has to be the
+         page that decides.
+
+         The date range and the display menu stay on the SEARCH's own bar rather
+         than moving up here, for the reason they went there: that bar is what
+         STICKS, and a window you cannot change without scrolling back up is the
+         complaint the sticky came out of. */
     >
       {/* ⚠ A SECTION REPLACES THE BODY. On the segments tab there is no filter
           card and no sessions table, because you are not looking at sessions -

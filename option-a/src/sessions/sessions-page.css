@@ -144,8 +144,20 @@
 
 /* The second and third facts in a cell, one step quieter. Browser is what
    people filter on; the OS and the device are context, and three columns for
-   them would be 300px of table saying almost nothing. */
-.m-ss__quiet { color: var(--m-content-muted); font-size: var(--m-text-xs); }
+   them would be 300px of table saying almost nothing.
+
+   ⚠ ONE SIZE, AND ONLY THE COLOUR SEPARATES THEM (Mehdi, 2026-09-02: "why is
+   Safari bigger than iPadOS and tablet there? I don't get it"). It was 13px
+   beside 12px, and there is no reason for it - a size step says "this is a
+   different kind of thing", and these are three facts about one device. One
+   step of colour already says which one you filter on. */
+.m-ss__quiet { color: var(--m-content-muted); }
+
+/* ⚠ THE METADATA OVERFLOW KEEPS ITS OWN SIZE, and that is why it stopped
+   sharing `.m-ss__quiet`. It sits in a row of 2xs chips rather than in a line
+   of 13px prose, so the one class was carrying two different jobs and the
+   device-cell fix above would have made "+2" bigger than the chips it counts. */
+.m-ss__more { color: var(--m-content-muted); font-size: var(--m-text-2xs); }
 
 /* ── metadata ────────────────────────────────────────────────────────────────
    CLICKABLE, and that is the one thing from production's card that had to
@@ -238,48 +250,22 @@
 .m-ss__table .m-ss__row { --m-ss-play-ground: var(--m-surface-default); }
 .m-ss__table .m-ss__row:hover { --m-ss-play-ground: var(--m-surface-hover); }
 
-/* Two things at the row's right edge, in the order you reach for them: keep
-   this one, then watch it. The play is last because it is the row's own verb
-   and the edge is where the eye stops. */
-.m-ss__acts {
+/* ⚠ ONE THING AT THE ROW'S RIGHT EDGE. The bookmark sat beside the play for
+   one morning and came off the same evening - see SessionsPage for the reason,
+   which is that nobody bookmarks a session they have not watched yet. So the
+   `.m-ss__acts` wrapper and the bookmark's four states went with it: a flex row
+   holding one item is a div, and four states nothing can enter are dead CSS.
+   Both are in git if the replay page wants them. */
+.m-ss__play {
   position: relative;
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: var(--m-space-2);
-}
-
-.m-ss__play,
-.m-ss__act {
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: var(--m-radius-control);
+  width: 1.375rem;
+  height: 1.375rem;
   color: var(--m-content-decorative);
-  transition: color var(--m-duration-fast) var(--m-ease-out),
-    background-color var(--m-duration-fast) var(--m-ease-out);
-}
-
-/* ── the bookmark ────────────────────────────────────────────────────────────
-   FOUR STATES, and the fourth is the only one that is not a shade of the same
-   grey: rest is decorative like everything else out here, the row's hover
-   brings it forward, its OWN hover gives it a target, and BOOKMARKED IS
-   FILLED. A solid glyph beside a hollow one is legible without colour, which
-   is what lets this page keep spending its single accent on the play. */
-.m-ss__row:hover .m-ss__act { color: var(--m-content-secondary); }
-.m-ss__act:hover { background: var(--m-surface-active); color: var(--m-content-primary); }
-
-/* ⚠ AFTER the two rules above, because a bookmarked row still has to read as
-   bookmarked while the cursor is somewhere else on it. */
-.m-ss__act.is-on,
-.m-ss__row:hover .m-ss__act.is-on { color: var(--m-content-primary); }
-.m-ss__act.is-on:hover { background: var(--m-surface-active); }
-
-.m-ss__act:focus-visible {
-  outline: 2px solid var(--m-focus-ring);
-  outline-offset: -2px;
+  transition: color var(--m-duration-fast) var(--m-ease-out);
 }
 
 /* A watched session's play is one step quieter at rest, which is the same

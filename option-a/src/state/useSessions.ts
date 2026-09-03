@@ -46,6 +46,7 @@ import {
   type SavedSegment,
   type SessionRow,
   type SessionTab,
+  type SessionTag,
   type SessionsState,
 } from '@shared/sessions-logic.ts';
 
@@ -113,6 +114,13 @@ export function useSessions() {
   const setEventsOrder = useCallback((o: EventsOrder) => patch({ eventsOrder: o }), [patch]);
   const setRange = useCallback((r: DateRangeValue) => patch({ range: r }), [patch]);
   const setTab = useCallback((t: SessionTab) => patch({ tab: t }), [patch]);
+  /** The issue-type strip. Single-select, and clicking the one that is already
+   *  on returns to All - production's `toggleTag`, and the same behaviour the
+   *  Issues page's category strip has. */
+  const setTag = useCallback(
+    (t: SessionTag) => patch({ tag: t === state.tag ? 'all' : t }),
+    [patch, state.tag],
+  );
   const setPage = useCallback((p: number) => setState((s) => ({ ...s, page: p })), []);
 
   const clearSearch = useCallback(
@@ -244,6 +252,17 @@ export function useSessions() {
   }, [state.dataState, bookmarks]);
   const matched = useMemo(() => filterSessions(state, all), [state, all]);
 
+  /* ⚠ WHAT THE STRIP COUNTS AGAINST: the search, the window and the tab
+     applied, and the strip's OWN choice released. The same `without(key)`
+     arithmetic every filter menu in this app uses, and the reason is the same -
+     a tab has to report how many rows IT would leave, not how many are left
+     after it already narrowed. Counted with the tag applied, every tab but the
+     current one would read zero. */
+  const inScope = useMemo(
+    () => filterSessions({ ...state, tag: 'all' }, all),
+    [state, all],
+  );
+
   /* ⚠ EVERY SESSION IN THE WINDOW, with no filter and no tab applied. It is
      what a SEGMENT is counted against - a segment is its own search, so
      counting one inside another search would answer a question nobody asked -
@@ -300,6 +319,7 @@ export function useSessions() {
        counts are computed against this, so they answer "how many would this
        leave me" rather than "how many are on screen". */
     matched,
+    inScope,
     inWindow,
     total: matched.length,
     pageSize: PAGE_SIZE,
@@ -309,6 +329,8 @@ export function useSessions() {
     /* the header */
     tab: state.tab,
     setTab,
+    tag: state.tag,
+    setTag,
     range: state.range,
     setRange,
     /* display */

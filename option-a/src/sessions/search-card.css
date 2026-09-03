@@ -124,37 +124,20 @@
 }
 .m-sc__field:hover .m-sc__lead { color: var(--m-content-secondary); }
 
-/* ONLY THIS CROSSFADES. It is keyed on its own text in SearchCard, so React
-   remounts it and the animation runs once per example - a line where the whole
-   thing changed every four seconds would be a page with a pulse.
-
-   `animation` and not `transition`, because there is nothing to transition
-   FROM: the element is new each time. And it fades in only, with no fade out,
-   so the swap reads as the next example arriving rather than as the field
-   blinking. */
-.m-sc__eg {
-  color: var(--m-content-disabled);
-  animation: m-sc-eg var(--m-duration-slow) var(--m-ease-out);
-}
-.m-sc__field:hover .m-sc__eg { color: var(--m-content-muted); }
-
-@keyframes m-sc-eg {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* A placeholder that rotates is motion, whatever the spec counts. The hook
-   stops the rotation outright under reduced motion; this stops the fade on the
-   one example that does get drawn. */
-@media (prefers-reduced-motion: reduce) {
-  .m-sc__eg { animation: none; }
-}
-
 /* ── THE RING ────────────────────────────────────────────────────────────────
-   The one piece of expression on this page, and it is here rather than
-   anywhere else for a reason: this field is where the search agent will live,
-   and a control that is about to start answering questions should look like it
-   is listening.
+   The one piece of expression on this page.
+
+   ⚠ ITS ORIGINAL REASON IS GONE and it is kept anyway, which is worth saying
+   plainly: it was here because *this field is where the search agent will
+   live*, and the natural-language path came out on 2026-09-02 (see the note
+   above LEAD). So the justification is now weaker - it decorates the control
+   that opens the filter rather than one that answers questions.
+
+   It stays because Mehdi engaged with it over three rounds and asked twice for
+   it to be better, not for it to go; removing something he refined without
+   being asked would be the wrong call. **But it is a candidate for the layout
+   pass**, where the fonts and colours get decided and every piece of
+   expression has to earn its place again.
 
    ── HOW IT IS BUILT, AND WHY IT IS THE THIRD ATTEMPT ──────────────────────
    A single SVG `rect`, stroked, with a dash travelling around it. Nothing is

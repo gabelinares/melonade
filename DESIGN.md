@@ -4242,3 +4242,186 @@ has: **the evaluator reads a store.** `SESSIONS` is a fixture and
 ⚠ Miss that effect and a new segment counts zero sessions everywhere except in
 the drawer that made it — which is exactly the bug it replaced, and exactly what
 `sessions-check` now watches.
+
+## 25. Seven subtractions, and a fixture bug they uncovered (2026-09-02, after the call)
+
+The unambiguous half of Mehdi's evening batch (§22.4 in the backlog): the items
+that are either a straight delete or a fact about production he stated on the
+call. Nothing here needed a design decision, which is why it went first.
+
+### The errors column, and why it was the cheapest-looking win
+
+It was the line the sessions rebuild was proudest of: `errorsCount` is in the
+list payload and **drawn nowhere**, so putting it on screen cost no endpoint and
+no backend. That was true and it was the wrong conclusion.
+
+Mehdi checked production live — *"I don't think we have errors… no, we don't"* —
+and gave the reason it had never been drawn: **"it would be too much data to
+read and people wouldn't get it. That's why we made it as tabs."**
+
+Verified in the code afterwards, and he is right in a more precise way than he
+put it: `errorsCount` **is** declared on `ISession` and on `SessionItem`'s
+props, and it is rendered in neither. So the field is real and the decision not
+to draw it is old and deliberate. **A field being unused is not evidence that
+nobody considered it** — which is the general form of the mistake, and the
+reason the inventory's "free / cheap / expensive" axis needs a fourth column for
+*already rejected*.
+
+### So the issue-type strip came back, and it is one decision with the column
+
+Deleted the same morning on his instruction ("keep only the all sessions and
+bookmarks"), restored the same evening: *"we're missing the tabs for errors,
+this and that… it's an easy win, because it should be the same tabs as we have
+in tests."*
+
+⚠ **Not a reversal — the missing half of the sentence.** The column goes and the
+strip is what answers the question it was answering. One choice against 134
+figures.
+
+**And it is its own state, which is the part the morning got wrong.** The
+argument for deleting it was that `issueType` is already a catalogue property,
+so a strip is a second path to one filter. Production says otherwise and the
+distinction is real: `searchStore.activeTags` is **single-select and separate
+from `filters`**, exactly as the Tests page's status strip is separate from its
+six filter dimensions. One narrows to a *kind*; the other composes. Both exist,
+and the build now matches.
+
+Three details taken from production rather than re-decided:
+- **The labels are theirs** — which is why `js_exception` reads **"Errors"**,
+  not "JS exception". That is also the word Mehdi used for the tab.
+- **The glyphs are theirs** (`tagIcons` in `SessionTags.tsx`). Which icon means
+  "rage" is a decision this product already made, and choosing a different one
+  would make the same word mean two things across two builds of one app.
+- **`mouse_thrashing` is hidden**, as production hides it.
+
+### ⚠ The fixture bug the strip exposed
+
+The strip came back reading **Click Rage 3, Tap Rage 0**. The three were the
+hand-written leads; the generator had produced none.
+
+```
+ISSUE_SETS has 9 entries, indexed with (i * 3) % 9
+gcd(3, 9) = 3  →  only indices 0, 3, 6 are ever reached
+```
+
+**Six of the nine sets had been dead code since the fixture was written** —
+every `click_rage` set and every `js_exception` set among them. The only reason
+"Errors" showed anything at all was the `['js_exception']` fallback for sessions
+with `errorsCount > 0`. The stride has to be **coprime with the length** to walk
+the list; 4 is.
+
+⚠ **It was invisible until today, and the reason generalises: a fixture defect
+is only as visible as the least aggregated view of it.** The errors column drew
+a number per session — 134 numbers, all plausible. The strip draws a number per
+*kind* — seven numbers, and two of them wrong. Nothing had ever aggregated this
+fixture by issue type before, so nothing had ever asked it a question it could
+answer incorrectly.
+
+`sessions-check` now asserts every tab has a non-zero count, which is the
+cheapest possible guard against the class.
+
+### Rage belongs to the device
+
+Restoring the strip meant offering a **Tap Rage** tab, and production
+platform-gates the two so a web project only ever sees one of them. This fixture
+is one project holding desktop and mobile sessions together, so both tabs are
+offered — and `rageType()` assigns by device, so **a phone's rage is a tap and a
+desktop's is a click**. Otherwise one tab could never match anything, which
+reads as a broken control rather than an empty one — the same defect the segment
+fixture had this morning, for the same reason.
+
+### Sorting, and a limit that is not ours
+
+> *"You can sort by date and you can sort by number of events. So which means
+> you cannot do anything else… we have to reload the entire list because it
+> might be like millions of sessions."*
+
+Verified: production's `sortValues` is exactly four — `startTs-desc`,
+`startTs-asc`, `eventsCount-asc`, `eventsCount-desc`. So `SORT_CHOICES` is those
+four, and **`duration` and `errors` lose their column sorters**.
+
+**A sortable header the backend cannot honour is the worst kind of affordance:**
+it works in the prototype, demos beautifully, and gets filed as a bug six weeks
+later. The table's whole argument over the card was that columns sort — that
+argument survives on the two columns where it is true.
+
+### The bookmark comes off the row
+
+A mark, then a control, then gone, all in one day and every step his. The last
+one came with usage rather than taste: *"people don't use the bookmark there.
+They need to view the session first before bookmarking it. So keep that for when
+you're going to be reviewing the replay."*
+
+Obvious in hindsight, and it is the shape of the mistake worth remembering: the
+control was correct in isolation and wrong in sequence. **You cannot decide to
+keep something you have not seen.**
+
+`favorite` and the Bookmarked tab are untouched — the state is real, only the
+control moved. The check now asserts both halves, because *a feature whose
+control moves has to keep working or the move was a deletion wearing a plan*.
+The play is alone at the edge now, a size down: with nothing beside it there is
+no pair to hold an edge against, and his last word was *"keep the play button,
+but make it much smaller"*.
+
+### Metadata on, and one class doing two jobs
+
+**Metadata is a default column** now (*"then it should be by default"*). It was
+opt-in, which put the one column carrying the customer's **own** vocabulary —
+plan, cohort, account — behind a menu while six columns of ours were on.
+
+And the device cell's second line lost its size step: *"why is Safari bigger
+than iPadOS and tablet there? I don't get it."* There was no reason. A size step
+says *this is a different kind of thing*, and these are three facts about one
+device; a step of colour already says which one you filter on.
+
+⚠ **That fix could not be made where it looked like it lived.** `.m-ss__quiet`
+was carrying two jobs — the device cell's prose **and** the metadata column's
+`+2` overflow, which sits in a row of 2xs chips. Changing the one class would
+have made the overflow larger than the chips it counts. Split into
+`.m-ss__quiet` and `.m-ss__more`. **A shared class is only shared if both users
+want the same thing when it changes.**
+
+### The natural-language field is parked, not deleted
+
+> *"'Describe the sessions you want' — we used to have it as a feature. We
+> removed it. So we won't have something like this. It's a new feature. We can
+> have it. Not saying we don't."*
+
+**It is out because it is a feature OpenReplay shipped and removed**, and this
+scope forbids adding features. He is warm on it for later and said why it is
+cheap now: two years ago it needed a trained model, *"today you would ask an
+LLM."*
+
+So the switch, not the code. `onTranslate` is optional on `FilterPicker` and
+gates the entire sentence path — the offer, the steps, the ignored words, the
+accept. **The card stopped passing one prop.** `translate()` is untouched,
+`FilterPicker.stories.tsx` still exercises it behind a `sentences` arg, and the
+feature is one prop from returning. Deleting it would have thrown away the half
+that is hard to rebuild.
+
+The field says `Filter these sessions` and nothing else. **A control that
+promises a sentence and cannot read one is worse than a plain button**, which is
+why that line is now four words long.
+
+⚠ **The ring's justification went with it, and the ring stayed.** It was there
+because *this field is where the search agent will live*. That is no longer
+true, so it now decorates the control that opens a filter rather than one that
+answers questions. It stays because Mehdi engaged with it over three rounds and
+twice asked for it to be **better**, not for it to go — removing something
+somebody refined without being asked is its own kind of error. But it is
+written down as a candidate for the layout pass, where every piece of expression
+has to earn its place again.
+
+### Two things the suite taught
+
+⚠ **A setup step that assumes a default breaks silently when the default is what
+changed.** The metadata check clicked the Display pill to turn the column *on*;
+once it was on by default the click turned it **off**, and the suite then waited
+thirty seconds for a chip that could not exist. It asserts the default and uses
+it now.
+
+⚠ **And a click on a control that is not there is a timeout, not a failure.**
+Three separate steps broke that way today, each reporting a locator instead of a
+claim. Where a step depends on the previous block's leftovers, it now clears
+state explicitly rather than reaching for a Clear button that only exists
+sometimes.
