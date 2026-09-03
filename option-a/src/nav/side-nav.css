@@ -161,6 +161,22 @@
 .m-nav__brand-toggle:hover .m-nav__mark { opacity: 0; }
 .m-nav__brand-toggle:hover .m-nav__brand-open { opacity: 1; color: var(--m-content-primary); }
 
+/* ⚠ AND THE MARK DOES NOT SHAPE-SHIFT IN HERE. `[data-mark-host]` is this row
+   in both widths, so the logo's own hover - the two triangles trading places,
+   see openreplay-mark.css - would otherwise run underneath a mark that is
+   fading out, which is two animations arguing over one gesture and neither of
+   them readable. Narrow, this row means *expand*, and the glyph that says so
+   is the only thing that should answer the cursor.
+
+   One extra class beats the mark stylesheet's own `[data-mark-host]:hover`
+   selector on specificity, so no `!important` is needed. */
+[data-mark-host]:is(:hover, :focus-visible) .m-nav__brand-toggle .m-ormark__fill {
+  transform: none;
+}
+[data-mark-host]:is(:hover, :focus-visible) .m-nav__brand-toggle .m-ormark__eye {
+  opacity: 0;
+}
+
 .m-nav__brand-name {
   min-width: 0;
   font-size: var(--m-text-lg);

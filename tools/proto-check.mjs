@@ -47,15 +47,15 @@ const nav = await p.evaluate(() => {
     tools: nav.querySelectorAll('.m-nav__tools button').length,
     credits: nav.querySelector('.m-credits')?.textContent?.trim() ?? null,
     brand: nav.querySelector('.m-nav__brand-name')?.textContent?.trim() ?? null,
-    hasMark: !!nav.querySelector('.m-nav__brand .m-mark'),
+    hasMark: !!nav.querySelector('.m-nav__brand .m-ormark'),
     searchButton: !!nav.querySelector('.m-nav__new'),
     account: [
       nav.querySelector('.m-nav__account-name')?.textContent?.trim(),
       nav.querySelector('.m-nav__account-org')?.textContent?.trim(),
     ].filter(Boolean),
-    sep: !!nav.querySelector('.m-nav__sep'),
-    groupLabel: nav.querySelector('.m-nav__label')?.textContent?.trim() ?? null,
-    groupName: nav.querySelector('.m-nav__scroll [role="group"]')?.getAttribute('aria-label') ?? null,
+    seps: nav.querySelectorAll('.m-nav__sep').length,
+    groupLabels: [...nav.querySelectorAll('.m-nav__label')].map((l) => l.textContent.trim()),
+    groupNames: [...nav.querySelectorAll('.m-nav__scroll [role="group"]')].map((g) => g.getAttribute('aria-label')),
     weights: (() => {
       const rows = [...nav.querySelectorAll('.m-nav__scroll .m-nav-item')];
       const top = rows.find((e) => !e.classList.contains('is-nested'));
@@ -91,26 +91,64 @@ check('the menu renders with labels', !!nav && nav.labels.length >= 5, nav?.labe
 /* 2026-09-02: the top of the menu is the product, then the account, then the
    destinations - and Search is one of those rather than the one filled button
    in the column. */
+/* ⚠ 09-02: the top of the menu is the product, then the account, then the
+   destinations - and Search is one of those rather than the one filled button
+   in the column. ⚠ 09-03: the product is OPENREPLAY, so the name and the mark
+   both changed. The strategy question closed on the facelift rather than the
+   separate brand, which took the whole Melonade wordmark with it. */
 check('the logo names the product, and it is not the switcher',
-  !!nav && nav.brand === 'melonade' && nav.hasMark && !nav.searchButton,
+  !!nav && nav.brand === 'OpenReplay' && nav.hasMark && !nav.searchButton,
   `${nav?.brand}, mark ${nav?.hasMark}, old search button ${nav?.searchButton}`);
 check('the account says whose workspace and which project, on two lines',
   !!nav && nav.account?.length === 2 && nav.account[1] === 'Acme, Inc.',
   nav?.account?.join(' / '));
-check('the agents start at a rule rather than a word',
-  !!nav && nav.sep && !nav.groupLabel && nav.groupName === 'Agents',
-  `rule ${nav?.sep}, label ${nav?.groupLabel ?? 'none'}, group named ${nav?.groupName}`);
+/* ⚠ INVERTED ON 09-03. The 09-02 pass made "AGENTS" a bare rule, and the
+   argument held at one group: a single group does not need to be told what it
+   is, and the word was the only uppercase type in the column. It dies at
+   three. A rule between Audits and Analytics says something changed; it cannot
+   say changed to what. The first group keeps no label - the top of a menu does
+   not need to be told it is the top. */
+check('the groups are named again, except the first',
+  !!nav && nav.seps === 2 && nav.groupLabels.join(',') === 'Agents,Product'
+    && nav.groupNames.join(',') === 'Overview,Agents,Product',
+  `${nav?.seps} rules, labels ${nav?.groupLabels.join(' | ')}, groups ${nav?.groupNames.join(' | ')}`);
 /* THE WEIGHT STEP IS BETWEEN A PARENT AND ITS SECTIONS, not between the current
    row and the other ten. An agent and one of its sections were the same 13px
    regular, told apart by an indent, a hairline and a colour but not by the type
    - which is the thing you actually read. */
-check('an agent is set a weight above its own sections',
-  !!nav && nav.weights && nav.weights.top === '500' && nav.weights.nested === '400',
-  `agent ${nav?.weights?.top}, section ${nav?.weights?.nested}, both ${nav?.weights?.size}`);
 check('and the current row is a fill rather than a third weight',
   !!nav && nav.weights?.active === nav.weights?.top && nav.weights?.activeFilled,
   `${nav?.weights?.active} on ${nav?.weights?.activeBg}`);
-check('an agent expands into its sections', !!nav && nav.sections === 3, `${nav?.sections} sections`);
+
+/* ⚠ NOTHING IS NESTED UNTIL YOU OPEN IT, and since 09-03 only one row can be
+   opened at all. This used to read the weights straight off the first render,
+   because Synthetics carried its three tabs and something was always expanded;
+   now Analytics is the only entry with subitems and nothing starts open unless
+   you arrived inside it. So the check opens it and then measures - which also
+   proves the caret is a control rather than a decoration. */
+await p.locator('[aria-label="Show Analytics subitems"]').click();
+await p.waitForTimeout(300);
+const sub = await p.evaluate(() => {
+  const nav = document.querySelector('.m-nav');
+  const rows = [...nav.querySelectorAll('.m-nav__scroll .m-nav-item')];
+  const top = rows.find((e) => !e.classList.contains('is-nested'));
+  const nested = rows.find((e) => e.classList.contains('is-nested'));
+  const w = (e) => (e ? getComputedStyle(e).fontWeight : null);
+  return {
+    top: w(top), nested: w(nested),
+    size: top && nested && getComputedStyle(top).fontSize === getComputedStyle(nested).fontSize
+      ? getComputedStyle(top).fontSize : 'two sizes',
+    labels: [...nav.querySelectorAll('.m-nav__sections .m-nav-item__label')].map((l) => l.textContent.trim()),
+  };
+});
+/* THE WEIGHT STEP IS BETWEEN A PARENT AND ITS SUBITEMS, not between the current
+   row and the other ten. A parent and one of its children were the same 13px
+   regular, told apart by an indent, a hairline and a colour but not by the type
+   - which is the thing you actually read. */
+check('a parent is set a weight above its own subitems',
+  sub.top === '500' && sub.nested === '400', `parent ${sub.top}, subitem ${sub.nested}, both ${sub.size}`);
+check('and it expands into the two pages under it, not into tabs',
+  sub.labels.join('/') === 'Data Management/Dashboards', sub.labels.join('/') || 'nothing opened');
 check('the foot is a row of tools', !!nav && nav.tools >= 4, `${nav?.tools} tools`);
 check('the credits are always on screen', !!nav && /Credits/.test(nav.credits ?? ''), nav?.credits);
 check('the menu paints nothing of its own',
@@ -236,8 +274,17 @@ check('the plane takes back every pixel the menu gave up',
   shut.plane - open0.plane === open0.width - shut.width,
   `plane +${shut.plane - open0.plane}, menu -${open0.width - shut.width}`);
 
-/* THE FLYOUT: the row the width took away, including what is inside it. */
-await p.hover('.m-nav__scroll .m-nav__row:nth-of-type(2)');
+/* THE FLYOUT: the row the width took away, including what is inside it.
+
+   ⚠ THE SUBJECT CHANGED ON 09-03 and the rows are addressed BY NAME now. This
+   used to hover the second row and expect Synthetics to nest Tests / Runs /
+   Environments; the nav restructure took tabs out of the menu, so Synthetics
+   nests nothing and ANALYTICS is the only entry in the tree with subitems.
+   Positional selectors were what made that a 30-second timeout instead of a
+   failed assertion - `nth-of-type(2)` still matched a row, just not the one
+   the assertions were written about. */
+const rowNamed = (name) => p.locator('.m-nav__scroll .m-nav__row').filter({ hasText: name }).first();
+await rowNamed('Analytics').hover();
 await p.waitForTimeout(600);
 const fly = await p.evaluate(() => {
   const el = document.querySelector('.m-flyout');
@@ -248,29 +295,32 @@ const fly = await p.evaluate(() => {
     sections: [...el.querySelectorAll('.m-flyout__sections .m-nav-item__label')].map((n) => n.textContent.trim()),
   };
 });
-check('a narrow row gives its label back on hover', fly?.name === 'Synthetics', fly?.name);
-check('and the sections the menu can no longer nest',
-  fly?.sections.join('/') === 'Tests/Runs/Environments', fly?.sections.join('/'));
+check('a narrow row gives its label back on hover', fly?.name === 'Analytics', fly?.name);
+check('and the subitems the width took with it',
+  fly?.sections.join('/') === 'Data Management/Dashboards', fly?.sections.join('/'));
 /* ⚠ A HOVER MENU YOU CANNOT REACH IS NOT A MENU. antd sets the card down clear
    of the rail, and that gap belonged to neither element: a cursor crossing it
    left the trigger and the card closed before it arrived. The popup's root
    carries the gap as padding now, so this must never go positive. */
 const bridge = await p.evaluate(() => {
-  const t = document.querySelectorAll('.m-nav__scroll .m-nav__row')[1].getBoundingClientRect();
+  const row = [...document.querySelectorAll('.m-nav__scroll .m-nav__row')]
+    .find((r) => /Analytics/.test(r.textContent));
+  const t = row.getBoundingClientRect();
   const r = document.querySelector('.m-flyout-root').getBoundingClientRect();
   return Math.round(r.left - t.right);
 });
 check('and the cursor can actually get to them', bridge <= 0, `${bridge}px of dead ground`);
 
 /* A LEAF ROW GETS THE NAME AND NOTHING ELSE: its count is still on the row, so
-   a card restating it would be reading the row back to someone looking at it. */
+   a card restating it would be reading the row back to someone looking at it.
+   Since 09-03 that is nearly every row - Synthetics is a leaf here now. */
 await p.hover('.m-nav__foot');
 await p.waitForTimeout(300);
-await p.hover('.m-nav__scroll .m-nav__row:nth-of-type(1)');
+await rowNamed('Synthetics').hover();
 await p.waitForTimeout(700);
 const leafCard = await p.evaluate(() => document.querySelector('.m-flyout')?.textContent ?? null);
 check('and only a row with something inside it gets a card',
-  leafCard === null, leafCard ? 'a leaf agent opened a flyout card' : 'Issues shows a plain tooltip');
+  leafCard === null, leafCard ? 'a leaf agent opened a flyout card' : 'Synthetics shows a plain tooltip');
 
 /* THE HOVER BUG the collapse exposed: `--m-surface-hover` is the ground's own
    colour in light mode, so a row on the ground had no hover at all. */

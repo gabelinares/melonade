@@ -175,7 +175,7 @@ melonade-app/
     crop.mjs           element-level crops
     look.mjs           one screenshot, optional element crop
     pix.mjs            reads COMPUTED colours out of a running app as hex
-    mark-check.mjs     asserts the brand mark's turn actually moves geometry
+    mark-check.mjs     asserts the OpenReplay mark's two triangles trade places
     live-verify.mjs    asserts a DEPLOYED url really mounted, not just 200'd
     flow-shot.mjs      walks option B's three depths and shoots each one
     watch-shot.mjs     one shot of the watch depth, playback advanced

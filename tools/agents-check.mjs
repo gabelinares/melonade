@@ -66,7 +66,18 @@ const navTo = async (label) => {
   await p.mouse.move(900, 600);
   await p.waitForTimeout(350);
 };
+/* ⚠ RUNS AND ENVIRONMENTS ARE NOT IN THE MENU ANY MORE. The 09-03 nav
+   restructure took tabs out of the sidebar - "the tabs dont show in the
+   sidemenu, only subitems" - so they are reached the way a reader reaches
+   them, by the strip in the page's own header. This file already did it that
+   way in one place; now it does it everywhere. */
+const tabTo = async (label) => {
+  await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: label }).click();
+  await p.waitForTimeout(400);
+};
 await navTo('Synthetics');
+/* The page keeps whichever section it was left on, so say which one. */
+await tabTo('Tests');
 await p.locator('.m-tests__table').waitFor();
 const tests = await shell();
 
@@ -261,10 +272,16 @@ const sections = await p.evaluate(() => ({
   })(),
   toolbarTop: getComputedStyle(document.querySelector('.m-page__toolbar')).borderTopWidth,
 }));
-t('SECTIONS: the menu and the page both hold them',
-  sections.navSections.join(',') === 'Tests,Runs,Environments'
-    && sections.pageTabs.join(',') === 'Tests,Runs,Environments',
-  `menu ${sections.navSections.join(' | ')} — page ${sections.pageTabs.join(' | ')}`);
+/* ⚠ INVERTED ON 09-03, and the inversion is the point. This used to assert
+   that the menu AND the page both listed the three sections. Gabriel's nav
+   restructure removed the menu's copy - "the tabs dont show in the sidemenu,
+   only subitems. tabs only appear in the container" - because the same three
+   rows in two places is two things that have to be kept in agreement, and
+   Mehdi asked for two levels rather than three for the same reason. So the
+   page holds them and the menu holds none. */
+t('SECTIONS: the page holds them and the menu does not',
+  sections.pageTabs.join(',') === 'Tests,Runs,Environments' && sections.navSections.length === 0,
+  `menu ${sections.navSections.length} — page ${sections.pageTabs.join(' | ')}`);
 t('SECTIONS: the header is a title and a sentence, with no rule under it',
   sections.title === 'Synthetics' && !!sections.sub && sections.headBorder === '0px',
   `${sections.title} / ${sections.sub}`);
@@ -342,7 +359,7 @@ t('CHIPS: tags and statuses are different kinds of thing',
   `tag "${chipKinds.tagText}" ${chipKinds.tag} | status "${chipKinds.statusText}" ${chipKinds.status}`);
 
 // RUNS: a log, defaulted to a week, and the default is visible
-await navTo('Runs');
+await tabTo('Runs');
 await p.locator('.m-runs__table').waitFor();
 await p.waitForTimeout(300);
 const runsHead = await p.evaluate(() => ({
@@ -432,7 +449,7 @@ await p.locator('.ant-drawer-mask').click();
 await p.waitForTimeout(500);
 
 // ENVIRONMENTS: no toolbar at all, and deleting one names what it stops
-await navTo('Environments');
+await tabTo('Environments');
 await p.locator('.m-envs').waitFor();
 await p.waitForTimeout(300);
 const envs = await p.evaluate(() => ({
@@ -464,21 +481,22 @@ t('ENVIRONMENTS: and counts the ones that carry on', /also comes off/.test(dlg.a
 await p.keyboard.press('Escape');
 await p.waitForTimeout(300);
 
-/* The strip is a control, not a label. Clicking it moves the section AND the
-   menu's nested row moves with it, because both read the one route string the
-   shell keeps - a page that held its own copy is how two controls that show the
-   same thing end up disagreeing. */
+/* The strip is a control, not a label: clicking it moves the section and the
+   header's actions with it. ⚠ It no longer has a menu row to keep in step -
+   there is nothing nested under Synthetics since 09-03 - so what this asserts
+   is that the parent row stays lit while the strip moves underneath it, which
+   is the whole reason two levels are enough. */
 await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'Tests' }).first().click();
 await p.locator('.m-tests__table').waitFor();
 await p.waitForTimeout(300);
 const viaStrip = await p.evaluate(() => ({
   title: document.querySelector('.m-page__title')?.textContent?.trim() ?? null,
   activeTab: document.querySelector('.m-page__tabs .ant-tabs-tab-active')?.textContent?.trim() ?? null,
-  navActive: document.querySelector('.m-nav__sections .m-nav-item.is-active .m-nav-item__label')?.textContent?.trim() ?? null,
+  navActive: document.querySelector('.m-nav-item.is-active .m-nav-item__label')?.textContent?.trim() ?? null,
   addTest: [...document.querySelectorAll('.m-page__actions button')].some((b) => /Add test/.test(b.textContent)),
 }));
-t('SECTIONS: the strip navigates, and the menu follows it',
-  viaStrip.activeTab === 'Tests' && viaStrip.navActive === 'Tests' && viaStrip.title === 'Synthetics',
+t('SECTIONS: the strip navigates, and the menu keeps naming the page',
+  viaStrip.activeTab === 'Tests' && viaStrip.navActive === 'Synthetics' && viaStrip.title === 'Synthetics',
   `${viaStrip.title} / strip ${viaStrip.activeTab} / menu ${viaStrip.navActive}`);
 t('SECTIONS: the header actions follow the section too', viaStrip.addTest);
 
@@ -578,8 +596,7 @@ t('AUDITS: the running job advances while you watch', before !== after, `${befor
    draws the same ring, exactly one of them carries the turning arc, and the
    rail is solid down to it and quiet past it. */
 await navTo('Synthetics');
-await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'Runs' }).click();
-await p.waitForTimeout(500);
+await tabTo('Runs');
 await p.locator('.ant-table-tbody tr', { hasText: 'Checkout flow' }).first().click();
 await p.waitForTimeout(800);
 const stepMarks = await p.evaluate(() => {

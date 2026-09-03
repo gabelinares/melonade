@@ -85,7 +85,12 @@ export function NavItem({
           role="button"
           tabIndex={-1}
           className={`m-nav-item__caret${expanded ? ' is-open' : ''}`}
-          aria-label={`${expanded ? 'Hide' : 'Show'} ${label} sections`}
+          /* ⚠ "subitems", not "sections". Sections were the tabs the menu
+             used to nest; since 09-03 the only thing that opens here is
+             Analytics' two real pages, and a screen reader saying "Show
+             Analytics sections" would be naming a level that no longer
+             exists. */
+          aria-label={`${expanded ? 'Hide' : 'Show'} ${label} subitems`}
           aria-expanded={expanded}
           onClick={(e) => {
             e.stopPropagation();

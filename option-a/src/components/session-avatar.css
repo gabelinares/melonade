@@ -1,0 +1,51 @@
+/* ── THE SESSION AVATAR ──────────────────────────────────────────────────────
+   See SessionAvatar.tsx for what it is and shared/avatar.ts for why. What is
+   here is the ground and the clip.
+
+   ── TWELVE HUES, ONE DECLARATION ────────────────────────────────────────────
+   The component sets `--m-avatar-i` to a number from 0 to 11 and the hue is
+   thirty degrees times that. ⚠ Written as a calc inside `oklch()` rather than
+   as twelve classes, because twelve classes is twelve places for one of them to
+   drift - and because the interesting part is the LIGHTNESS AND CHROMA, which
+   are shared and therefore should be typed once.
+
+   Chroma is 0.04, which is deliberately almost nothing. This ground sits behind
+   a small illustration, under a name, in a table with a real accent elsewhere on
+   the row: a saturated block here would be the loudest thing in the list and it
+   would be carrying the least. It is a tint that makes a row cohere, not a
+   colour that means something - the robot is what identifies the person. */
+.m-savatar {
+  --m-avatar-hue: calc(var(--m-avatar-i, 0) * 30deg);
+  /* The one number the themes disagree about, so it is the only one they
+     override. Light is the bare `:root` case, the way every token in this app
+     is defined. */
+  --m-avatar-l: 0.93;
+  display: block;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--m-radius-control);
+  background: oklch(var(--m-avatar-l) 0.04 var(--m-avatar-hue));
+}
+
+/* ⚠ Match the light ground's CHROMA and its distance from the surface; do not
+   invert its lightness - see memory/dark-mode-surface-token-formula. 0.30 sits
+   the same few steps above the dark canvas as 0.93 sits below the light one, so
+   the tint is as quiet in both and the robot keeps its contrast against it.
+
+   Both theme states, in this app's own order: the explicit choice and the
+   system default that has not been overridden. */
+:root[data-theme='dark'] .m-savatar { --m-avatar-l: 0.3; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .m-savatar { --m-avatar-l: 0.3; }
+}
+
+.m-savatar__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* A row you have already watched is quieter in every other cell, so the avatar
+   is quieter too - otherwise it becomes the one thing on a read row still
+   asking for attention. */
+.m-ss__row.is-viewed .m-savatar { opacity: 0.6; }

@@ -474,9 +474,25 @@ function derive(i: number): SessionRow {
   const [country, countryCode, city] = PLACES[(i * 5 + 3) % PLACES.length]!;
   const [browser, os, deviceType] = BROWSERS[(i * 3 + 1) % BROWSERS.length]!;
   const identified = n % 3 !== 0;
-  const hash = 1000 + ((i * 613 + 77) % 8999);
-  const anon = `a-${hash.toString(16).padStart(4, '0')}`;
-  const name = NAMES[(i * 7 + 2) % NAMES.length]!;
+  /* PER SESSION, and it stays per session: this is what names an anonymous
+     visitor, and two anonymous visits are two visitors as far as this list can
+     tell. */
+  const sessionHash = 1000 + ((i * 613 + 77) % 8999);
+  const anon = `a-${sessionHash.toString(16).padStart(4, '0')}`;
+
+  /* ── WHICH PERSON, CHOSEN ONCE ─────────────────────────────────────────
+     ⚠ THE IDENTITY USED TO BE TWO INDEPENDENT DERIVATIONS: the name came from
+     `(i * 7 + 2) % 8` and the id from `1000 + (i * 613 + 77) % 8999`, one per
+     person and one per session. So `ada.stone@northwind.com` appeared on
+     eleven rows carrying eleven different user ids, and filtering to that
+     person gave eleven different people. Nothing rendered the id, which is the
+     only reason it survived this long - the moment the avatar seeds on it, the
+     same person has eleven faces.
+
+     One person, one id, one hash, one avatar. */
+  const person = (i * 7 + 2) % NAMES.length;
+  const name = NAMES[person]!;
+  const userHash = 1000 + ((person * 1373 + 401) % 8999);
   const events = 4 + ((i * 17 + n) % 180);
   /* errors are RARE and clustered, which is the only honest shape for them: a
      column of "3 errors" on every row says nothing, and a filter on errors > 0
@@ -485,10 +501,12 @@ function derive(i: number): SessionRow {
 
   return {
     sessionId: `s${(i * 2654435761 % 4294967296).toString(16).slice(0, 8).padStart(8, '0')}`,
-    userId: identified ? `u-${hash}` : undefined,
+    userId: identified ? `u-${userHash}` : undefined,
     userAnonymousId: anon,
     displayName: identified ? name : anon,
-    numericHash: hash,
+    /* What the avatar is seeded on, so it follows whichever identity the row
+       actually has: the person if there is one, the anonymous visitor if not. */
+    numericHash: identified ? userHash : sessionHash,
     /* Ordered oldest-last, in a widening spread: the newest sessions are
        minutes apart and the oldest are weeks, which is what a list sorted by
        time actually looks like.
@@ -962,6 +980,16 @@ export interface ValueCandidate {
   weight: number;
 }
 
+/** Every user id in the fixture with the number of sessions it holds, most
+ *  first. Read off `SESSIONS`, which is defined above this point. */
+const userIdCandidates = (): readonly ValueCandidate[] => {
+  const counts = new Map<string, number>();
+  for (const s of SESSIONS) if (s.userId) counts.set(s.userId, (counts.get(s.userId) ?? 0) + 1);
+  return [...counts]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([value, weight]) => ({ value, weight }));
+};
+
 export const VALUE_FIXTURES: Record<string, readonly ValueCandidate[]> = {
   /* the autocapture page event's own URLs, which is the single most-filtered
      value in any session-replay product */
@@ -1018,13 +1046,13 @@ export const VALUE_FIXTURES: Record<string, readonly ValueCandidate[]> = {
     { value: 'PATCH', weight: 31 },
     { value: 'DELETE', weight: 12 },
   ],
-  userId: [
-    { value: 'u-4021', weight: 24 },
-    { value: 'u-1187', weight: 19 },
-    { value: 'u-2290', weight: 14 },
-    { value: 'u-7734', weight: 11 },
-    { value: 'u-5512', weight: 7 },
-  ],
+  /* ⚠ DERIVED, NOT HAND-KEPT. This was five ids typed out beside the fixture,
+     and all five came from the ten hand-written lead sessions - so filtering by
+     a user returned exactly one row, and there was no way to see that a
+     person's avatar holds across their sessions. The weights are the real
+     counts now, which is also the only way the picker's proportion bars mean
+     anything. */
+  userId: userIdCandidates(),
   'meta.accountId': [
     { value: 'acc-1188', weight: 38 },
     { value: 'acc-0042', weight: 26 },

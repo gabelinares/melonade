@@ -7,6 +7,11 @@
     <meta name="color-scheme" content="light dark" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- The session avatars (DiceBear pixelbot). Measured: twelve avatars on a
+         cold cache took 2-4s to appear, and most of that was one TLS handshake
+         nothing had asked for yet. Warming it here is one line and the rows
+         fill in as they paint. See shared/avatar.ts. -->
+    <link rel="preconnect" href="https://api.dicebear.com" crossorigin />
     <!-- Every face the prototype panel's five type pairings can ask for. The
          System pairing asks for nothing: it is the OS's own stack. This
          DECLARES them; a browser does not fetch a face until something is

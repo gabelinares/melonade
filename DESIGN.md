@@ -4626,3 +4626,219 @@ The field's copy carries into the drawer, one word different: **"Filter the
 sessions this segment holds"** rather than "Filter these sessions". Same control
 doing the same job — but *these sessions* points at a list, and a drawer has no
 list to point at: you are saying which sessions the segment will hold.
+
+---
+
+## §28 — The mark shape-shifts (2026-09-03)
+
+Gabriel, having seen the first hover (the inner play sliding forward a couple of
+units): *"as the OpenReplay logo are two triangles with rounded corners, can we
+do an animation where the teal rectangle inside increases and becomes the outer
+triangle, and when mouse leaves the darker triangle goes back to its place, like
+a shape shifting thing."*
+
+**The shape already contained the animation.** The mark is a play button whose
+outline is a play button: one path with two subpaths under `fill-rule: nonzero`,
+so the inner triangle is *cut out* of the outer one, and a small teal play sits
+in the cut. Nothing had to be added. At rest the **blue** is the triangle with a
+play taken out of it. On hover the teal grows until it *is* the triangle, and the
+cut-out passes to the teal — a play opens in the middle, in the place the teal
+just vacated. The two halves have traded which one is the negative space.
+
+Four decisions did the work.
+
+**The silhouette never moves.** The outer frame is the constant; only the
+interior changes. A logo whose outline changes on hover reads as a different
+logo, and this one sits beside a control people are aiming at (the collapse).
+The frame does not dim either — it did in the first version, and an outline
+lightening while the interior floods teal reads as three things happening rather
+than one.
+
+**A clip does the fitting, not a matched scale.** Filling the hole exactly needs
+2.216 across and 2.321 down; a uniform scale therefore leaves daylight on one
+axis, and a *rounded* triangle can never reach a *sharp* one's corners at all. So
+the teal overshoots — 2.5, checked against each of the hole's three vertices —
+and a `clipPath` built from the outline's own hole subpath cuts it back. The end
+state is the frame's interior exactly, sharp corners included, rather than an
+approximation of it.
+
+**The opening is a hole, not a blue play.** The obvious version paints the middle
+with the frame's blue, so the logo reads as its two colours swapped. It was built
+that way first, then measured:
+
+| the middle, hovered | contrast on the teal | L\* apart |
+| --- | --- | --- |
+| a blue play | 1.84:1 | 17.3 |
+| a hole, light theme | 2.76:1 | 34.8 |
+| a hole, dark theme | 6.63:1 | 59.6 |
+
+The glyph is 14px wide, so the whole payoff is about 5px of detail. At 1.84:1
+that is a smudge — the blue and the teal are nearly the same weight, which is
+exactly why they work *side by side* in the logo and exactly why one cannot sit
+*inside* the other. A hole is not WCAG-clean either (a logotype is exempt from
+1.4.11, so the threshold is not the argument) but it separates on lightness
+rather than hue, by twice as much in light and three and a half times in dark. It
+needs no colour that is not already in the mark, and cutting a play out of a
+triangle is what this mark does.
+
+It is a luminance `<mask>`, so it is a real hole: the nav's background, the theme
+and any fill under it are somebody else's business.
+
+**They cross in opposite directions.** The teal expands outward while the opening
+contracts into place, and on the way out the opening closes while the teal
+shrinks back. The declarations on the base selector are the *leave* timing and
+the ones under `:hover` are the *enter* — the trade is not symmetric and should
+not be. On the way in the teal leads and the opening follows it into the gap; on
+the way out the opening clears first, so the teal is not shrinking around a hole
+that is still there.
+
+### Four things that made this harder than it looks
+
+- ⚠ **`transform` moves an element's `mask` and `clip-path` with it.** Hanging
+  the mask on the scaling path scaled the punch too, so at 2.5× the hole covered
+  the whole fill and hovering blanked the logo's interior. Both the clip and the
+  mask now live on untransformed wrappers.
+- ⚠ **A mask's default region is 120% of the *unscaled* bounding box.** Left at
+  the default it crops the grown teal back to roughly its resting size, and the
+  animation appears to do nothing. `maskUnits="userSpaceOnUse"` with the whole
+  viewBox.
+- ⚠ **Paint the frame first, the fill on top.** They are disjoint, so the pixels
+  are identical either way *except* at the boundary, where the teal's
+  antialiased edge composites over solid blue instead of over the background. The
+  other order leaves a pale seam tracing the inside of the frame.
+- ⚠ **The bounding boxes are measured, not read off the path.** The rounded tip
+  bulges about half a unit past its last on-curve point: the inner play is 17.02
+  wide, not the 16.42 the coordinates suggest. Off by that, the pivot is half a
+  unit wrong and the growth reads as a drift. Both are symmetric about y 29.5, so
+  the whole swap is one horizontal shift (3.85) and one scale, with no vertical
+  correction.
+
+**It does not run in the collapsed menu.** At 52px the brand row *is* the
+collapse button, and its hover already crossfades the mark for an expand glyph.
+Two animations arguing over one gesture leaves neither readable, so the shift is
+switched off there and the glyph that says *expand* is the only thing that
+answers the cursor.
+
+`tools/mark-check.mjs` asserts all of it in both themes by reading real pixels
+out of a screenshot — the frame's colour, the interior flooding, the sharp corner
+filling, and the hole matching the surface behind the logo exactly. ⚠ Serialising
+the `<svg>` and rendering *that* gives a white box: the classes are in an
+external stylesheet that does not travel with the markup, so nothing is filled
+and every colour assertion passes on nothing.
+
+---
+
+## §29 — One identity, one robot (2026-09-03)
+
+Mehdi wanted the per-user avatar back and smaller, but *"not a face at 16px"*,
+possibly from a different library. Gabriel picked DiceBear's **pixelbot**, with
+one requirement: *"I want the avatar to be exactly the same when the user is the
+same, of course, when I filter by user."*
+
+**Why a robot and not a face.** A generated face at 16px is a smear that reads as
+a photograph of nobody, and it makes a claim the data cannot support — these are
+user IDs and email addresses, not people who chose a picture. A pixel robot is
+legibly synthetic: it says *this is a token standing for an identity*, which is
+what it is. Pixel art is also the one illustration style that gets more readable
+as it gets smaller, because it was drawn on a grid.
+
+**The seed is the identity, and that is the entire requirement.** DiceBear is a
+pure function of its seed, so "the same user gets the same avatar" needs no
+cache, no store and no id map — it needs the seed to be the identity and nothing
+else. Not the row, not the index, not the session id. `seedFor` takes the user id
+when there is one and the anonymous id when there is not, so an identified person
+is one robot across every session they appear in and an anonymous visit is its
+own.
+
+⚠ **Deliberately not `numericHash`**, even though the fixture carries one and
+production has a `userNumericHash` beside it. A hash is a lossy copy of the thing
+it hashes: two identities can collide into one robot, and the field can drift
+from the id it was meant to summarise — which is exactly what had happened.
+
+### The defect this found
+
+**One person owned eleven user ids.** In the fixture generator the display name
+came from `(i * 7 + 2) % 8` and the id from `1000 + (i * 613 + 77) % 8999` — one
+per person, one per session. So `ada.stone@northwind.com` appeared on eleven rows
+carrying eleven different ids. Nothing rendered the id, which is the only reason
+it survived: **the avatar is the first thing that reads it**, and it would have
+given one person eleven faces. The identity is now one choice — person, then id,
+hash and name from that.
+
+The same class of drift was in the filter's value list: the five user ids offered
+in the picker were all typed out from the ten hand-written lead sessions, so
+filtering by a user returned exactly one row and there was no way to *see* that a
+person's avatar holds. They are derived from `SESSIONS` now, with the real counts
+as weights — which is also the only way the picker's proportion bars mean
+anything.
+
+### Why the HTTP API, and what it costs
+
+`@dicebear/collection` stops at 9.4.3 and **pixelbot is a 10.x style**, so there
+is no local generator for it. Measured before choosing:
+
+| | over the wire |
+| --- | --- |
+| `svg` | **995 bytes** (20.9 kB raw, gzipped) |
+| `png?size=40` | 2,856 bytes |
+| `webp?size=48` | 4,140 bytes |
+
+So the SVG — which is also the only resolution-independent one; a raster sized
+for a 20px avatar is wrong the moment the avatar changes size. Responses carry
+`cache-control: public, max-age=31919000` and `access-control-allow-origin: *`.
+The fixture holds about fifty distinct identities, so a full browse of every page
+is roughly 50 kB, once.
+
+⚠ **It is the only thing in the prototype that fetches from a third party at
+render time**, and it is built to survive the fetch not landing: the tint is the
+element's own background, drawn first, and the robot is an `<img>` on top. A
+failed request leaves a small coloured chip where an avatar goes — a degraded
+avatar rather than a broken image — and because the tint is seeded too, it is
+still the same chip for the same person.
+
+⚠ **Not `loading="lazy"`.** It was, on the reasoning that a paged list need not
+fetch below the fold. It fetched two of the twelve rows *on screen* and left ten
+grounds empty: Chrome defers on its own reading of the scrollport, and a table
+body inside a scroller is exactly the case it reads badly. At 995 bytes each
+there is nothing to defer. A `preconnect` in `index.html` covers the rest — twelve
+avatars on a cold cache took 2–4s to appear and most of that was one TLS
+handshake nothing had asked for yet.
+
+### The ground, which is also the start of Mehdi's one-hue-per-row
+
+pixelbot arrives transparent, so something has to sit behind it or the robot's
+outline is all there is on a white row. That something may as well carry
+information, and Mehdi's own resolution to his twenty-colours objection was *one
+hue per row, used twice* — avatar on the left, play on the right, so the two ends
+of a wide row are visibly the same row. `hueIndexFor` is that hue; wiring it to
+the play is still open.
+
+**Twelve hues, and the number is the point of the objection.** A hundred and
+thirty-four distinct colours is a colour per row, which is noise. Twelve means
+hues repeat down the list, and repeating is fine: the hue is a tint that makes a
+row cohere, not an identifier. The robot is the identifier. Chroma is 0.04 —
+almost nothing — because this sits behind a small illustration, under a name, in
+a table with a real accent elsewhere on the row.
+
+Written as `oklch(var(--m-avatar-l) 0.04 calc(var(--m-avatar-i) * 30deg))`: one
+declaration for twelve grounds instead of twelve rules, with lightness the only
+thing the themes disagree about.
+
+⚠ **The hash needs an avalanche before the modulo.** `% 12` reads the low bits,
+and FNV-1a's low bits barely move for short similar strings — which is every seed
+here. `u-1187` and `a-8801` landed on the same hue, adjacent in the list, and
+twelve rows produced six distinct grounds instead of nine or ten. Three
+xor-shift-multiply rounds (`lowbias32`) cost nothing and are what makes the
+modulo mean anything.
+
+### What the check asserts
+
+`tools/sessions-check.mjs` walks **every page**, not one filtered view — a filter
+can only prove the property for the rows it happened to return. Every row carries
+a pixelbot; one person is one seed across every session they appear in; two
+people never share a robot; the avatar is 20px inside the 38px row every list in
+this app uses, so it cannot be the thing setting the rhythm; and the twelve
+grounds actually spread. ⚠ It also asserts that **the list holds people with more
+than one session** — "one person, one seed" is satisfied trivially by a fixture
+where every row is a different person, so without that the main assertion is
+worthless.

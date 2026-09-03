@@ -1,53 +1,96 @@
 /* ── THE OPENREPLAY MARK ─────────────────────────────────────────────────────
    See OpenReplayMark.tsx for what moves and why. What is here is the two
-   colours and the one transition.
+   colours and the timing of the trade.
 
    ⚠ THE COLOURS ARE TOKENS THAT DEFAULT TO THE BRAND'S OWN. `--m-brand-blue`
    and `--m-brand-teal` fall back to the values in the product's SVG, so the
    mark is correct with no theme work at all - and the day the palette moves to
    OpenReplay's blue ("maybe change it to a slightly different blue"), the logo
    follows from the same place every other accent does instead of holding a
-   hardcoded hex the rest of the build has moved past. */
+   hardcoded hex the rest of the build has moved past.
+
+   ⚠ THE GEOMETRY IS NOT IN THIS FILE. `--m-ormark-origin`, `-shift` and
+   `-scale` arrive as inline custom properties from the component, which reads
+   them from `shared/openreplay-mark.ts`. They are measured numbers, so they
+   live with the geometry and get retyped nowhere. */
 .m-ormark {
   display: block;
   flex: none;
-  overflow: visible;
 }
 
 .m-ormark__outline { fill: var(--m-brand-blue, #394eff); }
-.m-ormark__play { fill: var(--m-brand-teal, #27a2a8); }
+.m-ormark__fill { fill: var(--m-brand-teal, #27a2a8); }
+/* ⚠ `.m-ormark__eye` has NO colour here and must not get one. It lives inside
+   a luminance mask, where its fill is black-or-white plumbing rather than a
+   brand value - the opening it makes shows the real surface behind the logo,
+   whatever the theme has put there. */
 
-/* ── THE LIFT ────────────────────────────────────────────────────────────────
-   The inner play advances along its own axis and grows a little: the thing was
-   pressed and started. 1.5 viewBox units is about half a pixel at 17px, which
-   is the whole point - at this size the move has to be small enough to read as
-   life rather than as a layout shift.
+/* ── THE TRADE ───────────────────────────────────────────────────────────────
+   The teal play grows until it is the triangle, and a play-shaped opening
+   appears in the place it left - so the cut-out passes from the blue to the
+   teal. The frame does not move and does not dim: it is the constant the other
+   two are measured against, and an outline that lightens while the interior
+   floods teal reads as three things happening instead of one.
 
-   ⚠ THE PIVOT IS THE GLYPH'S OWN CENTRE (21px 29.5px in viewBox units), not
-   the box's. The inner play sits left of centre, so scaling about the box would
-   drag it sideways and the growth would read as a drift. */
-.m-ormark__play {
+   The two elements pivot on the same point: the inner play's own centre, which
+   is 3.85 units left of the hole's. So the teal scales about itself and then
+   travels that far right, landing concentric with the frame's interior.
+
+   ⚠ THE DECLARATIONS HERE ARE THE **LEAVE** TIMING; the ones under `:hover`
+   are the **ENTER**. The trade is not symmetric and it should not be: on the
+   way in the teal leads and the opening follows it into the gap, and on the
+   way out the opening closes first so the teal is not shrinking around a hole
+   that is still there. */
+.m-ormark__fill,
+.m-ormark__eye {
   transform-box: view-box;
-  transform-origin: 21px 29.5px;
-  transition: transform var(--m-duration-normal) var(--m-ease-out);
+  transform-origin: var(--m-ormark-origin);
+}
+
+.m-ormark__fill {
+  /* Out: let the opening close before the fill collapses through it. */
+  transition: transform var(--m-duration-slow) var(--m-ease-out) 40ms;
+}
+
+.m-ormark__eye {
+  /* ⚠ TRANSPARENT AT REST IS "NO HOLE". In a luminance mask an unpainted
+     region leaves the white plate underneath, which keeps everything - so the
+     resting mark is the logo untouched, and this path only starts subtracting
+     as it fades up. Getting the polarity backwards makes the resting teal play
+     disappear, which is the one state that must be exact. */
+  opacity: 0;
+  /* It rests outward and contracts into place, so closing *is* travelling back
+     out. Growing it from nothing would read as a dot appearing. */
+  transform: scale(1.4);
+  transition:
+    opacity var(--m-duration-fast) var(--m-ease-out),
+    transform var(--m-duration-normal) var(--m-ease-out);
 }
 
 /* `[data-mark-host]` is the row, so the whole brand row is the trigger rather
-   than the 12px triangle inside it - a hover target you have to hit precisely
-   is a hover target nobody finds. It is the same hook the previous mark used,
-   so the nav did not have to change to keep it. */
-[data-mark-host]:hover .m-ormark__play {
-  transform: translateX(2.5px) scale(1.09);
+   than the 14px triangle inside it - a hover target you have to hit precisely
+   is a hover target nobody finds. Keyboard gets it too: at 52px the brand row
+   *is* the collapse button, so it can be focused, and a focus ring on a logo
+   that then does nothing looks broken. */
+[data-mark-host]:is(:hover, :focus-visible) .m-ormark__fill {
+  transform: translateX(var(--m-ormark-shift)) scale(var(--m-ormark-scale));
+  transition-delay: 0ms;
 }
 
-/* The outline holds still, always: a logo whose silhouette changes on hover
-   reads as a different logo. What it does instead is deepen a shade, so the
-   pair reads as one object responding rather than as a part coming loose. */
-.m-ormark__outline { transition: opacity var(--m-duration-normal) var(--m-ease-out); }
-[data-mark-host]:hover .m-ormark__outline { opacity: 0.88; }
+[data-mark-host]:is(:hover, :focus-visible) .m-ormark__eye {
+  opacity: 1;
+  transform: none;
+  /* In: after the teal has cleared the middle. Any sooner and the hole looks
+     like it was always there and the teal merely grew around it. */
+  transition-delay: 110ms;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .m-ormark__play,
-  .m-ormark__outline { transition: none; }
-  [data-mark-host]:hover .m-ormark__play { transform: none; }
+  /* No motion, and no instant swap either: a logo that turns itself inside out
+     the moment a cursor crosses it is louder than the animation was. The mark
+     simply rests. */
+  .m-ormark__fill,
+  .m-ormark__eye { transition: none; }
+  [data-mark-host]:is(:hover, :focus-visible) .m-ormark__fill { transform: none; }
+  [data-mark-host]:is(:hover, :focus-visible) .m-ormark__eye { opacity: 0; }
 }

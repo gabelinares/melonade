@@ -750,25 +750,33 @@ const day = (back) => {
   const d = new Date(Date.now() - back * 86400000);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
-/* ⚠ BOTH ENDS, IN ONE GO, AND NOTHING IS ASSERTED IN BETWEEN. antd's
-   RangePicker does not fire `onChange` for a HALF-picked range - it commits
-   when both ends exist - so there is no intermediate state to check here. An
-   assertion between the two fills was added and removed: it read the label as
-   still saying "Custom range" and looked like a bug in ours.
+/* ⚠ WAIT FOR EACH END TO LAND, DO NOT WAIT A FIXED 300ms. This step was
+   `fill / Enter / sleep / fill / Enter / sleep` and it failed about one run in
+   three: the first Enter sometimes committed nothing, the second fill went in
+   anyway, and antd fired `onChange([null, date])`. The control then printed
+   "Up to Aug 29" over an unfiltered list - which is CORRECT behaviour for a
+   half range, so the suite was reporting a real state as a bug in it.
 
-   The model supports a one-ended window and `rangeLabel` prints it ("Jul 3
-   onwards", "Up to Jul 18"). That path is simply not reachable through this
-   control, which is recorded in date-range.ts rather than left to be
-   rediscovered. */
+   It also disproved the note in date-range.ts, which said a one-ended window
+   was unreachable from this control. It is reachable; the note is corrected
+   there. What this step wants is the two-ended case, so it now waits for the
+   field to actually hold what was typed before moving on. */
 const ends = p.locator('.m-dr__picker .ant-picker input');
-await ends.nth(0).click();
-await p.waitForTimeout(150);
-await ends.nth(0).fill(day(20));
-await p.keyboard.press('Enter');
-await p.waitForTimeout(300);
-await ends.nth(1).fill(day(5));
-await p.keyboard.press('Enter');
-await p.waitForTimeout(500);
+const landed = async (i, text) => {
+  await ends.nth(i).click();
+  await ends.nth(i).fill(text);
+  await p.waitForFunction(
+    ({ i, text }) => document.querySelectorAll('.m-dr__picker .ant-picker input')[i]?.value === text,
+    { i, text },
+    { timeout: 4000 },
+  );
+  await p.keyboard.press('Enter');
+};
+await landed(0, day(20));
+await landed(1, day(5));
+/* And the menu closes only once the range is complete, so waiting on that is
+   waiting on the thing being asserted rather than on a clock. */
+await p.locator('.m-dr__menu').waitFor({ state: 'detached', timeout: 4000 }).catch(() => {});
 const custom = {
   label: await p.locator('.m-dr__value').textContent(),
   rows: await total(),
@@ -794,6 +802,95 @@ const w3 = await widths();
 check('the columns hold their widths as the data under them changes', w1 === w2 && w2 === w3, `${w1} / ${w2} / ${w3}`);
 await p.locator('.ant-pagination-item', { hasText: '1' }).click();
 await p.waitForTimeout(350);
+
+/* ── ONE IDENTITY, ONE ROBOT (2026-09-03) ─────────────────────────────────
+   Gabriel: *"I want the avatar to be exactly the same when the user is the
+   same, of course, when I filter by user."* DiceBear is a pure function of its
+   seed, so the requirement reduces entirely to WHAT IS SEEDED - and this walks
+   every page rather than one filtered view, because a filter can only prove it
+   for the rows the filter happened to return.
+
+   ⚠ THIS IS THE CHECK THAT FOUND THE FIXTURE DEFECT. The name and the user id
+   were derived from two different formulas, so one person carried eleven ids
+   and would have had eleven robots. Nothing rendered the id, so nothing had
+   ever disagreed - the avatar is the first thing that reads it. */
+const avatarsHere = () => p.evaluate(() =>
+  [...document.querySelectorAll('.m-ss__table tbody tr.ant-table-row')].map((r) => {
+    const a = r.querySelector('.m-savatar');
+    const img = r.querySelector('.m-savatar__img');
+    const u = img ? new URL(img.src) : null;
+    return {
+      name: r.querySelector('.m-ss__name')?.textContent?.trim() ?? null,
+      seed: u ? u.searchParams.get('seed') : null,
+      endpoint: u ? `${u.host}${u.pathname}` : null,
+      ground: a ? getComputedStyle(a).backgroundColor : null,
+      box: a ? Math.round(a.getBoundingClientRect().width) : null,
+      rowH: Math.round(r.getBoundingClientRect().height),
+      loaded: img ? img.naturalWidth > 0 : false,
+    };
+  }));
+
+/* The first page waits: twelve first-time requests to a cold CDN take a couple
+   of seconds, which is what the preconnect in index.html exists to shorten. */
+await p.waitForTimeout(4000);
+const firstPage = await avatarsHere();
+check('every row carries an avatar, and it is the pixelbot endpoint',
+  firstPage.length > 0 && firstPage.every((a) => a.seed && a.endpoint === 'api.dicebear.com/10.x/pixelbot/svg'),
+  `${firstPage.filter((a) => a.seed).length}/${firstPage.length}, ${firstPage[0]?.endpoint}`);
+check('and the avatars actually load',
+  firstPage.every((a) => a.loaded), `${firstPage.filter((a) => a.loaded).length}/${firstPage.length} loaded`);
+/* 20px inside the 38px row every list in this app uses. The avatar has to be
+   small enough that it cannot be the thing setting the row height - Mehdi asked
+   for it back "smaller", and a row that grew to fit it would be the avatar
+   deciding the list's rhythm. */
+check('it sits inside the list rhythm rather than setting it',
+  firstPage.every((a) => a.box === 20 && a.rowH === 38), `${firstPage[0]?.box}px in ${firstPage[0]?.rowH}px`);
+check('the ground resolves to a real colour per row',
+  firstPage.every((a) => /^(oklch|rgb|color)/.test(a.ground ?? '')), firstPage[0]?.ground);
+
+/* Now every page, which is where the same person turns up more than once. */
+const pages = await p.locator('.ant-pagination-item').evaluateAll((els) => els.map((e) => e.textContent.trim()));
+const all = [...firstPage];
+for (const n of pages.slice(1)) {
+  await p.locator('.ant-pagination-item', { hasText: new RegExp(`^${n}$`) }).click();
+  await p.waitForTimeout(400);
+  all.push(...(await avatarsHere()));
+}
+await p.locator('.ant-pagination-item', { hasText: '1' }).click();
+await p.waitForTimeout(350);
+
+const byName = new Map();
+for (const a of all) {
+  if (!byName.has(a.name)) byName.set(a.name, new Set());
+  byName.get(a.name).add(a.seed);
+}
+const manySeeds = [...byName].filter(([, seeds]) => seeds.size > 1);
+const repeated = [...byName].filter(([n]) => all.filter((a) => a.name === n).length > 1);
+check('one person is one seed, across every session they appear in',
+  manySeeds.length === 0,
+  manySeeds.length ? manySeeds.map(([n, s]) => `${n} has ${s.size}`).join(', ')
+    : `${byName.size} identities over ${all.length} rows, ${repeated.length} of them repeat`);
+/* ⚠ AND THE CHECK ABOVE IS WORTHLESS IF NOBODY REPEATS. A fixture where every
+   row is a different person satisfies "one person, one seed" trivially. */
+check('and the list actually holds people with more than one session',
+  repeated.length >= 5, `${repeated.length} identities appear more than once`);
+
+const seedToNames = new Map();
+for (const a of all) {
+  if (!seedToNames.has(a.seed)) seedToNames.set(a.seed, new Set());
+  seedToNames.get(a.seed).add(a.name);
+}
+check('and two people never share one robot',
+  [...seedToNames.values()].every((n) => n.size === 1), `${seedToNames.size} seeds`);
+
+/* The hue is a tint, not an identifier, so it is allowed to repeat - but if it
+   collapses onto three or four values it stops making a row cohere and starts
+   looking like a bug. Twelve hues drawn from twelve should land on nine or ten.
+   ⚠ It landed on SIX before the hash grew an avalanche: `% 12` reads the low
+   bits and FNV-1a barely moves them for short similar strings. */
+const grounds = new Set(all.map((a) => a.ground));
+check('the twelve grounds are actually spread over the list',
+  grounds.size >= 9, `${grounds.size} distinct grounds over ${all.length} rows`);
 
 /* ── THE PLAY HOLDS THE RIGHT EDGE ───────────────────────────────────────
    Third position in a day: hover-only in the last column, then leading the row

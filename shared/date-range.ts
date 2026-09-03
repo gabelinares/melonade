@@ -71,14 +71,19 @@ const endOfDay = (ms: number) => startOfDay(ms) + DAY_MS - 1;
  * everything away while somebody is still picking is the worst moment to
  * empty a list.
  *
- * ⚠ THE ONE-ENDED CASE IS NOT REACHABLE FROM THE CURRENT CONTROL, and that is
- * worth knowing before anybody "simplifies" it away. antd's `RangePicker` only
- * fires `onChange` once BOTH ends exist, so `DateRange` can never hand this a
- * half range today. It is kept because the arithmetic is three lines, the
- * labels for it already exist ("Jul 3 onwards", "Up to Jul 18"), and the first
- * control that offers a single bound - a "since I last looked" shortcut, a
- * shared link carrying one date - gets it for free instead of forcing the
- * model open again.
+ * ⚠ THE ONE-ENDED CASE IS REACHABLE, which corrects what this note said until
+ * 2026-09-03. The claim was that antd's `RangePicker` only fires `onChange`
+ * once both ends exist, so `DateRange` could never hand this a half range - and
+ * the check suite then produced one by accident: a flaky step filled the second
+ * field while the first had not committed, antd fired `onChange([null, date])`,
+ * and the control printed "Up to Aug 29" over an unfiltered list. Which is the
+ * correct behaviour, and the reason to keep these branches is now that they are
+ * LIVE rather than that they are cheap: clearing one end of a committed range
+ * puts you here.
+ *
+ * The arithmetic is three lines, the labels already exist ("Jul 3 onwards",
+ * "Up to Jul 18"), and the first control that offers a single bound - a "since
+ * I last looked" shortcut, a shared link carrying one date - gets it for free.
  */
 export function rangeBounds(v: DateRangeValue, now: number = Date.now()): { from: number; to: number } {
   if (v.preset === 'custom') {

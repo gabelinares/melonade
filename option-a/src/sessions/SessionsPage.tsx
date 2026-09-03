@@ -27,6 +27,7 @@ import {
   type SessionTag,
 } from '@shared/sessions-logic.ts';
 import type { useSessions } from '../state/useSessions.ts';
+import { seedFor } from '@shared/avatar.ts';
 import { DateRange } from '../components/DateRange.tsx';
 import { PageCard } from '../components/PageCard.tsx';
 import { DisplayShell, MenuSelect } from '../components/DisplayMenu.tsx';
@@ -35,6 +36,7 @@ import { FilterStrip } from '../components/FilterStrip.tsx';
 import { IconButton } from '../components/IconButton.tsx';
 import { ListFooter } from '../components/ListFooter.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
+import { SessionAvatar } from '../components/SessionAvatar.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { sortable } from '../components/SortIcon.tsx';
 import { SearchCard } from './SearchCard.tsx';
@@ -131,6 +133,11 @@ export function SessionsPage({ model }: SessionsPageProps) {
         <div className="m-ss__who">
           {/* THE SLOT IS ON EVERY ROW. See the note above. */}
           <span className={`m-dot is-slot${s.viewed ? ' is-off' : ''}`} aria-hidden={s.viewed} />
+          {/* ⚠ KEYED ON THE SEED. The avatar holds a failed-request flag, and
+              antd reuses a row's React node across pages - so without the key
+              a robot that failed to load on page one would leave whoever lands
+              in that position on page two with no avatar at all. */}
+          <SessionAvatar key={seedFor(s)} seed={seedFor(s)} />
           <span className={`m-ss__name m-truncate${s.userId ? '' : ' is-anon'}`}>{s.displayName}</span>
           {s.live && <span className="m-ss__live">live</span>}
           {/* ⚠ NO BOOKMARK MARK HERE. It moved to the actions cell on the right
