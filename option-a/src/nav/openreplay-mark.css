@@ -29,6 +29,8 @@
   overflow: visible;
   color: inherit;
 }
+.m-ormark.is-plain path { fill: none; }
+.m-ormark.is-plain.is-filled .m-ormark__inner { fill: currentColor; }
 
 .m-ormark__outline { fill: var(--m-brand-blue, #394eff); }
 .m-ormark__fill { fill: var(--m-brand-teal, #27a2a8); }

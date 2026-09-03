@@ -371,6 +371,12 @@
    clicks. What would be wrong is a row that looked inert. */
 .m-ss__table .m-ss__row { cursor: pointer; }
 
+/* ⚠ ONE ANGLE, TWO USES, ONE FALLBACK. `--m-row-hue` is set inline on the row
+   the moment the robot's own colour has been read (useAvatarHue.ts); until then
+   it is the hashed twelve. Everything on the row that wears the hue reads THIS,
+   so there is exactly one place the two uses can disagree, and they cannot. */
+.m-ss__table .m-ss__row { --m-row-hue: calc(var(--m-avatar-i, 0) * 30deg); }
+
 .m-ss__table .m-ss__row { --m-ss-play-ground: var(--m-surface-default); }
 .m-ss__table .m-ss__row:hover { --m-ss-play-ground: var(--m-surface-hover); }
 
@@ -479,7 +485,7 @@
    glyph are the same colour doing two jobs. */
 .m-ss__play:hover,
 .m-ss__row.is-viewed .m-ss__play:hover {
-  color: oklch(var(--m-play-l) 0.13 calc(var(--m-avatar-i, 0) * 30deg));
+  color: oklch(var(--m-play-l) 0.13 var(--m-row-hue));
 }
 
 /* A watched session is not dimmed, only its name gives up its weight. Dimming

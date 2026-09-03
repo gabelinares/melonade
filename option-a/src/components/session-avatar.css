@@ -15,16 +15,34 @@
    would be carrying the least. It is a tint that makes a row cohere, not a
    colour that means something - the robot is what identifies the person. */
 .m-savatar {
-  --m-avatar-hue: calc(var(--m-avatar-i, 0) * 30deg);
-  /* The one number the themes disagree about, so it is the only one they
-     override. Light is the bare `:root` case, the way every token in this app
-     is defined. */
-  --m-avatar-l: 0.93;
+  /* ⚠ THE ROW'S HUE WINS. Inside a session row `--m-row-hue` is the colour read
+     off this very robot, so the ground behind it and the play at the other end
+     of the row are the same colour it is. Outside a row - the replay header, the
+     stories - nothing sets it and the hashed twelve stand in. */
+  --m-avatar-hue: var(--m-row-hue, calc(var(--m-avatar-i, 0) * 30deg));
+  /* ⚠ THE GROUND IS A MID TONE, NOT A TINT, AND IT HAS TO BE. It was 0.93 - a
+     pale wash - which was right when it sat behind nothing, because pixelbot
+     brought its own black background and covered it. With that background off,
+     0.93 puts a pastel robot on near-white: 1.1:1 to 1.6:1, invisible.
+
+     Pixelbot's palette is Tailwind's 300s - #f9a8d4, #bef264, #fdba74 - drawn
+     to sit on something dark, and no parameter changes that. So the ground goes
+     where they read: 0.40 in light and 0.30 in dark, measured against the six
+     robot colours the fixture produces (3.4-5.0:1 and 4.9-7.2:1). Both are
+     visibly COLOURED chips carrying the row's own hue, which is the difference
+     from what shipped: a fixed near-black teal square became a mid-tone chip
+     the same colour as the thing inside it.
+
+     ⚠ It moves less between themes than a surface would, and that is the
+     robot's doing rather than the system's - a pastel needs a dark ground in
+     both. The theme still moves it a step, and the chroma with it. */
+  --m-avatar-l: 0.4;
+  --m-avatar-c: 0.06;
   display: block;
   flex: none;
   overflow: hidden;
   border-radius: var(--m-radius-control);
-  background: oklch(var(--m-avatar-l) 0.04 var(--m-avatar-hue));
+  background: oklch(var(--m-avatar-l) var(--m-avatar-c) var(--m-avatar-hue));
 }
 
 /* ⚠ Match the light ground's CHROMA and its distance from the surface; do not
@@ -34,9 +52,9 @@
 
    Both theme states, in this app's own order: the explicit choice and the
    system default that has not been overridden. */
-:root[data-theme='dark'] .m-savatar { --m-avatar-l: 0.3; }
+:root[data-theme='dark'] .m-savatar { --m-avatar-l: 0.3; --m-avatar-c: 0.05; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .m-savatar { --m-avatar-l: 0.3; }
+  :root:not([data-theme='light']) .m-savatar { --m-avatar-l: 0.3; --m-avatar-c: 0.05; }
 }
 
 .m-savatar__img {

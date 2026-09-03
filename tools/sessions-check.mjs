@@ -1387,11 +1387,61 @@ const playHover = await p.evaluate(() => ({
    which is the whole of Mehdi's "one hue per row, used twice". The lightness
    differs because the jobs do: 0.93 behind an illustration, 0.52 as a stroked
    glyph on the same surface. */
-check('and hovering the PLAY takes the row\'s own hue',
+/* ⚠ AND THE HUE IS THE ROBOT'S OWN, which is the part that was wrong for a
+   day. It was a hash of the seed - and DiceBear hashes the SAME seed by its own
+   function into its own palette, so the tint and the robot never agreed and
+   nobody could say why. There is no colour parameter to pass, so the colour is
+   read off the avatar and both uses are mixed from that one angle.
+
+   This fetches the same SVG the row's `<img>` did and checks the dominant fill
+   really is the hue the row is wearing. If it ever fails, the reading broke -
+   not the CSS. */
+const fromRobot = await p.evaluate(async () => {
+  const row = document.querySelector('.m-ss__row');
+  const txt = await (await fetch(row.querySelector('.m-savatar__img').src)).text();
+  const counts = new Map();
+  for (const m of txt.matchAll(/fill="(#[0-9a-fA-F]{6})"/g)) {
+    const h = m[1].toLowerCase();
+    if (h === '#000000') continue;
+    counts.set(h, (counts.get(h) ?? 0) + 1);
+  }
+  return {
+    robot: [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
+    ownBg: txt.match(/<rect width="100" height="100" fill="([^"]*)"/)?.[1] ?? null,
+    hue: getComputedStyle(row).getPropertyValue('--m-row-hue').trim(),
+  };
+});
+/* A read hue is a raw angle with decimals; the hashed fallback is a `calc()`. */
+/* ⚠ AND PIXELBOT'S OWN BACKGROUND IS OFF. It ships a full-bleed near-black
+   teal rect whatever the robot's colour is, which in a light list is a black
+   square per row and in either mode is a colour belonging to neither the robot
+   nor the theme. `backgroundColor=ffffff00` - an 8-digit hex, because the API
+   answers 400 to the word "transparent" and the browser then reports that as
+   ERR_BLOCKED_BY_ORB on the img, which says nothing about the cause. */
+check('the avatar brings no background of its own',
+  fromRobot.ownBg === '#ffffff00', fromRobot.ownBg ?? 'none declared');
+check('the row\'s hue was read off its own robot, not hashed from the seed',
+  !!fromRobot.robot && /^-?\d+\.\d+deg$/.test(fromRobot.hue),
+  `${fromRobot.robot} → ${fromRobot.hue}`);
+const angle = Number.parseFloat(fromRobot.hue).toFixed(2).replace(/0+$/, '');
+check('and hovering the PLAY takes that same hue, as the avatar\'s ground does',
   playHover.colour !== playRest.colour
-    && playHover.colour.includes(`${Number(playHover.hue) * 30}`)
-    && playHover.ground.includes(`${Number(playHover.hue) * 30}`),
+    && playHover.colour.includes(angle.slice(0, 5))
+    && playHover.ground.includes(angle.slice(0, 5)),
   `${playRest.colour} → ${playHover.colour}, avatar ${playHover.ground}`);
+
+/* ⚠ AND AN UNWATCHED SESSION IS SOLID. A muted outline against an unmuted one
+   is a difference you have to compare two rows to see; filled against hollow
+   you see in one. The weight is on the unwatched state because that is the row
+   with something in it for you. */
+const solid = await p.evaluate(() =>
+  [...document.querySelectorAll('.m-ss__row')].map((r) => [
+    r.className.includes('is-viewed'),
+    r.querySelector('.m-ormark')?.classList.contains('is-filled') ?? null,
+  ]));
+check('an unwatched session fills its triangle and a watched one does not',
+  solid.length > 0 && solid.every(([viewed, filled]) => filled === !viewed),
+  `${solid.filter(([, f]) => f).length} filled of ${solid.length}`);
 
 /* ── THE RING IS A DASH ON A PATH ────────────────────────────────────────
    Third attempt, and the two before it failed on the same fact - the field is

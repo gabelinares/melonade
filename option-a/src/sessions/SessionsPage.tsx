@@ -42,6 +42,7 @@ import { IconButton } from '../components/IconButton.tsx';
 import { ListFooter } from '../components/ListFooter.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SessionAvatar } from '../components/SessionAvatar.tsx';
+import { useAvatarHues } from '../components/useAvatarHue.ts';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { sortable } from '../components/SortIcon.tsx';
 import { SearchCard } from './SearchCard.tsx';
@@ -167,6 +168,10 @@ const SECTION: Record<SessionTab, { title: string; sub: string }> = {
 
 export function SessionsPage({ model }: SessionsPageProps) {
   const { display } = model;
+  /* ⚠ THE ROW'S HUE COMES FROM THE ROBOT, not from a hash of the same seed -
+     see useAvatarHue.ts for why that distinction is the whole feature. One call
+     for the page; the rows read the map. */
+  const hues = useAvatarHues(model.rows.map((r) => seedFor(r)));
   const has = (f: SessionField) => display.fields.includes(f);
 
 
@@ -455,9 +460,16 @@ export function SessionsPage({ model }: SessionsPageProps) {
          "right away I understand I'm on the sessions page."
 
          No colour of its own: it inherits the row's hue. See the stylesheet. */
-      render: () => (
+      render: (_: unknown, s: SessionRow) => (
         <span className="m-ss__play">
-          <OpenReplayMark variant="plain" />
+          {/* ⚠ SOLID UNTIL YOU HAVE WATCHED IT (Gabriel, 2026-09-04: "the
+              sessions not watched are still not different enough - maybe the
+              inner triangle should be filled"). A muted outline against an
+              unmuted one is a difference you have to compare two rows to see;
+              filled against hollow you see in one. And the weight is on the
+              right state: an unwatched session is the one with something in it
+              for you. */}
+          <OpenReplayMark variant="plain" filled={!s.viewed} />
         </span>
       ),
     },
@@ -773,7 +785,15 @@ export function SessionsPage({ model }: SessionsPageProps) {
                  one property, so the two ends of a wide row are visibly the
                  same row. Twelve hues, seeded on the identity, so a person's
                  rows are always the same colour - see shared/avatar.ts. */
-              style: { '--m-avatar-i': hueIndexFor(seedFor(s)) } as CSSProperties,
+              style: {
+                /* The fallback, used until the robot's own colour has been read
+                   and if it never is. Twelve hues off a hash of the identity. */
+                '--m-avatar-i': hueIndexFor(seedFor(s)),
+                /* The real one. Both the avatar's ground and the play's ink are
+                   mixed from this single angle, which is what makes it ONE hue
+                   per row rather than two things that agree. */
+                ...(hues.has(seedFor(s)) ? { '--m-row-hue': `${hues.get(seedFor(s))}deg` } : {}),
+              } as CSSProperties,
               onClick: (e) => {
                 const el = e.target as HTMLElement;
                 if (el.closest('button') || el.closest('.ant-dropdown')) return;

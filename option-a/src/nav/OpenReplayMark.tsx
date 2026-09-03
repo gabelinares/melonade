@@ -28,6 +28,10 @@ export interface OpenReplayMarkProps {
    * can never fire there.
    */
   variant?: 'brand' | 'plain';
+  /** `plain` only: the inner triangle solid rather than outlined. The sessions
+   *  list uses it to mark a session nobody has watched - see the note in
+   *  sessions-page.css for why that is the state that gets the weight. */
+  filled?: boolean;
 }
 
 /**
@@ -102,7 +106,7 @@ export interface OpenReplayMarkProps {
  * stylesheet. There is nothing to lose: the logo is a logo either way.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function OpenReplayMark({ size = 17, className, variant = 'brand' }: OpenReplayMarkProps) {
+export function OpenReplayMark({ size = 17, className, variant = 'brand', filled }: OpenReplayMarkProps) {
   /* ⚠ Two marks render at once (the wide nav's and the collapsed one's), so the
      clip needs an id per instance or the second `url(#...)` resolves to the
      first one's node. `useId` returns `:r3:`, and the colons are legal in an
@@ -114,7 +118,7 @@ export function OpenReplayMark({ size = 17, className, variant = 'brand' }: Open
   if (variant === 'plain') {
     return (
       <svg
-        className={`m-ormark is-plain${className ? ` ${className}` : ''}`}
+        className={`m-ormark is-plain${filled ? ' is-filled' : ''}${className ? ` ${className}` : ''}`}
         viewBox={OR_VIEWBOX}
         height={size}
         width={(size * 52) / 59}
@@ -140,9 +144,13 @@ export function OpenReplayMark({ size = 17, className, variant = 'brand' }: Open
           strokeWidth={3.8}
           strokeLinejoin="round"
         />
+        {/* ⚠ THE FILL IS A CLASS, NOT AN ATTRIBUTE, so the stylesheet can turn
+            it on for an unwatched row. Kept stroked as well as filled: a filled
+            triangle alone is smaller than the outlined one by half a stroke on
+            every edge, and the two states would change size as well as weight. */}
         <path
+          className="m-ormark__inner"
           d={OR_INNER}
-          fill="none"
           stroke="currentColor"
           strokeWidth={3.8}
           strokeLinejoin="round"

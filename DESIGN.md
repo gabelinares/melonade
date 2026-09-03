@@ -5215,3 +5215,77 @@ default, so the list is for turning things **off**: a narrow window, a projector
 someone who does not care about metadata. The heading says "Columns to hide",
 because "Columns" over a row of already-lit pills sends you looking for the other
 half.
+
+---
+
+## §35 — The hue was never the robot's (2026-09-04)
+
+Gabriel, on the hover colour: *"the colour of the play when hovered is still not
+connected to the pixelrobot, what is going on?"*
+
+**Both sides were hashing the same seed with different functions.** `hueIndexFor`
+turned the identity into one of twelve angles; DiceBear turns the identity into
+one of its own palette entries. There was never any reason for the two to agree,
+and they didn't — the robot for `ravi.patel@vantage.io` is pink (`#f9a8d4`) and
+the hash had put his row on green.
+
+Nothing could be fixed from our side. **Pixelbot takes no colour parameter** —
+every plausible name was tried against the API and silently ignored — and
+matching its choice would mean reproducing its PRNG. So the colour is **read off
+the avatar**: one flat fill dominates a pixelbot, and that fill *is* the robot.
+
+`useAvatarHue` fetches the same URL the row's `<img>` already asked for (an HTTP
+cache hit in every case but the first, and the first is 995 bytes), finds the
+dominant fill with a regex, and turns it into an OKLCH angle. Results live in a
+module `Map` for the life of the page, because a seed's hue cannot change. ⚠ **It
+never touches the DOM** — the obvious version inlines the SVG and reads the fill
+off the elements, which means injecting third-party markup into the page for a
+colour.
+
+**The hue only.** The robot's colour is a pastel — `#f9a8d4` is Tailwind's
+pink-300 — and a pastel is unusable as ink: about 1.9:1 at 14px on white. So the
+row borrows the *angle* and supplies its own lightness and chroma per job: a
+ground behind the avatar, ink for the play. That is the only way "the same colour
+as the pixelbot" can be true of a background and a 14px stroke at once.
+
+One custom property carries it. `--m-row-hue` is set inline on the `<tr>` when
+the reading lands, and falls back to the hashed twelve until then — so
+everything that wears the hue reads one value and the two uses cannot disagree.
+
+### The avatar's ground had to stop being a tint
+
+⚠ **Pixelbot ships its own background**: a full-bleed `#042f2e` rect, near-black
+teal, whatever colour the robot is. In a light list that is a black square per
+row — *"in light mode it's horrible, the background of the avatar is super
+dark"* — and in either mode it is a colour belonging to neither the robot nor the
+theme.
+
+Turning it off is what finally makes the component's original premise true (it
+was written for a transparent avatar). ⚠ **`backgroundColor=ffffff00`, an
+8-digit hex**: the API validates against `^#?([0-9a-f]{3,4,6,8})$` and answers
+**400** to the word `transparent`, which the browser then reports on the `<img>`
+as `ERR_BLOCKED_BY_ORB` — a message that says nothing about the cause.
+
+And with it off, the ground could no longer be a wash. At 0.93 a pastel robot is
+1.1–1.6:1 against it. Pixelbot's palette is Tailwind's 300s, drawn to sit on
+something dark, and no parameter changes that — so the ground goes where they
+read: **0.40 in light and 0.30 in dark**, measured against the six robot colours
+the fixture produces (3.4–5.0:1 and 4.9–7.2:1). Both are visibly *coloured* chips
+in the row's own hue, which is the difference from what shipped: a fixed
+near-black teal square became a mid-tone chip the same colour as the thing inside
+it.
+
+⚠ It moves less between themes than a surface would, and that is the robot's
+doing rather than the system's — a pastel needs a dark ground in both. If a light
+chip is wanted, the answer is a different DiceBear style, not a different
+lightness.
+
+### An unwatched session fills its triangle
+
+*"The sessions not watched are still not different enough — maybe the inner
+triangle should be filled."* A muted outline against an unmuted one is a
+difference you have to compare two rows to see; **filled against hollow you see
+in one**. And the weight is on the right state: an unwatched session is the row
+with something in it for you. It stays stroked as well as filled, because a fill
+alone is smaller than the outline by half a stroke on every edge and the two
+states would change size as well as weight.
