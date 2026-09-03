@@ -575,33 +575,25 @@ export function SessionsPage({ model }: SessionsPageProps) {
               says which, because a New that quietly inherited the filter you
               had built would be a surprise and a New that threw it away would
               be a waste. */}
-          {model.tab === 'segments' ? (
+          {/* ⚠ SAVE AS SEGMENT LEFT THIS HEADER on 2026-09-04 and went to the
+              filter's own strip, beside Clear (Gabriel). It is a better home
+              for the reason it was a poor one here: in the header it lived
+              beside controls that are always available, while it is only ever
+              usable once there are rules - so it spent most of its life greyed
+              out, explaining in a tooltip that you had not built a filter yet.
+              The strip only exists when the filter has something in it, which
+              makes the button reachable exactly when it is true.
+
+              It also puts the two verbs that dispose of a filter side by side:
+              keep this, or throw it away.
+
+              The segments tab keeps its own New here, because there is no
+              filter on that tab to save and the header is the only place a
+              list-level action can live. */}
+          {model.tab === 'segments' && (
             <Button size="small" icon={<Plus size={13} />} onClick={model.newSegment}>
               New segment
             </Button>
-          ) : (
-            <Tooltip
-              title={
-                model.filters.length === 0
-                  ? 'Add a filter first'
-                  : model.filters.some((f) => entryOf(f.entryId)?.category === 'segments')
-                    ? 'A search that uses a segment cannot itself be saved'
-                    : 'Save this search as a segment'
-              }
-            >
-              <span>
-                <Button
-                  size="small"
-                  disabled={
-                    model.filters.length === 0 ||
-                    model.filters.some((f) => entryOf(f.entryId)?.category === 'segments')
-                  }
-                  onClick={model.newSegment}
-                >
-                  Save as segment
-                </Button>
-              </span>
-            </Tooltip>
           )}
           <Dropdown
             trigger={['click']}
@@ -690,6 +682,28 @@ export function SessionsPage({ model }: SessionsPageProps) {
           /* The value counts are computed against everything the OTHER filters
              already left, so the menu and the table can never disagree. */
           rows={model.matched}
+          saveAction={
+            <Tooltip
+              title={
+                model.filters.some((f) => entryOf(f.entryId)?.category === 'segments')
+                  ? 'A search that uses a segment cannot itself be saved'
+                  : 'Save this search as a segment'
+              }
+            >
+              {/* The span is antd's own requirement: a disabled button fires no
+                  pointer events, so the Tooltip has nothing to listen to. */}
+              <span>
+                <Button
+                  size="small"
+                  className="m-sc__save"
+                  disabled={model.filters.some((f) => entryOf(f.entryId)?.category === 'segments')}
+                  onClick={model.newSegment}
+                >
+                  Save as segment
+                </Button>
+              </span>
+            </Tooltip>
+          }
           trailing={
             <>
               {/* ⚠ THE SAME CONTROL AS EVERY OTHER LIST since 2026-09-02, and

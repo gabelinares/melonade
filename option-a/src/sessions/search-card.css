@@ -25,10 +25,29 @@
    208px wide inside a 1410px plane, with the empty state stacked into a column,
    and nothing in the stylesheet looked wrong. Prefix collisions in a flat class
    namespace do not error, they just quietly resize something. */
+/* ⚠ INVERTED 2026-09-04. Gabriel: "I don't like the background of the section,
+   it seems really disconnected - I think we should invert, brighter background
+   on the back."
+
+   He is right and the diagnosis is better than the one this file opens with. A
+   grey band cut across a white plane does read as a slab that arrived from
+   somewhere else: it shares no edge with the table under it, it is the only
+   large grey shape on the page, and the eye files it as a different document
+   rather than as the top of this one.
+
+   So the SECTION takes the plane's own white and the CONTROLS on it take the
+   tint. A tinted field on a bright ground is the ordinary way round for a form,
+   and it does two things the old arrangement could not: the section now shares
+   its ground with the table below, so the filter and its results read as one
+   surface; and the field, which is the one thing here you act on, is the only
+   shape with a fill.
+
+   The hairline at the bottom is doing all the separating now, which is enough
+   for two regions of one plane. */
 .m-sc {
   display: flex;
   flex-direction: column;
-  background: var(--m-surface-canvas);
+  background: var(--m-surface-default);
   border-bottom: var(--m-border-width) solid var(--m-border-subtle);
 }
 
@@ -84,10 +103,19 @@
   padding-inline: var(--m-space-5);
   border: var(--m-border-width) solid var(--m-border-default);
   border-radius: var(--m-radius-control);
-  background: var(--m-surface-default);
+  /* ⚠ THE TINT MOVED HERE from the section behind it (see `.m-sc`). A white
+     field on a white ground is a rectangle held together by one hairline; the
+     tint is what makes it read as a place to put something. */
+  background: var(--m-surface-canvas);
   text-align: left;
-  transition: border-color var(--m-duration-fast) var(--m-ease-out);
+  transition:
+    background var(--m-duration-fast) var(--m-ease-out),
+    border-color var(--m-duration-fast) var(--m-ease-out);
 }
+
+/* AND IT BRIGHTENS UNDER THE POINTER, which is the direction a control on a
+   light ground should move: towards the paper, not away from it. */
+.m-sc__field:hover { background: var(--m-surface-default); }
 /* The ring paints OVER the field's own border (a negative-z child paints after
    its stacking context's background and borders), so the resting border is
    simply what shows when the ring is not there. */
@@ -109,6 +137,12 @@
    The example is a shade quieter than the lead: it is an illustration of the
    instruction, not a second instruction. */
 .m-sc__field-text {
+  display: flex;
+  align-items: baseline;
+  /* The space between the lead and its example. A literal one in the JSX would
+     be collapsed by the flex box, and an `&nbsp;` in a sentence that already
+     ends on "like" is a space nobody can select. */
+  gap: 0.32em;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -118,6 +152,9 @@
   font-size: var(--m-text-md);
 }
 
+/* The lead never shrinks; the example truncates instead, because the
+   instruction is the part that has to survive a narrow plane. */
+.m-sc__lead { flex: none; }
 .m-sc__lead {
   color: var(--m-content-placeholder);
   transition: color var(--m-duration-fast) var(--m-ease-out);
@@ -178,21 +215,76 @@
    3. IT STOPS BEING AN ARC WHEN IT IS A FOCUS RING. On `:focus-visible` the
       dash becomes the whole perimeter and holds still: a focus indicator that
       moves is a focus indicator you cannot locate. */
+/* ── THE RING: A TORCH, NOT A MARQUEE ────────────────────────────────────────
+   ⚠ REBUILT 2026-09-04. Gabriel: "I kinda hate the ring now - what if you add a
+   ring in a mask with a glow and you reveal that when you hover only in a
+   radius around that."
+
+   THE OLD ONE WAS A TRAVELLING ARC: a dashed stroke chasing itself around the
+   perimeter on two out-of-phase loops. Everything about it was correct except
+   the thing that matters - it moved ON ITS OWN SCHEDULE. A control that
+   animates to a clock is a control that is talking; a 1400px rectangle with a
+   light running round it reads as loading, or as an alert, and it does that
+   twenty-four times a minute whether or not anybody is looking at it.
+
+   THE TORCH ANSWERS TO THE POINTER INSTEAD. The whole ring is always drawn and
+   almost always invisible: a radial mask centred on the cursor reveals only the
+   stretch of rim near it. Move along the field and the light follows; leave and
+   it is gone. Nothing animates unless you are moving, which means the effect is
+   a RESPONSE rather than a performance - and a response is the one kind of
+   motion a reader never has to ignore.
+
+   ── THE LEAD-IN (Gabriel's pick of the variants) ───────────────────────────
+   The reveal does not wait for the pointer to arrive. `useTorch` listens at the
+   document and measures the distance from the cursor to the field's box, so the
+   radius opens as you approach and the rim is already lit by the time you get
+   there. That is the whole reason to prefer it over a plain `:hover` version:
+   hover tells you where you ARE, and this tells you where you are GOING - the
+   control acknowledges you a beat before you commit, which is what makes it
+   feel like the thing is listening rather than reacting.
+
+   Three variables do all of it, and they are all set from JS:
+     --m-torch-x / --m-torch-y  where the light is, in the field's own box
+     --m-torch-r                how far it reaches; 0 puts the ring away
+   ──────────────────────────────────────────────────────────────────────────── */
 .m-sc__ring {
   position: absolute;
-  /* Half the border outwards, so the path runs down the MIDDLE of the field's
-     own 1px rim rather than a pixel inside it. Inside, the two are a doubled
-     line; outside, the arc floats off the control. */
+  /* Half the border outwards, so the rim runs down the MIDDLE of the field's
+     own 1px edge rather than a pixel inside it. Inside, the two are a doubled
+     line; outside, the ring floats off the control. */
   inset: calc(var(--m-border-width) * -0.5);
   border-radius: inherit;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--m-duration-fast) var(--m-ease-out);
+  /* ⚠ THE MASK IS THE WHOLE EFFECT, so it lives on the element that holds both
+     passes rather than on each of them - one circle, one source of truth, and
+     the glow can never be lit where the rim is not.
+
+     The falloff is 1.9x the radius and not a hard stop: a hard-edged mask makes
+     a lit SEGMENT with two cut ends travelling around the box, which is the
+     marquee again by another route. Soft, it is a glow that happens to be
+     bounded by a rim. */
+  --m-torch-x: 50%;
+  --m-torch-y: 50%;
+  --m-torch-r: 0px;
+  -webkit-mask: radial-gradient(
+    circle at var(--m-torch-x) var(--m-torch-y),
+    #000 0,
+    #000 calc(var(--m-torch-r) * 0.35),
+    transparent calc(var(--m-torch-r) * 1.9)
+  );
+  mask: radial-gradient(
+    circle at var(--m-torch-x) var(--m-torch-y),
+    #000 0,
+    #000 calc(var(--m-torch-r) * 0.35),
+    transparent calc(var(--m-torch-r) * 1.9)
+  );
+  /* No transition on the mask itself - it follows the pointer and a lagging
+     light is a smear. The RADIUS is what eases, and it eases in JS. */
 }
 
 /* `overflow: visible` because a stroke is centred on its path, so half of it
    sits outside the box it is drawn on. Clipped, the ring would be half as
-   thick as it is on the long rims and a quarter of it missing at the corners. */
+   thick on the long rims and a quarter of it missing at the corners. */
 .m-sc__ring svg {
   display: block;
   width: 100%;
@@ -201,95 +293,62 @@
 }
 
 /* ── the two passes ──────────────────────────────────────────────────────────
-   ⚠ THE ENDS ARE A GRADIENT, NOT A CAP (Mehdi, 2026-09-02: "the edges of the
-   arc segments should be a gradient and the colour more subtle, you can even
-   add a glow"). A stroke cannot be given a gradient ALONG its own length in
-   CSS - `stroke` paints by position in the box, not by distance down the path -
-   so the softness comes from a blur instead, which is the same result by a
-   simpler route: a blurred cap has no edge, it has a falloff.
+   THE WHOLE PERIMETER, both of them, with no dash at all - the mask decides
+   what is visible, so the geometry stopped needing to. That is the simplification
+   the rebuild bought: `pathLength`, two keyframe sets, the dash arithmetic and
+   the phase-drift note all went, and what is left is two rectangles.
 
-   Two passes of the identical dash. The wide one is blurred hard and is the
-   glow; the narrow one is blurred just enough to lose its ends. They share the
-   keyframes, so they can never drift apart.
+   The wide one blurred hard is the glow; the narrow one barely blurred is the
+   rim, and its blur is what gives the mask's edge a falloff instead of an edge.
 
-   AND THE COLOUR IS HELD BACK. The arc is the accent at just over half
-   strength and the glow at a fifth - one accent per view is the rule here, and
-   this one is decoration on a control that is already the largest object on
-   the page. At full strength it read as a status. */
+   THE COLOUR IS HELD BACK. The rim is the accent at just over half strength and
+   the glow at a fifth: one accent per view is the rule here, and this is
+   decoration on a control that is already the largest object on the page. */
 .m-sc__ring rect {
   fill: none;
   stroke: var(--m-content-accent);
-  /* Round caps still, under the blur: a butt cap blurs into a straight faded
-     edge, which reads as a cut rather than as a falloff. */
   stroke-linecap: round;
-  /* THE ARC AND THE GAP, as percentages of the perimeter. It starts short. */
-  stroke-dasharray: 6 94;
   rx: var(--m-radius-control);
-  animation:
-    m-sc-travel 3.4s linear infinite,
-    m-sc-breathe 1.7s var(--m-ease-in-out) infinite alternate;
-  animation-play-state: paused, paused;
 }
 
 .m-sc__arc {
   stroke-width: 1.25;
-  opacity: 0.6;
+  opacity: 0.62;
   filter: blur(0.7px);
 }
 
 .m-sc__glow {
   stroke-width: 4;
-  opacity: 0.22;
+  opacity: 0.24;
   filter: blur(3.5px);
 }
 
-/* Round the loop, once. Negative, so it runs clockwise from the top-left the
-   way a rect path is drawn. */
-@keyframes m-sc-travel {
-  to { stroke-dashoffset: -100; }
-}
+/* ── FOCUS HAS NO POINTER ────────────────────────────────────────────────────
+   A torch is useless to somebody who arrived by keyboard: there is nothing to
+   centre it on, and a control whose only indicator is a mouse position is a
+   control with no focus indicator. So focus drops the mask entirely and takes
+   the whole perimeter, held still, in the focus colour.
 
-/* ⚠ THE ARC GROWS AND SHRINKS, which is the part that makes it read as alive
-   rather than as a marquee. The two ends move at different speeds because the
-   dash grows from one end - so the leading edge runs ahead, the trailing edge
-   catches up, and the loop never looks like a fixed object being dragged. The
-   period is deliberately not a divisor of the travel: at 3.4s and 1.7s exactly
-   they would land in phase every cycle and the whole thing would tick. */
-@keyframes m-sc-breathe {
-  from { stroke-dasharray: 6 94; }
-  to { stroke-dasharray: 30 70; }
-}
-
-.m-sc__field:hover .m-sc__ring { opacity: 1; }
-.m-sc__field:hover .m-sc__ring rect { animation-play-state: running, running; }
-
-/* Focus holds still, as the whole perimeter, in the focus colour. */
+   No blur and no glow: a focus ring is an indicator, not an effect, and the one
+   thing it has to be is exactly locatable. */
 .m-sc__field:focus-visible { outline: none; }
-.m-sc__field:focus-visible .m-sc__ring { opacity: 1; }
+.m-sc__field:focus-visible .m-sc__ring {
+  -webkit-mask: none;
+  mask: none;
+}
 .m-sc__field:focus-visible .m-sc__ring .m-sc__arc {
-  animation: none;
   stroke: var(--m-focus-ring);
-  stroke-dasharray: 100 0;
   stroke-width: 2;
   opacity: 1;
-  /* A focus ring is an indicator, not an effect: no blur and no glow, because
-     the one thing it has to be is exactly locatable. */
   filter: none;
 }
 .m-sc__field:focus-visible .m-sc__ring .m-sc__glow { display: none; }
 
-/* A ring that only exists as a movement is a ring that is not there for
-   somebody who has turned movement off. It becomes a plain accent rim. */
-@media (prefers-reduced-motion: reduce) {
-  .m-sc__ring rect {
-    animation: none;
-    stroke: var(--m-border-accent);
-    stroke-dasharray: 100 0;
-    filter: none;
-  }
-  .m-sc__ring .m-sc__glow { display: none; }
-  .m-sc__ring .m-sc__arc { opacity: 1; }
-}
+/* ⚠ REDUCED MOTION KEEPS THE TORCH, and that is not an oversight. The setting
+   is about motion that happens TO you; this moves only because your own hand
+   is moving, which is the same category as a cursor. What it drops is the
+   easing on the radius (see `useTorch`), so the light appears and goes rather
+   than swelling. */
 
 /* ── THE STRIP ───────────────────────────────────────────────────────────────
    It held Clear and nothing else - a whole row of height for one word at the
@@ -498,5 +557,92 @@
    rather than as the control. `git show` has them. */
 
 
-/* the two steps a search row takes off the well it is standing on */
-.m-sc { --m-srow-hover: var(--m-surface-default); }
+/* ⚠ A ROW HOVERS THE OTHER WAY SINCE THE INVERSION. It used to step UP towards
+   the plane because it stood on a sunken well; the section is the plane now, so
+   there is nowhere up to go and it steps in instead. Exactly the bug the nav
+   rows hit when the 08-28 shell moved the ground under them - a hover colour
+   that equals the surface it is on is a row that does not respond. */
+.m-sc { --m-srow-hover: var(--m-surface-canvas); }
+
+
+/* ── THE FIELD'S WRAPPER ─────────────────────────────────────────────────────
+   Exists so the fork has a box to grow out of: it is measured for the morph's
+   starting size and it is the containing block the fork positions against. It
+   is the field's own geometry and nothing else, so the bar's flex layout is
+   unchanged. */
+.m-sc__fieldwrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+/* ── THE EXAMPLE ─────────────────────────────────────────────────────────────
+   A little more muted than the lead it follows (Gabriel, 2026-09-04), because
+   the lead is the instruction and this is only an illustration of it. Same
+   size, same face - the difference is entirely in the ink, which is the
+   quietest way to say "and this part is an aside".
+
+   ⚠ ONE LINE, NO REFLOW. It is absolutely sized out of the flow's way by
+   `min-width: 0` on its parent and truncated rather than wrapped, so a long
+   example never makes the field taller mid-rotation. */
+.m-sc__eg {
+  color: var(--m-content-decorative);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: m-sc-eg-in var(--m-duration-slow) var(--m-ease-out) both;
+}
+
+@keyframes m-sc-eg-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-sc__eg { animation: none; }
+}
+
+/* ── A SECTION'S ADD ─────────────────────────────────────────────────────────
+   Production's own small "Add" beside each heading, and drawn as quietly as
+   that: it sits inside a heading, so it must not outweigh the heading. Text
+   and a plus at 11px, no fill until you point at it.
+
+   It is a real button and not a link because it opens a menu, and it keeps the
+   app's focus ring for the same reason everything else does. */
+.m-sc__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px var(--m-space-2);
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+  background: transparent;
+  border: var(--m-border-width) solid transparent;
+  border-radius: var(--m-radius-control);
+  cursor: pointer;
+  transition:
+    color var(--m-duration-fast) var(--m-ease-out),
+    background var(--m-duration-fast) var(--m-ease-out),
+    border-color var(--m-duration-fast) var(--m-ease-out);
+}
+
+.m-sc__add:hover {
+  color: var(--m-content-primary);
+  background: var(--m-surface-canvas);
+  border-color: var(--m-border-default);
+}
+
+/* THE HINT GOES TO THE FAR END, opposite the Add, so the two headings balance:
+   name and its Add on the left, the qualifier on the right. On the events
+   heading that right-hand slot is the order control. */
+.m-sc__head-hint { margin-inline-start: auto; }
+
+/* THE LIST'S CONTROLS, when the bar has retired and the strip is the top row.
+   Pushed to the right so they hold the same corner they held on the bar. */
+.m-sc__strip-trailing {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  margin-inline-start: auto;
+}

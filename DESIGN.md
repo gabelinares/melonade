@@ -5428,3 +5428,127 @@ three-column picker Gabriel proposed live stays rejected (*"for people it's
 going to be super confusing"*). The natural-language path stays parked behind
 `onTranslate`. **User and metadata are already the filter-only kinds** he named,
 so that cut needed no work.
+
+---
+
+## §37 — One door, two catalogues (2026-09-04)
+
+The 09-02 build read "have event and filters within a single button" as one
+button **and one list**, and merged production's two catalogues into a single
+scroll. Gabriel, 09-04: *"separate filter from events in a way that doesn't
+compromise the unified filter field… the list in the picker should stay exactly
+the same as it is currently in OpenReplay, undoing the merger we did into a
+single picker."*
+
+He is right, and the distinction is worth stating because it was the whole
+mistake: **the ask was about the entry point, not the catalogue.** One button is
+a claim about how many things are on the bar. It says nothing about what is
+inside them.
+
+### Where the kind gets decided
+
+There are only five places it can be decided — before the list, beside it,
+inside it, after the pick, or at the bar — and the option chosen is **before**,
+with one condition that makes it affordable.
+
+**The fork.** Clicking the field opens two cards: *Events* and *Group filters*,
+each with a sentence and its own glyph. Choosing one opens production's list for
+that kind, scoped exactly as `SessionFilters` scopes it (`eventOptions` /
+`propertyOptions`).
+
+**And the fork is only reachable on an empty search.** The standing objection to
+a fork step is that it charges a click on everything you ever add, forever, to
+teach a distinction an expert learned on day one. Here the bar retires the
+moment there is one rule, and each section grows its own **Add** — so the fork
+appears once per search, exactly when a reader is least oriented, and never gets
+in the way again.
+
+⚠ **Both section headings render once the search is non-empty**, even an empty
+one. An Add that appears only when its own section is already occupied is an Add
+you cannot reach until after you have used it. Production draws both for the
+same reason.
+
+**And this is not the two buttons Mehdi objected to.** His words were *"we have
+two buttons and people don't know right away what an event is, what a filter
+is."* Two buttons at the top of a card, before you have picked anything, **is** a
+question about vocabulary. The same two at the foot of the sections they fill are
+not a question at all — each is attached to the thing it makes, and the thing it
+makes is on screen above it.
+
+### The morph is the argument
+
+The fork does not fade in over the bar; **it is the bar, growing.** The surface
+starts at the bar's own measured width and height and moves to the panel's, then
+changes shape again into the catalogue. A popover that appears somewhere else
+has to be connected to its trigger by the reader; a shape that grows out of one
+does not.
+
+⚠ **Width and height are animated, which is normally the wrong choice** — a
+transform is cheaper and does not reflow. It is wrong here: a scaled box scales
+its own text and its own border, so a 13px label would arrive at 19px and
+shrink. One element, no siblings, 260ms, contents absolutely positioned so they
+are not laid out per frame. The rule of thumb does not apply when its reason
+does not.
+
+**The two glyphs are drawn rather than taken from lucide**, which is the one
+place in this app where that is right. Lucide has a funnel and a mouse pointer;
+both name the *control*, and neither says the thing these cards exist to say,
+which is a difference in **scope**. So the sequence is three steps on a rising
+stair, joined; the group is a brace gathering three lines.
+
+### The ring is a torch now
+
+Gabriel: *"I kinda hate the ring now — what if you add a ring in a mask with a
+glow and you reveal that when you hover only in a radius around that."*
+
+The travelling arc was correct in every way except the one that mattered: **it
+moved on its own schedule.** A 1400px rectangle with a light running round it
+reads as loading, or as an alert, twenty-four times a minute whether or not
+anybody is looking.
+
+The rim is whole and always drawn; a radial mask centred on the pointer reveals
+only the stretch near it. **With a lead-in** (his pick of the variants): the
+radius opens as you *approach*, driven by distance to the box rather than by
+entering it, so the rim is lit before you land. Hover tells you where you are;
+distance tells you where you are going.
+
+That deleted more than it added — `pathLength`, two keyframe sets, the dash
+arithmetic and the phase-drift note all went. What is left is two rectangles and
+a mask.
+
+⚠ **Focus has no pointer**, so focus drops the mask entirely and takes the whole
+rim, held still. A control whose only indicator is a mouse position is a control
+with no focus indicator, which is the trap every reveal-on-hover effect sets.
+
+The document-level listener is the part to be careful with: it stores
+coordinates and nothing else, one rAF loop does the geometry and **parks itself**
+when the light is out, the box is measured on wake rather than per move, and the
+result is three custom properties.
+
+### The ground is inverted
+
+Gabriel: *"I don't like the background of the section, it seems really
+disconnected — I think we should invert, brighter background on the back."*
+
+A grey band cut across a white plane does read as a slab from another document:
+it shares no edge with the table under it, and it is the only large grey shape on
+the page. So the section takes the plane's own ground and **the field carries the
+tint** — the ordinary way round for a form. The filter and its results are one
+surface now, and the fill is on the one shape you act on. A row's hover had to
+flip with it: it used to step *up* toward the plane off a sunken well, and now
+steps in.
+
+### Two smaller moves
+
+**The examples came back, as a different thing.** The 09-02 pair rotated prose
+you were invited to type, and came out the same day because the field cannot read
+a sentence. These sit after the word *like* and are **specimens** of what a
+filter can say — you read one and click, you never type it — so the promise is
+true and the field stays a button. Quieter than the lead, because the lead is the
+instruction and this is an illustration of it.
+
+**Save as segment moved to the strip, beside Clear.** In the page header it lived
+among controls that are always available while it is only usable once there are
+rules, so it spent most of its life greyed out explaining that you had not built
+a filter yet. The strip exists only when the filter does. It also puts the two
+verbs that dispose of a filter side by side: keep this, or throw it away.

@@ -1,0 +1,153 @@
+/* ── THE FORK: ONE SURFACE, THREE SHAPES ─────────────────────────────────────
+   The bar, the two cards, and the catalogue are the same object at three sizes.
+   It is absolutely positioned over the bar's own box and starts at that box's
+   measured width and height, so the first painted frame is indistinguishable
+   from the bar it covers - then it grows.
+
+   ⚠ WIDTH AND HEIGHT ARE ANIMATED, WHICH IS NORMALLY THE WRONG CHOICE. A
+   transform is cheaper and does not reflow. It is wrong here: a scaled box
+   scales its own text and its own border, so the 13px label would arrive at
+   19px and shrink, and the hairline would thicken. This box is one element with
+   no siblings to push around, it animates for 260ms, and the content inside it
+   is absolutely positioned so it is not laid out again per frame. Correctness
+   beats the rule of thumb when the rule's reason does not apply. */
+.m-fork {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 20;
+  width: var(--m-fork-w0, 100%);
+  height: var(--m-fork-h0, 40px);
+  overflow: hidden;
+  background: var(--m-surface-default);
+  border: var(--m-border-width) solid var(--m-border-default);
+  border-radius: var(--m-radius-surface);
+  box-shadow: var(--m-shadow-popover);
+  transition:
+    width var(--m-duration-slow) var(--m-ease-out),
+    height var(--m-duration-slow) var(--m-ease-out),
+    border-radius var(--m-duration-slow) var(--m-ease-out);
+}
+
+/* THE TWO GROWN SHAPES. The fork is as wide as it needs to be for two cards
+   side by side and no wider - a 1400px bar morphing into a 1400px card pair
+   would put 600px of nothing between a heading and its own text. */
+.m-fork.is-grown { width: 33rem; height: 11.5rem; }
+.m-fork.is-grown.is-events,
+.m-fork.is-grown.is-filters { width: 33rem; height: 23.75rem; }
+
+/* The panels are absolutely positioned so the growing box does not re-lay-out
+   its contents sixty times a second, and so the two stages can cross-fade in
+   the same space rather than pushing each other. */
+.m-fork__cards,
+.m-fork > .m-pick {
+  position: absolute;
+  inset: 0;
+  animation: m-fork-in var(--m-duration-slow) var(--m-ease-out) both;
+}
+
+@keyframes m-fork-in {
+  from { opacity: 0; }
+  /* Held at nothing for the first third: the content arrives once the box is
+     mostly the right size, so it is never seen squeezed into a bar. */
+  35% { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.m-fork__cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--m-space-3);
+  padding: var(--m-space-4);
+}
+
+/* ── A CARD ──────────────────────────────────────────────────────────────────
+   A target, not a menu row: this is a choice between two ideas, and the two
+   ideas need a sentence each. Left-aligned, because the blurb is prose and
+   centred prose is a poster. */
+.m-fork__card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--m-space-2);
+  padding: var(--m-space-4);
+  text-align: start;
+  background: var(--m-surface-canvas);
+  border: var(--m-border-width) solid transparent;
+  border-radius: var(--m-radius-surface);
+  cursor: pointer;
+  transition: background var(--m-duration-fast) var(--m-ease-out);
+}
+
+/* ── THE GRADIENT OUTLINE ────────────────────────────────────────────────────
+   ⚠ A MASKED PSEUDO-ELEMENT, because `border-image` cannot take a radius and a
+   gradient border drawn as a background needs the middle punched out. Two
+   backgrounds on one layer, `xor`-composited: the padding box is subtracted
+   from the border box, which leaves exactly the 1px frame.
+
+   It is the only gradient in the app and it is spent here on purpose: this is
+   the one moment a reader is choosing between two things they may not yet
+   understand, so the card that is under the cursor should be unmistakable. It
+   is a HOVER state and never a resting one - a page of gradient-outlined cards
+   is a page with no hierarchy at all. */
+.m-fork__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--m-border-width);
+  background: linear-gradient(
+    135deg,
+    var(--m-border-accent) 0%,
+    var(--m-content-accent) 42%,
+    var(--m-border-default) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--m-duration-fast) var(--m-ease-out);
+  pointer-events: none;
+}
+
+.m-fork__card:hover { background: var(--m-surface-hover); }
+.m-fork__card:hover::before,
+.m-fork__card:focus-visible::before { opacity: 1; }
+.m-fork__card:focus-visible { outline: none; }
+
+.m-fork__glyph {
+  display: inline-flex;
+  color: var(--m-content-secondary);
+  margin-block-end: var(--m-space-1);
+}
+.m-fork__card:hover .m-fork__glyph { color: var(--m-content-accent); }
+
+.m-fork__head {
+  font-size: var(--m-text-sm);
+  font-weight: var(--m-weight-medium);
+  color: var(--m-content-primary);
+}
+
+.m-fork__blurb {
+  font-size: var(--m-text-xs);
+  line-height: 1.45;
+  color: var(--m-content-muted);
+}
+
+/* THE SAME THREE STAGES WITH NO INTERPOLATION. The morph is the argument, but
+   an argument nobody asked to watch should not be forced on them. */
+@media (prefers-reduced-motion: reduce) {
+  .m-fork,
+  .m-fork__cards,
+  .m-fork > .m-pick {
+    transition: none;
+    animation: none;
+  }
+}

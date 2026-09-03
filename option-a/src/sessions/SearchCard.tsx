@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Select, Tooltip } from 'antd';
 import { ListFilter } from 'lucide-react';
 import {
+  catalogueNow,
   describeRules,
   type CatalogueEntry,
   type EventsOrder,
@@ -9,10 +10,12 @@ import {
   type SessionRow,
 } from '@shared/sessions-logic.ts';
 import { noNativeTooltip } from '../components/selectOptions.ts';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus } from 'lucide-react';
 import { FilterPicker } from './FilterPicker.tsx';
+import { FilterFork } from './FilterFork.tsx';
 import { SearchRow } from './SearchRow.tsx';
 import { useFilterCollapse } from './useFilterCollapse.ts';
+import { useTorch } from './useTorch.ts';
 import { EVENTS_HEAD, GROUP_HEAD, GROUP_SCOPE } from './vocabulary.ts';
 import './search-card.css';
 
@@ -36,14 +39,14 @@ import './search-card.css';
    The field says what it does and nothing else. A control that promises a
    sentence and cannot read one is worse than a plain button, which is the
    whole reason this line is now four words long. */
-const LEAD = 'Filter these sessions';
+const LEAD = 'Filter the recordings and save search segments, like';
 
 /** ⚠ THE SAME COPY IN THE SEGMENT DRAWER, in that drawer's own words. It is
  *  the same control doing the same job, so it says the same thing - but "these
  *  sessions" points at a list, and in a drawer there is no list to point at:
  *  you are saying which sessions the segment will hold. One word changes and
  *  the sentence keeps its shape. */
-const LEAD_PANEL = 'Filter the sessions this segment holds';
+const LEAD_PANEL = 'Say which recordings this segment holds, like';
 
 
 const ORDER_OPTIONS: ReadonlyArray<{ value: EventsOrder; label: string; hint: string }> = [
@@ -93,6 +96,14 @@ export interface SearchCardProps {
    *  is the same complaint the sticky came out of. A slot rather than props,
    *  because the search has no business knowing what a date range is. */
   trailing?: ReactNode;
+  /** Saving the current rules as a segment. It rides the STRIP, beside Clear
+   *  (Gabriel, 2026-09-04) - and the strip is the right home for it because the
+   *  strip exists only when there are rules to save. In the page header it was
+   *  a control that spent most of its life disabled, explaining in a tooltip
+   *  that you had not built a filter yet; here it cannot be reached before it
+   *  is true. The two verbs also belong together: this row is where you keep
+   *  what you built and where you throw it away. */
+  saveAction?: ReactNode;
   /**
    * `page` is the sessions list's own filter: it sticks, it collapses itself as
    * you scroll into the results, and it carries the list's controls on its bar.
@@ -174,8 +185,10 @@ export function SearchCard({
   rows,
   resultCount,
   trailing,
+  saveAction,
   variant = 'page',
 }: SearchCardProps) {
+  const [fork, setFork] = useState(false);
   const [drag, setDrag] = useState<{ from: number; over: number | null; at: 'top' | 'bottom' | null }>({
     from: -1,
     over: null,
@@ -183,6 +196,11 @@ export function SearchCard({
   });
 
   const any = events.length > 0 || properties.length > 0;
+  /* The ring answers to the pointer rather than to a clock, and only while the
+     bar exists - once there is a rule the bar retires and the listener with
+     it, so a page of results is not measuring pointer distance to a control
+     that is not on it. See useTorch. */
+  const torch = useTorch(!any);
   const takenProperties = properties.map((f) => f.entryId);
   const rowCount = events.length + properties.length;
   const inPanel = variant === 'panel';
@@ -220,54 +238,82 @@ export function SearchCard({
           signal, and this control narrows a list rather than searching a
           corpus.
 
-          THE RING is the one piece of expression here. It sweeps around the
-          field on hover and on focus - a slow conic pass, mostly the border's
-          own grey with a single accent arc in it - because this field is where
-          the agent will live, and a control that is about to start answering
-          questions should look like it is listening. Not on at rest: a
-          permanently animated border is a page you cannot read.
+          THE RING is the one piece of expression here, and since 09-04 it
+          answers to the pointer rather than to a clock: the whole rim is drawn
+          and a radial mask reveals only the stretch near your cursor, opening
+          as you APPROACH rather than when you land. A control that animates on
+          its own schedule is a control that is talking; one that lights where
+          your hand is going is one that is listening. Nothing at rest, nothing
+          moving unless you are.
 
           Still a `<button>`, because it opens a menu and holds no text of its
           own. It is DRAWN as a field. */}
+      {/* ── THE BAR RETIRES ONCE THE SEARCH HAS SOMETHING IN IT ─────────────
+          (Gabriel, 2026-09-04: "after the filter and event was added there
+          should also exist the two adds in their sections, so the user doesn't
+          need to click at the bar again - actually the bar vanishes and only
+          appears after deleting or clearing.")
+
+          It is the right trade and it is what makes the FORK affordable. A
+          fork step charges a click every time you add anything, which is the
+          standing objection to one; here it is charged once, on the empty
+          search, when a reader is least oriented - and from the second clause
+          on you add from the section you are adding TO, which is nearer, more
+          specific and needs no choice made in advance.
+
+          ⚠ THE DATE RANGE AND THE DISPLAY MENU DO NOT RETIRE WITH IT. They are
+          the LIST's controls riding the search's bar, and they move down to the
+          strip, which becomes the top row of the well the moment the bar goes.
+          So they hold the same corner of the same surface either way: nothing
+          about the window moves when you add your first filter. */}
+      {!any && (
       <div className="m-sc__bar">
-        {/* ⚠ NO `onTranslate`. That one prop is the sentence path's only switch
-            (see FilterPicker), so the feature is off and intact. */}
-        <FilterPicker taken={takenProperties} onPick={onAdd}>
+        <div className="m-sc__fieldwrap">
           <button
             type="button"
             className="m-sc__field"
+            onClick={() => setFork(true)}
+            aria-expanded={fork}
+            aria-haspopup="dialog"
             aria-label={lead}
           >
-            {/* ⚠ AN SVG STROKE, not a gradient (Mehdi, 2026-09-02: "the ring
-                should be a circle, and have a nice modern effect of increasing
-                and decreasing the size of the arc"). A dash on a stroked path
-                is measured in ARC LENGTH, which is the only model that treats
-                a 1400x40 rectangle as a loop: the arc is the same length on
-                the long rims and the end caps, it travels the whole perimeter,
-                and its length is a number that can be animated on its own. The
-                two gradients that came before could not do either - a conic
-                one divides by angle, a linear one only moves sideways.
-
-                `pathLength="100"` normalises the perimeter, so the dash figures
-                below are percentages of the loop and hold at any field width. */}
-            <span className="m-sc__ring" aria-hidden="true">
+            {/* ⚠ STILL AN SVG STROKE rather than a border, and now for one
+                reason rather than three: a stroke can be blurred without
+                blurring what it surrounds, and the glow is half the effect.
+                The dash, the arc length and the `pathLength` normalisation all
+                went with the travelling animation they served. */}
+            <span className="m-sc__ring" ref={torch as React.RefObject<HTMLSpanElement>} aria-hidden="true">
               <svg>
-                {/* TWO PASSES OF ONE ARC. The wide, heavily blurred one is the
-                    glow; the narrow, barely blurred one is the arc itself, and
-                    its blur is what gives the ends a gradient instead of a
-                    cap. Same dash, same keyframes, so they cannot drift. */}
-                <rect className="m-sc__glow" x="0" y="0" width="100%" height="100%" rx="4" pathLength="100" />
-                <rect className="m-sc__arc" x="0" y="0" width="100%" height="100%" rx="4" pathLength="100" />
+                {/* TWO PASSES OF THE WHOLE PERIMETER. The wide, heavily
+                    blurred one is the glow; the narrow, barely blurred one is
+                    the rim. Neither is dashed any more - the MASK decides what
+                    is visible, so the geometry stopped needing to, and
+                    `pathLength` went with the dash arithmetic it existed for. */}
+                <rect className="m-sc__glow" x="0" y="0" width="100%" height="100%" rx="4" />
+                <rect className="m-sc__arc" x="0" y="0" width="100%" height="100%" rx="4" />
               </svg>
             </span>
             <ListFilter size={16} className="m-sc__field-glyph" aria-hidden="true" />
             <span className="m-sc__field-text" aria-hidden="true">
               <span className="m-sc__lead">{lead}</span>
+              <RotatingExample />
             </span>
           </button>
-        </FilterPicker>
+          {/* ⚠ NO `onTranslate` ANYWHERE. That one prop is the sentence path's
+              only switch, so the parked feature stays parked and intact. */}
+          <FilterFork
+            open={fork}
+            onClose={() => setFork(false)}
+            onPick={(e) => {
+              onAdd(e);
+              setFork(false);
+            }}
+            taken={takenProperties}
+          />
+        </div>
         {trailing}
       </div>
+      )}
 
       {/* ── THE STRIP: WHAT THE FILTER SAYS, AND HOW TO PUT IT AWAY ──────────
           It used to hold Clear and nothing else, which is a whole row of height
@@ -322,6 +368,12 @@ export function SearchCard({
               a relationship BETWEEN THE EVENT ROWS, so it belongs over them
               rather than in a summary bar that also speaks for the group
               filters below. See `m-sc__head` in the list. */}
+          {/* The list's controls, on whichever row is the top one. See the
+              note above the bar. */}
+          <span className="m-sc__strip-trailing">{trailing}</span>
+
+          {saveAction}
+
           <Button type="text" size="small" className="m-sc__clear" onClick={onClear}>
             Clear
           </Button>
@@ -358,46 +410,55 @@ export function SearchCard({
           be false, since there would be no events for it to apply to. */}
       {any && !collapsed ? (
         <div className="m-sc__list" id="m-sc-rows">
-          {events.length > 0 && (
-            <div className="m-sc__head">
-              <span className="m-sc__head-name">{EVENTS_HEAD}</span>
-              {/* TWO events, not one: with a single event there is no gap for
-                  an operator to sit in, and a control that cannot change the
-                  result is a control that teaches you to ignore controls. */}
-              {events.length > 1 && (
-                <span className="m-sc__order">
-                  <Tooltip title="How the events relate to each other, across the whole search.">
-                    <span className="m-sc__order-label">matching</span>
-                  </Tooltip>
-                  <Select
-                    className="m-sc__order-select"
-                    size="small"
-                    variant="borderless"
-                    popupMatchSelectWidth={false}
-                    value={eventsOrder}
-                    onChange={onEventsOrder}
-                    options={noNativeTooltip(
-                      ORDER_OPTIONS.map((o) => ({
-                        value: o.value,
-                        label: (
-                          <span className="m-sc__order-option">
-                            <span>{o.label}</span>
-                            <span className="m-sc__order-hint">{o.hint}</span>
-                          </span>
-                        ),
-                      })),
-                    )}
-                    /* The closed control shows the word alone; the open list
-                       shows the word and what it means. A dropdown whose closed
-                       state repeats its own explanation is a dropdown twice as
-                       wide as it needs to be. */
-                    labelRender={({ value }) => <span>{String(value)}</span>}
-                    aria-label="How the events relate"
-                  />
-                </span>
-              )}
-            </div>
-          )}
+          {/* ⚠ BOTH HEADINGS, ALWAYS, once the search has anything in it -
+              and that changed on 09-04 for a reason that is structural rather
+              than aesthetic. Each heading now owns the ADD for its own kind,
+              and a heading that appears only when its section is already
+              occupied is an Add you cannot reach until you have already used
+              it. Production shows both for exactly this reason.
+
+              This is also where the fork's cost goes away: you never choose a
+              kind in the abstract again, you point at the section you want the
+              thing to land in. */}
+          <div className="m-sc__head">
+            <span className="m-sc__head-name">{EVENTS_HEAD}</span>
+            <AddTo kind="events" taken={takenProperties} onPick={onAdd} />
+            {/* TWO events, not one: with a single event there is no gap for an
+                operator to sit in, and a control that cannot change the result
+                is a control that teaches you to ignore controls. */}
+            {events.length > 1 && (
+              <span className="m-sc__order">
+                <Tooltip title="How the events relate to each other, across the whole search.">
+                  <span className="m-sc__order-label">matching</span>
+                </Tooltip>
+                <Select
+                  className="m-sc__order-select"
+                  size="small"
+                  variant="borderless"
+                  popupMatchSelectWidth={false}
+                  value={eventsOrder}
+                  onChange={onEventsOrder}
+                  options={noNativeTooltip(
+                    ORDER_OPTIONS.map((o) => ({
+                      value: o.value,
+                      label: (
+                        <span className="m-sc__order-option">
+                          <span>{o.label}</span>
+                          <span className="m-sc__order-hint">{o.hint}</span>
+                        </span>
+                      ),
+                    })),
+                  )}
+                  /* The closed control shows the word alone; the open list
+                     shows the word and what it means. A dropdown whose closed
+                     state repeats its own explanation is a dropdown twice as
+                     wide as it needs to be. */
+                  labelRender={({ value }) => <span>{String(value)}</span>}
+                  aria-label="How the events relate"
+                />
+              </span>
+            )}
+          </div>
           {events.map((f, i) => (
             <SearchRow
               key={f.key}
@@ -422,21 +483,19 @@ export function SearchCard({
             />
           ))}
 
-          {/* Production's own Divider, and only when there is something on both
-              sides of it. */}
-          {events.length > 0 && properties.length > 0 && <hr className="m-sc__rule" />}
+          {/* Production's own Divider between its two sections. Unconditional
+              now, because both sections are. */}
+          <hr className="m-sc__rule" />
 
-          {properties.length > 0 && (
-            <div className="m-sc__head">
-              <span className="m-sc__head-name">{GROUP_HEAD}</span>
-              {/* ⚠ THE SCOPE, PRINTED, and only when it is true. With no events
-                  above there is nothing for a group filter to apply TO, and a
-                  line saying otherwise would be the caption teaching the wrong
-                  model - which is the failure this whole section exists to
-                  stop. */}
-              {events.length > 0 && <span className="m-sc__head-hint">{GROUP_SCOPE}</span>}
-            </div>
-          )}
+          <div className="m-sc__head">
+            <span className="m-sc__head-name">{GROUP_HEAD}</span>
+            <AddTo kind="filters" taken={takenProperties} onPick={onAdd} />
+            {/* ⚠ THE SCOPE, PRINTED, and only when it is true. With no events
+                above there is nothing for a group filter to apply TO, and a
+                line saying otherwise would be the caption teaching the wrong
+                model - which is the failure this section exists to stop. */}
+            {events.length > 0 && <span className="m-sc__head-hint">{GROUP_SCOPE}</span>}
+          </div>
 
           {properties.map((f) => (
             <SearchRow
@@ -468,5 +527,85 @@ export function SearchCard({
         {describeRules(events, properties, eventsOrder)}
       </p>
     </section>
+  );
+}
+
+/**
+ * A SECTION'S OWN ADD. Production has exactly this - `FilterSelection` wrapping
+ * a small "Add" beside each heading - and the 09-02 build deleted both when it
+ * merged the two buttons on the bar.
+ *
+ * ⚠ THE TWO ARE NOT BACK SIDE BY SIDE, which is what Mehdi objected to: "we
+ * have two buttons and people don't know right away what an event is, what a
+ * filter is." Two buttons at the top of a card, before you have picked
+ * anything, IS a question about vocabulary. The same two buttons at the foot of
+ * the sections they fill are not a question at all - each one is attached to
+ * the thing it makes, and the thing it makes is on screen above it.
+ */
+function AddTo({
+  kind,
+  taken,
+  onPick,
+}: {
+  kind: 'events' | 'filters';
+  taken: readonly string[];
+  onPick: (entry: CatalogueEntry) => void;
+}) {
+  /* ⚠ THE CATALOGUE, RECUT to production's own two lists (`eventOptions` /
+     `propertyOptions` in `SessionFilters`). With one kind in it the picker
+     draws no kind heading, because there is nothing to disambiguate. */
+  const entries = catalogueNow().filter((e) => (kind === 'events' ? e.isEvent : !e.isEvent));
+  const what = kind === 'events' ? 'event' : 'group filter';
+  return (
+    <FilterPicker
+      entries={entries}
+      taken={taken}
+      onPick={onPick}
+      placeholder={kind === 'events' ? 'Search events' : 'Search group filters'}
+    >
+      <button type="button" className="m-sc__add" aria-label={`Add ${what}`}>
+        <Plus size={12} aria-hidden="true" />
+        <span>Add</span>
+      </button>
+    </FilterPicker>
+  );
+}
+
+/* ── THE EXAMPLES ─────────────────────────────────────────────────────────────
+   ⚠ THEY CAME BACK ON 09-04, AND THEY ARE NOT WHAT THEY WERE. The 09-02 version
+   rotated prose you were invited to TYPE - "paid users who hit an error" - and
+   it came out the same day because the field could not read a sentence. A
+   placeholder that promises a feature the control does not have is the one kind
+   of copy that is worse than none.
+
+   These are the other thing: not input hints but SPECIMENS of what a filter can
+   say, sitting after the word "like". You never type them; you read one, learn
+   that this control expresses that sort of thing, and click. So the promise is
+   true, and the field stays a button.
+
+   A little more muted than the lead (Gabriel, 09-04), because the lead is the
+   instruction and the example is only an illustration of it. */
+const EXAMPLES: readonly string[] = [
+  'rage clicks on /checkout',
+  'paid accounts in France',
+  'sessions over three minutes',
+  'an error after checkout_start',
+  'mobile users who saw the new pricing',
+];
+const EXAMPLE_EVERY = 4200;
+
+function RotatingExample() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI((n) => (n + 1) % EXAMPLES.length), EXAMPLE_EVERY);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    /* Keyed so the fade restarts on each change; `aria-hidden` because the
+       button's own label already says what it does and a rotating example read
+       aloud every four seconds is a control nobody can use. */
+    <span className="m-sc__eg" key={i}>
+      {EXAMPLES[i]}
+    </span>
   );
 }

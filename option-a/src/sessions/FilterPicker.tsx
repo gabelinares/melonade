@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type ReactElement, type ReactNode } from 're
 import { Button, Input, Popover } from 'antd';
 import {
   ALargeSmall,
+  ChevronLeft,
   Flag,
   Hash,
   List,
@@ -77,6 +78,17 @@ export interface FilterPickerProps {
   children: ReactElement;
 }
 
+export interface PickerBodyProps extends Omit<FilterPickerProps, 'children'> {
+  /** Called when the body has finished - a pick, a sentence, or Escape. The
+   *  Popover form closes itself; the FORK form morphs back to the bar. */
+  onDone?: () => void;
+  /** Drawn as a back arrow beside the search field. Only the fork passes one:
+   *  in a Popover there is nothing to go back TO. */
+  onBack?: () => void;
+  /** What the back arrow returns to, named. */
+  backLabel?: string;
+}
+
 /**
  * ════════════════════════════════════════════════════════════════════════════
  * THE ONE PICKER — Mehdi, 2026-09-02: "add the event and filter button as a
@@ -117,7 +129,7 @@ export interface FilterPickerProps {
  * output you cannot correct is a search box you cannot trust.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function FilterPicker({
+export function PickerBody({
   entries = catalogueNow(),
   taken = [],
   onPick,
@@ -125,9 +137,10 @@ export function FilterPicker({
   initialCategory,
   placeholder = 'An event, a property, or a sentence',
   note,
-  children,
-}: FilterPickerProps) {
-  const [open, setOpen] = useState(false);
+  onDone,
+  onBack,
+  backLabel,
+}: PickerBodyProps) {
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState<string>(initialCategory ?? ALL);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -170,9 +183,9 @@ export function FilterPicker({
   const offerNL = nl != null;
 
   const close = () => {
-    setOpen(false);
     setQuery('');
     setCat(initialCategory ?? ALL);
+    onDone?.();
   };
 
   const pick = (e: CatalogueEntry) => {
@@ -189,6 +202,16 @@ export function FilterPicker({
   const content = (
     <div className="m-pick" role="menu">
       <div className="m-pick__search">
+        {onBack && (
+          <button
+            type="button"
+            className="m-pick__back"
+            onClick={onBack}
+            aria-label={backLabel ? `Back to ${backLabel}` : 'Back'}
+          >
+            <ChevronLeft size={14} aria-hidden="true" />
+          </button>
+        )}
         <Input
           autoFocus
           variant="borderless"
@@ -356,12 +379,27 @@ export function FilterPicker({
     </div>
   );
 
+  return content;
+}
+
+/**
+ * THE SAME BODY IN A POPOVER, which is how the EVENT ROW uses it - the funnel
+ * and the subject both hang a small menu off a control in a row.
+ *
+ * ⚠ THE SESSION BAR NO LONGER USES THIS. It opens `FilterFork`, which hosts the
+ * same `PickerBody` on a surface that morphs out of the bar itself, so the bar,
+ * the fork and the catalogue are one continuous object rather than three
+ * overlapping panels. Two hosts, one body: the alternative was a lookalike, and
+ * a lookalike is how the row's picker and the bar's picker drift apart.
+ */
+export function FilterPicker({ children, ...rest }: FilterPickerProps) {
+  const [open, setOpen] = useState(false);
   return (
     <Popover
-      content={content}
+      content={<PickerBody {...rest} onDone={() => setOpen(false)} />}
       trigger="click"
       open={open}
-      onOpenChange={(o) => (o ? setOpen(true) : close())}
+      onOpenChange={setOpen}
       placement="bottomLeft"
       arrow={false}
       rootClassName="m-pick-root"

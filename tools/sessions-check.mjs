@@ -80,10 +80,12 @@ const shell = await p.evaluate(() => ({
   columns: [...document.querySelectorAll('.m-ss__table th')].map((e) => e.textContent.trim()).filter(Boolean),
   rows: document.querySelectorAll('.m-ss__table tbody tr').length,
   foot: document.querySelector('.m-listfoot__range')?.textContent,
-  /* the search is a well, not a card: it steps DOWN from the plane, because the
-     plane is already the only surface (the 08-28 shell) */
+  /* ⚠ INVERTED 2026-09-04: the section takes the plane's own ground and the
+     FIELD carries the tint. See the note on `.m-sc`. */
   searchBg: getComputedStyle(document.querySelector('.m-sc')).backgroundColor,
   planeBg: getComputedStyle(document.querySelector('.m-page')).backgroundColor,
+  fieldBg: getComputedStyle(document.querySelector('.m-sc__field')).backgroundColor,
+  tableBg: getComputedStyle(document.querySelector('.m-ss__table')).backgroundColor,
 }));
 check('the page renders with the shell every other page uses',
   shell.title === 'Sessions' && shell.tabs.length === 3,
@@ -144,8 +146,18 @@ const sorters = await p.evaluate(() =>
 check('and only the two columns the backend can order carry a sorter',
   sorters.length === 2 && sorters.includes('Started') && sorters.includes('Events'),
   sorters.join(' | '));
-check('the search is a well rather than a second card on the plane',
-  shell.searchBg !== shell.planeBg, `${shell.searchBg} in ${shell.planeBg}`);
+/* ⚠ THE INVERSION (Gabriel, 2026-09-04: "I don't like the background of the
+   section, it seems really disconnected - I think we should invert, brighter
+   background on the back"). The filter used to be a grey band cut across a
+   white plane, which read as a slab from another document: it shared no edge
+   with the table under it and it was the only large grey shape on the page.
+
+   Now the section shares the plane's ground and the FIELD is the tinted thing -
+   the ordinary way round for a form, and it puts the fill on the one shape here
+   you actually act on. */
+check('the filter section shares its ground with the plane, and the field carries the tint',
+  shell.searchBg === shell.planeBg && shell.fieldBg !== shell.searchBg,
+  `section ${shell.searchBg} on plane ${shell.planeBg}, field ${shell.fieldBg}`);
 
 /* THE FIGURES LINE UP. The card could not do this and it is the reason for the
    table: three columns, one face, one right edge each. */
@@ -174,19 +186,37 @@ check('every figure in a column shares one left edge and one face',
   `${figs.n} cells, ${figs.lefts} edge, ${figs.numeric}`);
 
 /* ── 2. ONE BUTTON ───────────────────────────────────────────────────────────
-   The claim, and the whole reason this is a cheap change: one picker holds both
-   kinds, so nobody has to know which kind a thing is before looking for it. */
+   Mehdi's ask, and the one part of the search that survived every revision:
+   "have event and filters within a single button." One control on the bar, and
+   the two kinds are told apart AFTER it rather than before. */
 check('there is exactly ONE way into the filter, and it is a field',
   (await p.locator('.m-sc__field').count()) === 1
-    && /Filter these sessions/.test((await p.locator('.m-sc__lead').textContent()) ?? ''),
+    && /^Filter/.test(((await p.locator('.m-sc__lead').textContent()) ?? '').trim()),
   (await p.locator('.m-sc__field-text').textContent()) ?? 'no field');
-/* ⚠ AND IT PROMISES NOTHING IT CANNOT DO. The natural-language path is PARKED,
-   not deleted (Mehdi, 2026-09-02: it is a feature OpenReplay shipped and
-   removed, so putting it back is out of scope) - `onTranslate` is the one prop
-   that gates it and the card stopped passing it. What this asserts is that the
-   promise went with it: no rotating example, and no offer to read a sentence. */
-check('and it no longer promises prose it cannot read',
-  (await p.locator('.m-sc__eg').count()) === 0, 'no rotating example');
+
+/* ⚠ THE EXAMPLES ARE BACK AND THEY ARE A DIFFERENT THING (Gabriel, 09-04). The
+   09-02 pair rotated prose you were invited to TYPE, and they came out the same
+   day because the field cannot read a sentence. These sit after the word "like"
+   and are SPECIMENS of what a filter can say - you read one and click, you
+   never type it - so the promise is true and the field stays a button.
+
+   The natural-language path is still parked: `onTranslate` is its one switch
+   and nothing passes it. That is asserted separately, below. */
+const eg = await p.evaluate(() => {
+  const el = document.querySelector('.m-sc__eg');
+  const lead = document.querySelector('.m-sc__lead');
+  if (!el || !lead) return null;
+  return {
+    text: el.textContent.trim(),
+    /* "a little more muted" than the lead it follows */
+    ink: getComputedStyle(el).color,
+    leadInk: getComputedStyle(lead).color,
+    ends: /like$/.test(lead.textContent.trim()),
+  };
+});
+check('the lead ends on "like" and an example follows it, quieter than the lead',
+  !!eg && eg.ends && eg.text.length > 6 && eg.ink !== eg.leadInk,
+  `${eg?.text} — ${eg?.ink} against ${eg?.leadInk}`);
 /* ⚠ NOT A SEARCH BAR AND NOT CALLED SEARCH (Gabriel, 2026-09-02). The magnifier
    is the search signal, so it is a filter glyph; and no word a reader sees says
    "search". */
@@ -195,35 +225,107 @@ const words = await p.evaluate(() => {
   const glyph = nav.querySelector('.m-sc__field-glyph');
   return {
     glyph: glyph?.classList.contains('lucide-list-filter') || glyph?.getAttribute('class') || '',
-    saysSearch: /search/i.test(nav.textContent ?? ''),
+    lead: nav.querySelector('.m-sc__lead')?.textContent?.trim() ?? '',
+    all: nav.textContent ?? '',
     labels: [...nav.querySelectorAll('[aria-label]')].map((e) => e.getAttribute('label') ?? e.getAttribute('aria-label')).join(' | '),
   };
 });
-check('nothing a reader sees calls it search', !words.saysSearch && !/search/i.test(words.labels),
-  words.saysSearch ? 'the card prints the word' : words.labels.slice(0, 90));
+/* ⚠ RELAXED 2026-09-04, and only in one direction. The rule was that no word a
+   reader sees says "search"; the copy Gabriel asked for says "save search
+   segments", where "search" is the NOUN for the saved thing rather than the
+   name of this control. So what is asserted now is the part that always
+   mattered: the control's own verb is Filter, and nothing invites you to
+   search the sessions. */
+check('the control calls itself a filter, whatever it says about saved searches',
+  /^filter/i.test(words.lead) && !/search (these |the )?(sessions|recordings)/i.test(words.all),
+  words.lead);
 check('and the glyph is a filter, not a magnifier',
   !/magnif|search/i.test(String(words.glyph)), String(words.glyph).slice(0, 60));
 
+/* ── 2b. ONE ENTRY POINT, TWO CATALOGUES ────────────────────────────────────
+   ⚠ REWRITTEN 2026-09-04, and the assertion it replaces is the interesting
+   part. It used to read "the one picker holds both kinds" and it passed for two
+   days: the 09-02 build had merged production's two lists into one scroll.
+
+   That was a step past what Mehdi asked for. He wanted ONE BUTTON - "have event
+   and filters within a single button" - and the build heard one LIST. Gabriel,
+   09-04: "separate filter from events in a way that doesn't compromise the
+   unified filter field... the list in the picker should stay exactly the same
+   as it is currently in OpenReplay."
+
+   So the catalogue is recut to production's two, and the single entry point
+   survives by forking BEFORE the list rather than merging inside it. What is
+   asserted now is that both halves of that are true: one control on the bar,
+   and each list scoped to one kind. */
 await p.locator('.m-sc__field').click();
-await p.waitForTimeout(400);
-const picker = await p.evaluate(() => {
-  const el = document.querySelector('.m-pick');
-  if (!el) return null;
+await p.waitForTimeout(450);
+const forked = await p.evaluate(() => {
+  const el = document.querySelector('.m-fork');
+  const cards = [...document.querySelectorAll('.m-fork__card')];
   return {
-    rail: [...el.querySelectorAll('.m-pick__cat')].map((e) => e.textContent.trim()),
+    open: !!el,
+    heads: cards.map((c) => c.querySelector('.m-fork__head')?.textContent?.trim()),
+    blurbs: cards.map((c) => c.querySelector('.m-fork__blurb')?.textContent?.trim()),
+    glyphs: cards.filter((c) => c.querySelector('.m-fork__glyph svg')).length,
+    /* no catalogue yet: the fork is a choice, not a list */
+    rows: document.querySelectorAll('.m-pick__row').length,
+  };
+});
+check('the bar forks into the two kinds before it shows a list',
+  forked.open && forked.heads.join(' / ') === 'Events / Group filters' && forked.rows === 0,
+  `${forked.heads.join(' / ')} — ${forked.rows} entries`);
+check('and each card draws its own glyph and says what its kind does',
+  forked.glyphs === 2 && forked.blurbs.every((b) => (b ?? '').length > 20),
+  `${forked.glyphs} glyphs — ${forked.blurbs.join(' | ')}`);
+
+/* ⚠ IT GROWS OUT OF THE BAR rather than appearing beside it. The surface starts
+   at the bar's own measured width and moves to the panel's, so the first
+   painted frame is the bar. Asserted as a REAL transition on the box, because
+   a fade-in would satisfy any looser test. */
+const morph = await p.evaluate(() => {
+  const el = document.querySelector('.m-fork');
+  const cs = getComputedStyle(el);
+  return {
+    from: cs.getPropertyValue('--m-fork-w0').trim(),
+    grown: el.classList.contains('is-grown'),
+    props: cs.transitionProperty,
+    width: Math.round(el.getBoundingClientRect().width),
+    bar: Math.round(document.querySelector('.m-sc__fieldwrap').getBoundingClientRect().width),
+  };
+});
+check('the fork morphs out of the bar it came from, at the bar\u2019s own measured size',
+  parseInt(morph.from, 10) > 400 && morph.grown && /width/.test(morph.props) && morph.width < morph.bar,
+  `from ${morph.from} to ${morph.width}px, bar is ${morph.bar}px`);
+
+/* THE CATALOGUE BEHIND A CARD IS ONE KIND, which is production's own split. */
+await p.locator('.m-fork__card').first().click();
+await p.waitForTimeout(450);
+const evList = await p.evaluate(() => {
+  const el = document.querySelector('.m-pick');
+  return {
+    rail: [...el.querySelectorAll('.m-pick__cat')].map((e) => e.textContent.trim().replace(/\d+$/, '')),
     rows: el.querySelectorAll('.m-pick__row').length,
-    /* the four categories the backend special-cases have to be visible AS
-       categories: a segment does not behave like an event */
+    /* the four categories the backend special-cases are all events, and all
+       four have to be visible AS categories: a segment does not behave like an
+       event */
     special: ['Autocapture', 'Events', 'Features', 'Segments'].every((n) =>
       [...el.querySelectorAll('.m-pick__cat')].some((e) => e.textContent.includes(n)),
     ),
+    /* and nothing from the other half leaked in */
+    leaked: ['Geography', 'Technology', 'Metadata'].filter((n) =>
+      [...el.querySelectorAll('.m-pick__cat')].some((e) => e.textContent.includes(n)),
+    ),
+    back: !!el.querySelector('.m-pick__back'),
   };
 });
-check('the one picker holds both kinds, grouped the way the API groups them',
-  !!picker && picker.special && picker.rows > 30,
-  `${picker?.rows} entries, rail ${picker?.rail.length} deep`);
+check('choosing Events opens production\u2019s events list and only that',
+  evList.special && evList.leaked.length === 0 && evList.rows > 10,
+  `${evList.rows} entries, rail ${evList.rail.join('/')}${evList.leaked.length ? ` — leaked ${evList.leaked}` : ''}`);
+check('and it can go back, because a fork you cannot reverse is a trap',
+  evList.back);
 
-/* SEARCH SPANS EVERY CATEGORY, which is what two scoped pickers cannot do. */
+/* SEARCH STILL SPANS EVERY CATEGORY WITHIN A KIND, which is what makes the
+   rail optional rather than a maze. */
 await p.fill('.m-pick__search input', 'rage');
 await p.waitForTimeout(300);
 const spans = await p.evaluate(() => {
@@ -233,7 +335,7 @@ const spans = await p.evaluate(() => {
     cats: [...new Set(rows.map((r) => r.querySelector('.m-pick__cat-tag')?.textContent?.trim()))],
   };
 });
-check('one query reaches an event and a saved segment together',
+check('one query reaches an autocapture event and a saved segment together',
   spans.cats.includes('Autocapture') && spans.cats.includes('Segments'),
   `${spans.names.join(', ')} — from ${spans.cats.join('/')}`);
 
@@ -264,13 +366,26 @@ check('one query reaches an event and a saved segment together',
 await p.keyboard.press('Escape');
 await p.waitForTimeout(200);
 
-const addEntry = async (name) => {
-  await p.locator('.m-sc__field').click();
-  await p.waitForTimeout(300);
+/* ⚠ TWO DOORS, AND WHICH ONE IS OPEN DEPENDS ON WHETHER THE SEARCH IS EMPTY -
+   which is the behaviour, not an inconvenience. The bar forks you into a kind
+   on the FIRST clause and then retires; from the second on you add from the
+   section you are adding to. The helper does what a person does: use the bar if
+   it is there, otherwise the Add in the right section. */
+const EVENTY = /^(Click|Input|Page|Rage click|Dead click|Error|Network request|GraphQL|State action|Crash|Tap rage|Swipe|search_performed|add_to_cart|checkout_start|checkout_complete|signup_submitted|plan_upgraded|invite_sent|support_opened)$/;
+const addEntry = async (name, kind = EVENTY.test(name) ? 'events' : 'filters') => {
+  const head = kind === 'events' ? 'Events' : 'Group filters';
+  if (await p.locator('.m-sc__field').count()) {
+    await p.locator('.m-sc__field').click();
+    await p.waitForTimeout(400);
+    await p.locator('.m-fork__card', { hasText: head }).first().click();
+  } else {
+    await p.locator('.m-sc__head', { hasText: head }).locator('.m-sc__add').first().click();
+  }
+  await p.waitForTimeout(350);
   await p.fill('.m-pick__search input', name);
   await p.waitForTimeout(300);
   await p.locator('.m-pick__row').first().click();
-  await p.waitForTimeout(300);
+  await p.waitForTimeout(350);
 };
 
 await addEntry('Click');
@@ -443,15 +558,94 @@ const beforeN = Number((before ?? '0').split(' ')[0]);
 check('AND THE EVENT-LEVEL FILTER ACTUALLY FILTERS — the funnel was decoration until 09-04',
   scoped.n > 0 && scoped.n < beforeN, `${before} → ${scoped.count}`);
 
+/* ── 5c. THE BAR RETIRES, AND EACH SECTION GROWS ITS OWN ADD ────────────────
+   (Gabriel, 2026-09-04: "after the filter and event was added there should also
+   exist the two adds in their sections, so the user doesn't need to click at
+   the bar again - actually the bar vanishes and only appears after deleting or
+   clearing.")
+
+   This is what makes the FORK affordable. A fork step normally charges a click
+   on everything you ever add; here it is charged once, on the empty search, and
+   from the second clause on you add from the section you are adding TO.
+
+   ⚠ BOTH SECTIONS HAVE TO BE PRESENT, even an empty one. An Add that appears
+   only once its own section is occupied is an Add you cannot reach until after
+   you have used it - which is why production draws both headings always. */
+const retired = await p.evaluate(() => ({
+  bar: document.querySelectorAll('.m-sc__field').length,
+  heads: [...document.querySelectorAll('.m-sc__head-name')].map((e) => e.textContent.trim()),
+  adds: document.querySelectorAll('.m-sc__add').length,
+  /* the list's own controls came down with it rather than vanishing */
+  trailing: !!document.querySelector('.m-sc__strip-trailing .m-daterange, .m-sc__strip-trailing button'),
+  save: document.querySelector('.m-sc__save')?.textContent?.trim(),
+  /* and Save sits beside Clear rather than up in the page header */
+  savedBesideClear: (() => {
+    const strip = document.querySelector('.m-sc__strip');
+    return !!strip?.querySelector('.m-sc__save') && !!strip?.querySelector('.m-sc__clear');
+  })(),
+}));
+check('the bar retires once there is a rule, and both sections carry an Add',
+  retired.bar === 0 && retired.adds === 2 && retired.heads.join('/') === 'Events/Group filters',
+  `${retired.bar} bars, ${retired.adds} adds, ${retired.heads.join('/')}`);
+check('and the list\u2019s own controls come down to the strip rather than going with it',
+  retired.trailing, `trailing on the strip: ${retired.trailing}`);
+check('Save as segment sits beside Clear, where it can only be reached once it is true',
+  retired.savedBesideClear && /Save as segment/.test(retired.save ?? ''), retired.save ?? 'not on the strip');
+
+/* AND THE SECTION ADD OPENS ITS OWN HALF OF THE CATALOGUE - production's split,
+   with no fork in the way, because the section already said which kind. */
+await p.locator('.m-sc__head', { hasText: 'Group filters' }).locator('.m-sc__add').first().click();
+await p.waitForTimeout(400);
+const fromSection = await p.evaluate(() => {
+  const el = document.querySelector('.m-pick');
+  const cats = [...el.querySelectorAll('.m-pick__cat')].map((e) => e.textContent.trim());
+  return {
+    fork: !!document.querySelector('.m-fork__card'),
+    leaked: ['Autocapture', 'Features', 'Segments'].filter((n) => cats.some((c) => c.includes(n))),
+    has: ['Session', 'Technology', 'Geography'].every((n) => cats.some((c) => c.includes(n))),
+  };
+});
+check('a section\u2019s Add opens that kind only, with no fork in the way',
+  !fromSection.fork && fromSection.has && fromSection.leaked.length === 0,
+  `fork ${fromSection.fork}, leaked ${fromSection.leaked.join(',') || 'none'}`);
+/* ⚠ CLOSE IT FROM INSIDE. This one is an antd Popover rather than the fork, and
+   two obvious ways of dismissing it are both wrong: Escape at the page level
+   never reaches it (it listens on its own input), and a click at an empty
+   coordinate is a click on whatever happens to be there. Focus its field and
+   press Escape, which is what `PickerBody` handles. Left open, the panel covers
+   the strip and the next step waits thirty seconds for a Clear that is in the
+   DOM the whole time - a locator timeout that looks nothing like the cause. */
+await p.locator('.m-pick__search input').focus();
+await p.keyboard.press('Escape');
+await p.waitForTimeout(400);
+
+/* AND CLEARING BRINGS THE BAR BACK, which is the other half of "vanishes and
+   only appears after deleting or clearing". */
+/* Park the pointer somewhere harmless first: the popover has just closed and
+   the strip is still settling under it. */
+await p.mouse.move(200, 300);
+await p.waitForTimeout(400);
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(400);
+check('and clearing brings the bar back',
+  (await p.locator('.m-sc__field').count()) === 1 && (await p.locator('.m-sc__head').count()) === 0);
+
 /* ── 6. the metadata chip writes to the search ─────────────────────────────
    ⚠ THE COLUMN IS ON BY DEFAULT since 2026-09-02 ("then it should be by
    default"), so this no longer turns it on - it ASSERTS it is on, then uses it.
    The old version clicked the Display pill unconditionally, which turned the
    column off the moment the default changed and then waited thirty seconds for
    a chip that could not exist. A setup step that assumes a default is a setup
-   step that breaks silently when the default is the thing under test. */
-await p.locator('.m-sc__clear').click();
-await p.waitForTimeout(400);
+   step that breaks silently when the default is the thing under test.
+
+   ⚠ AND THE CLEAR IS GUARDED for the same class of reason: §5c now ends with an
+   empty filter, so the button it used to click unconditionally is not there -
+   and a click on a control that is not there is a thirty-second timeout rather
+   than a failed assertion. */
+if (await p.locator('.m-sc__clear').count()) {
+  await p.locator('.m-sc__clear').click();
+  await p.waitForTimeout(400);
+}
 const metaOn = await p.evaluate(() =>
   [...document.querySelectorAll('.m-ss__table th')].some((t) => t.textContent.trim() === 'Metadata'),
 );
@@ -656,9 +850,18 @@ check('and the title row is one colour from end to end',
 check('and the browser and OS are still readable without a mouse',
   device.labels.length > 1 && device.labels.every((l) => / on .+, (Desktop|Phone|Tablet)$/.test(l ?? '')),
   device.labels.slice(0, 2).join(' | '));
+/* ⚠ AND PARK THE POINTER FIRST. The date range and the Display menu ride the
+   strip now that the bar retires, so a tooltip from one of them can still be
+   mounted when this runs - and `.ant-tooltip` first matched THAT one, which
+   reported "Display" and read as a broken device tooltip. */
+await p.mouse.move(1400, 900);
+await p.waitForTimeout(500);
 await p.locator('.m-ss__dev').first().hover();
-await p.waitForTimeout(600);
-const devTip = (await p.locator('.ant-tooltip').textContent().catch(() => null))?.trim();
+/* ⚠ WAIT FOR THE TOOLTIP, DO NOT SLEEP AT IT. antd's own `mouseEnterDelay`
+   plus a mount animation is most of a second, and a fixed 600ms was landing on
+   the wrong side of it often enough to look like a broken tooltip. */
+await p.locator('.ant-tooltip:visible').first().waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
+const devTip = (await p.locator('.ant-tooltip:visible').first().textContent().catch(() => null))?.trim();
 check('and the words moved to the tooltip',
   / on .+ · (Desktop|Phone|Tablet)$/.test(devTip ?? ''), devTip ?? 'no tooltip');
 await p.mouse.move(1400, 900);
@@ -871,7 +1074,9 @@ check('the field is the biggest control on the page and the only one at 14px',
    still works when called. If somebody deletes `translate()` to tidy up, this
    fails - which is the point. */
 await p.locator('.m-sc__field').click();
-await p.waitForTimeout(250);
+await p.waitForTimeout(400);
+await p.locator('.m-fork__card').first().click();
+await p.waitForTimeout(350);
 await p.fill('.m-pick__search input', 'paid users who hit an error');
 await p.waitForTimeout(350);
 const parked = await p.evaluate(() => ({
@@ -880,6 +1085,10 @@ const parked = await p.evaluate(() => ({
 }));
 check('the sentence path is switched off at the callsite', !parked.offer && parked.steps === 0,
   `offer ${parked.offer}, ${parked.steps} steps`);
+/* ⚠ TWO ESCAPES. One shuts the catalogue back to the fork, the second shuts the
+   fork - you opened two doors, so one Escape closes one of them. */
+await p.keyboard.press('Escape');
+await p.waitForTimeout(200);
 await p.keyboard.press('Escape');
 await p.waitForTimeout(200);
 
@@ -924,60 +1133,52 @@ const gapOwner = await p.evaluate(() => {
 check('the column titles sit directly under the search, with no blank row between',
   gapOwner.pad === '0px' && gapOwner.margin === '0px' && gapOwner.gapToHeader === 0 && gapOwner.bg !== 'rgba(0, 0, 0, 0)',
   `pad ${gapOwner.pad}, card margin ${gapOwner.margin}, gap ${gapOwner.gapToHeader}px, opaque ${gapOwner.bg}`);
-/* AND THE WELL KEPT ITS OWN COLOUR. Putting the sticky on the card itself made
-   `.m-page__body > .m-sc` out-specify `.m-sc` and the well turned white. */
+/* AND THE STICKY IS STILL OPAQUE. Putting the sticky on the card itself made
+   `.m-page__body > .m-sc` out-specify `.m-sc`, and rows showed through it.
+   ⚠ The colour it has to hold is the PLANE's now rather than the well's - see
+   the inversion in §1 - so what is asserted is that it is not transparent,
+   which was always the load-bearing half. */
 const well = await p.evaluate(() => ({
   sc: getComputedStyle(document.querySelector('.m-sc')).backgroundColor,
-  plane: getComputedStyle(document.querySelector('.m-page')).backgroundColor,
+  sticky: getComputedStyle(document.querySelector('.m-ss__sticky')).backgroundColor,
 }));
-check('and the well still steps off the plane rather than matching it',
-  well.sc !== well.plane, `${well.sc} in ${well.plane}`);
+check('and the band is opaque, so the rows cannot show through it as they pass',
+  well.sc !== 'rgba(0, 0, 0, 0)' && well.sticky !== 'rgba(0, 0, 0, 0)',
+  `${well.sc} on ${well.sticky}`);
 
-/* ── 10. THE RING ────────────────────────────────────────────────────────────
-   The one piece of expression on this page, and three rules it has to keep: it
-   is not on at rest, its animation is PAUSED rather than merely invisible while
-   nobody is pointing at it, and it stops moving when it is a focus ring. */
+/* ── 10. THE RING'S THIRD RULE: FOCUS HAS NO POINTER ────────────────────────
+   The torch itself is asserted further down, where the pointer is driven around
+   the field. What belongs here is the case a torch cannot serve: somebody who
+   arrived by keyboard has no cursor to centre the light on, so the mask comes
+   off entirely and the whole rim lights, held still.
+
+   ⚠ A control whose only indicator is a mouse position is a control with no
+   focus indicator, which is the trap every "reveal on hover" effect sets. */
 await p.setViewportSize({ width: 1560, height: 940 });
-/* Park the cursor away from the field: "at rest" means nobody is pointing at
-   it, and a previous step left the pointer on it. */
 await p.mouse.move(900, 760);
 await p.waitForTimeout(400);
-const ringState = async () =>
-  p.evaluate(() => {
-    const r = document.querySelector('.m-sc__ring');
-    const arc = r.querySelector('.m-sc__arc');
-    const cs = getComputedStyle(arc);
-    return {
-      opacity: getComputedStyle(r).opacity,
-      play: cs.animationPlayState,
-      name: cs.animationName,
-      /* The path runs down the MIDDLE of the field's own rim, so the arc
-         replaces the border rather than sitting inside or outside it. */
-      onBorder: (() => {
-        const a = r.getBoundingClientRect();
-        const f = document.querySelector('.m-sc__field').getBoundingClientRect();
-        return Math.abs(a.left - f.left) <= 1 && Math.abs(a.width - f.width) <= 2;
-      })(),
-    };
-  });
-const ringRest = await ringState();
-check('the ring is off at rest, and paused rather than merely invisible',
-  ringRest.opacity === '0' && ringRest.play === 'paused, paused',
-  `opacity ${ringRest.opacity}, ${ringRest.play}`);
-await p.hover('.m-sc__field');
-await p.waitForTimeout(400);
-const ringHover = await ringState();
-check('it sweeps on hover, on the field\'s own border box',
-  ringHover.opacity === '1' && ringHover.play === 'running, running' && ringHover.onBorder,
-  `opacity ${ringHover.opacity}, ${ringHover.play}, on the border ${ringHover.onBorder}`);
 await p.focus('.m-sc__field');
 await p.keyboard.press('Tab');
 await p.keyboard.press('Shift+Tab');
 await p.waitForTimeout(300);
-const ringFocus = await ringState();
-check('and it HOLDS STILL as a focus ring, because one that moves cannot be located',
-  ringFocus.opacity === '1' && ringFocus.name === 'none',
-  `opacity ${ringFocus.opacity}, animation ${ringFocus.name}`);
+const ringFocus = await p.evaluate(() => {
+  const r = document.querySelector('.m-sc__ring');
+  const arc = r.querySelector('.m-sc__arc');
+  return {
+    masked: /radial-gradient/.test(getComputedStyle(r).maskImage || ''),
+    anim: getComputedStyle(arc).animationName,
+    /* the rim runs down the MIDDLE of the field's own border, so it replaces
+       that border rather than sitting inside or outside it */
+    onBorder: (() => {
+      const a = r.getBoundingClientRect();
+      const f = document.querySelector('.m-sc__field').getBoundingClientRect();
+      return Math.abs(a.left - f.left) <= 1 && Math.abs(a.width - f.width) <= 2;
+    })(),
+  };
+});
+check('a keyboard focus drops the mask and takes the whole rim, held still',
+  !ringFocus.masked && ringFocus.anim === 'none' && ringFocus.onBorder,
+  `masked ${ringFocus.masked}, animation ${ringFocus.anim}, on the border ${ringFocus.onBorder}`);
 
 /* ── 11. THE PROPORTION BARS ────────────────────────────────────────────────
    Mehdi, 2026-09-02: "there are some filters that you see the proportions of
@@ -1522,57 +1723,69 @@ check('an unwatched session fills its triangle and a watched one does not',
   solid.length > 0 && solid.every(([viewed, filled]) => filled === !viewed),
   `${solid.filter(([, f]) => f).length} filled of ${solid.length}`);
 
-/* ── THE RING IS A DASH ON A PATH ────────────────────────────────────────
-   Third attempt, and the two before it failed on the same fact - the field is
-   1400 by 40. A conic gradient divides by ANGLE, so the arc was a dot on the
-   long rim and covered the whole end cap. A linear one balances the arc but
-   only moves sideways, which stops reading as a ring at all ("now it's a
-   horizontal movement, that's wrong"). A dashed stroke is measured in ARC
-   LENGTH, travels the perimeter in order, and its length is a number that can
-   breathe on its own. */
-await p.hover('.m-sc__field');
-await p.waitForTimeout(400);
-const ringShape = await p.evaluate(() => {
-  const rect = document.querySelector('.m-sc__ring rect');
-  if (!rect) return null;
-  const cs = getComputedStyle(rect);
-  return {
-    tag: rect.tagName,
-    anim: cs.animationName,
-    state: cs.animationPlayState,
-    dash: cs.strokeDasharray,
-    perimeter: Math.round(rect.getTotalLength()),
-    field: Math.round(document.querySelector('.m-sc__field').getBoundingClientRect().width),
-  };
-});
-check('the ring is a stroked path, not a gradient, and it both travels and breathes',
-  !!ringShape && ringShape.anim === 'm-sc-travel, m-sc-breathe' && ringShape.state === 'running, running',
-  `${ringShape?.anim} — ${ringShape?.state}`);
-/* ⚠ THE ARC IS THE SAME LENGTH WHEREVER IT IS, which is the one thing the two
-   gradient versions could not do. `pathLength="100"` normalises the perimeter,
-   so the dash is a percentage of the loop at any plane width. */
-const arc = await p.evaluate(() => {
-  const rect = document.querySelector('.m-sc__ring rect');
-  const read = () => Number.parseFloat(getComputedStyle(rect).strokeDasharray);
-  return new Promise((done) => {
-    const seen = [];
-    const tick = () => {
-      seen.push(read());
-      if (seen.length < 12) setTimeout(tick, 90);
-      else done({ min: Math.min(...seen), max: Math.max(...seen) });
+/* ── THE RING IS A TORCH ─────────────────────────────────────────────────
+   ⚠ FOURTH ATTEMPT, and the first three all failed on the same axis. A conic
+   gradient divides by ANGLE, so on a 1400x40 box the arc was a dot on the long
+   rim and covered the whole end cap. A linear one balances the arc but only
+   moves sideways ("now it's a horizontal movement, that's wrong"). A dashed
+   stroke fixed the geometry and kept the real problem: it ran to a CLOCK.
+   Gabriel, 09-04: "I kinda hate the ring now - what if you add a ring in a mask
+   with a glow and you reveal that when you hover only in a radius around that."
+
+   So the rim is whole and always drawn, and a radial mask centred on the
+   pointer decides what of it you can see. What is asserted is the part that
+   makes it a torch rather than a spotlight bolted on: THE RADIUS ANSWERS TO
+   DISTANCE, so the ring is already lit before the pointer lands. */
+/* ⚠ THE BAR ONLY EXISTS ON AN EMPTY SEARCH since 09-04 - it retires the moment
+   there is a rule and the sections carry the Adds. So clear first, or this
+   whole block waits thirty seconds for a control that is deliberately gone. */
+if (await p.locator('.m-sc__clear').count()) {
+  await p.locator('.m-sc__clear').click();
+  await p.waitForTimeout(400);
+}
+await p.evaluate(() => { document.querySelector('.m-page__body').scrollTop = 0; });
+await p.waitForTimeout(200);
+const torchAt = async (x, y) => {
+  await p.mouse.move(x, y);
+  await p.waitForTimeout(320);
+  return p.evaluate(() => {
+    const cs = getComputedStyle(document.querySelector('.m-sc__ring'));
+    return {
+      r: Number.parseFloat(cs.getPropertyValue('--m-torch-r')) || 0,
+      x: cs.getPropertyValue('--m-torch-x').trim(),
+      masked: /radial-gradient/.test(cs.maskImage || cs.webkitMaskImage || ''),
     };
-    tick();
   });
-});
-check('and the arc grows and shrinks rather than holding one length',
-  arc.max - arc.min > 4 && ringShape.perimeter > ringShape.field * 2,
-  `dash ${arc.min.toFixed(1)}–${arc.max.toFixed(1)} of 100, perimeter ${ringShape.perimeter}px`);
+};
+const fieldBox = await p.locator('.m-sc__field').boundingBox();
+const far = await torchAt(fieldBox.x + 200, fieldBox.y + 620);
+const near = await torchAt(fieldBox.x + 200, fieldBox.y + 120);
+const on = await torchAt(fieldBox.x + 200, fieldBox.y + fieldBox.height / 2);
+check('the ring is masked to a radius rather than drawn whole',
+  on.masked, `mask ${on.masked}`);
+check('and it is DARK from across the page, so nothing animates at rest',
+  far.r === 0, `radius ${far.r}px at 620px away`);
+check('THE LEAD-IN: it opens on approach, before the pointer ever lands',
+  near.r > 0 && near.r < on.r,
+  `${far.r}px far → ${near.r.toFixed(1)}px near → ${on.r.toFixed(1)}px on it`);
+
+/* AND THE LIGHT IS WHERE THE POINTER IS, not at the middle of a 1400px bar.
+   The distance is measured to the RECTANGLE, so both ends of a very wide field
+   light up when you stand on them - a centre-based falloff would leave the ends
+   dark. */
+const leftLit = await torchAt(fieldBox.x + 60, fieldBox.y + fieldBox.height / 2);
+const rightLit = await torchAt(fieldBox.x + fieldBox.width - 60, fieldBox.y + fieldBox.height / 2);
+check('the light follows the pointer along the rim rather than sitting at its centre',
+  leftLit.r > 60 && rightLit.r > 60 && leftLit.x !== rightLit.x,
+  `left ${leftLit.x} at ${leftLit.r.toFixed(0)}px, right ${rightLit.x} at ${rightLit.r.toFixed(0)}px`);
 
 /* ── THE OPERATOR READS (Mehdi: "the 'is not' colour doesn't have contrast
    enough"). The closed control drew the word one step quieter than the SAME
    word in the menu under it. */
 await p.locator('.m-sc__field').click();
-await p.waitForTimeout(300);
+await p.waitForTimeout(400);
+await p.locator('.m-fork__card', { hasText: 'Group filters' }).first().click();
+await p.waitForTimeout(350);
 await p.fill('.m-pick__search input', 'User ID');
 await p.waitForTimeout(300);
 await p.locator('.m-pick__row').first().click();

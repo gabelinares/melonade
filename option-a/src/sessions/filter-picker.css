@@ -253,3 +253,33 @@
   color: var(--m-content-muted);
   border-bottom: var(--m-border-width) solid var(--m-border-subtle);
 }
+
+/* ── THE BACK ARROW ──────────────────────────────────────────────────────────
+   Only the FORK supplies one: in a popover hanging off a row there is nothing
+   to go back to, and an arrow that returns you nowhere is worse than no arrow.
+
+   It lives inside the search row rather than above it, because the row is the
+   catalogue's own head and a second bar of chrome for one glyph is how a
+   picker becomes a dialog. */
+.m-pick__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-inline-end: var(--m-space-2);
+  color: var(--m-content-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--m-radius-control);
+  cursor: pointer;
+  transition:
+    color var(--m-duration-fast) var(--m-ease-out),
+    background var(--m-duration-fast) var(--m-ease-out);
+}
+
+.m-pick__back:hover {
+  color: var(--m-content-primary);
+  background: var(--m-surface-canvas);
+}
