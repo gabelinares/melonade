@@ -27,6 +27,9 @@ export interface SideNavProps {
   onNavigate: (key: string) => void;
   /** How many agents to render. The prototype's growth control drives this. */
   agentCount: number;
+  /** Sessions nobody has watched. Drives Recordings' badge and its Sessions
+   *  row - the model owns it, because watching one has to take it off. */
+  newSessions?: number;
   /** Narrow. See useNavCollapse for who decides. */
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
@@ -112,8 +115,8 @@ export interface SideNavProps {
  * weight and colour rather than by a fourth and fifth size.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function SideNav({ active, onNavigate, agentCount, collapsed = false, onToggleCollapsed }: SideNavProps) {
-  const groups = navTree(agentCount);
+export function SideNav({ active, onNavigate, agentCount, newSessions = 0, collapsed = false, onToggleCollapsed }: SideNavProps) {
+  const groups = navTree(agentCount, newSessions);
   /* Expansion is remembered per row and starts open for whatever you are
      inside, so arriving on Data Management never shows a collapsed Analytics. */
   const [expanded, setExpanded] = useState<string[]>(() =>

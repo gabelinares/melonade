@@ -89,6 +89,7 @@ export function AppShell() {
         active={here}
         onNavigate={navigate}
         agentCount={agentCount}
+        newSessions={sessions.newCount}
         collapsed={collapsed}
         onToggleCollapsed={toggleNav}
       />

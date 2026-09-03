@@ -286,7 +286,21 @@
   right: 0;
   z-index: 1;
   background: transparent;
-  text-align: right;
+  /* ⚠ SYMMETRIC, OR "CENTRED" IS NOT CENTRED. The table gives its last column a
+     20px right inset and every cell an 8px left one, and `text-align: center`
+     centres inside the CONTENT box - so the glyph sat 6px left of the column's
+     middle and looked like a mistake nobody could point at. With no padding the
+     56px column centres the 24px target itself, and the 16px that leaves on
+     each side is the inset back, symmetrically. */
+}
+/* ⚠ The right inset is set on `td:last-child` in antd-overrides.css, which is
+   one selector heavier than the class alone - so this has to match its shape to
+   beat it. It is the same trap the sticky rule above documents: a declaration
+   that lands in the stylesheet and applies to nothing. */
+.m-page__body .ant-table-wrapper .ant-table .ant-table-thead > tr > th.m-ss__playcell:last-child,
+.m-page__body .ant-table-wrapper .ant-table .ant-table-tbody > tr > td.m-ss__playcell:last-child {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* ⚠ AND THE HEADER'S COPY OF IT IS SOLID, NOT TRANSPARENT. The rule above
@@ -378,21 +392,95 @@
   transition: color var(--m-duration-fast) var(--m-ease-out);
 }
 
-/* A watched session's play is one step quieter at rest, which is the same
-   thing its name does: the row is not disabled, it is behind you.
+/* ── THE PLAY, AND THE ROW'S HUE ────────────────────────────────────────────
+   ⚠ THE HUE IS THE HOVER, NOT THE REST (Gabriel, 2026-09-04: "it should be
+   white when it's not viewed, and a little muted when it has. The colour should
+   be the same colour as the pixelbot only when hovered").
+
+   It was tinted at rest, which was a fair reading of Mehdi's "one hue per row,
+   used twice" and it made the column a rainbow: twelve colours down a list, all
+   of them saying nothing except which person it is - and the person is already
+   named in the first column and drawn in the avatar. As a HOVER it does the
+   same job at the moment it is useful: the row you are pointing at lights up in
+   its own colour, and the two ends of it - the avatar's ground and the mark -
+   are visibly the same row.
+
+   `--m-avatar-i` is set on the ROW, not here. See `onRow` in SessionsPage. */
+/* ⚠ A 24px TARGET AROUND A 14px GLYPH. The hue is on the GLYPH's hover now,
+   not the row's, so this has to be something a cursor can actually land on -
+   14px of stroked outline is not. The box is square and centred, so the glyph
+   stays on the column's centre line whatever size the density gives it. */
+/* ⚠ ONLY ON THE ROW YOU ARE POINTING AT (Gabriel, 2026-09-04). Twelve play
+   glyphs down a column is twelve invitations, and the row is clickable anyway -
+   the glyph is not the only way in, it is the reminder that there IS one. Shown
+   on every row it was a texture you stop seeing; shown on one it is an answer
+   to where the cursor is.
+
+   Opacity, not `display`, so the cell keeps its width and nothing reflows as
+   the cursor moves down the list. `:focus-within` because a keyboard never
+   hovers, and a control that only exists under a mouse does not exist. */
+.m-ss__play {
+  --m-play-l: 0.52;
+  opacity: 0;
+  transition:
+    color var(--m-duration-fast) var(--m-ease-out),
+    opacity var(--m-duration-fast) var(--m-ease-out);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--m-radius-control);
+  color: var(--m-content-primary);
+}
+
+.m-ss__row:hover .m-ss__play,
+.m-ss__row:focus-within .m-ss__play { opacity: 1; }
+:root[data-theme='dark'] .m-ss__play { --m-play-l: 0.74; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .m-ss__play { --m-play-l: 0.74; }
+}
+
+/* ⚠ THE GLYPH FOLLOWS THE DENSITY CONTROL, which the `size` prop cannot do -
+   it is an attribute, and an attribute is written once at render. CSS on the
+   svg overrides both attributes, so the height is a token and the width follows
+   the mark's own 52:59.
+
+   "A little bigger in spaced, but not that much in compact": 16 and 20. The row
+   is 38px tall in compact and there is no room to spend; spaced buys 8px of row
+   and the glyph takes half of it. */
+.m-ss__play svg {
+  height: var(--m-ss-play-size, 14px);
+  width: auto;
+  display: block;
+}
+:root[data-density='spaced'] .m-ss__play { --m-ss-play-size: 17px; }
+
+/* A watched session's play is a step quieter, the same thing its name does:
+   the row is not disabled, it is behind you.
 
    ⚠ BEFORE the hover rule, not after. Both selectors weigh the same, so the
    later one wins and a watched row's play would have stayed grey under the
    cursor - the one row state where the affordance matters most. */
-.m-ss__row.is-viewed .m-ss__play { color: var(--m-content-disabled); }
+.m-ss__row.is-viewed .m-ss__play { color: var(--m-content-muted); }
 
-/* THE ACCENT, and only the accent (Mehdi: "hovering it would bring the accent
-   color"). No fill behind the glyph: it is already sitting on a gradient, and
-   this page spends its one accent on the search field's ring - a colour that
-   arrives on the row you are pointing at and leaves with the cursor does not
-   compete with it. */
-.m-ss__row:hover .m-ss__play,
-.m-ss__row.is-viewed:hover .m-ss__play { color: var(--m-content-accent); }
+/* ⚠ THE HUE IS ON THE GLYPH'S OWN HOVER, NOT THE ROW'S (Gabriel, 2026-09-04:
+   "what I mean hover is hovering the play icon; don't make it coloured when
+   hovering the row").
+
+   On the row it fired every time the cursor crossed a line on the way to
+   somewhere else, so twelve rows lit and unlit while you read - a colour that
+   arrives without being asked for is decoration. On the glyph it means what a
+   hover means: you are pointing at the thing that plays this, and it answers in
+   the row's own colour.
+
+   Same hue the avatar's ground is mixed from, at a lightness that works as INK
+   rather than as a tint - 0.93 behind an illustration and 0.52 as a stroked
+   glyph are the same colour doing two jobs. */
+.m-ss__play:hover,
+.m-ss__row.is-viewed .m-ss__play:hover {
+  color: oklch(var(--m-play-l) 0.13 calc(var(--m-avatar-i, 0) * 30deg));
+}
 
 /* A watched session is not dimmed, only its name gives up its weight. Dimming
    the whole row makes half the table look disabled; the list is still the

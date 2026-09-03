@@ -120,7 +120,7 @@ const fromAgent = (a: AgentEntry): NavEntry => ({
  * heading is one line away either direction; deleting it now would mean writing
  * it again on Monday.
  */
-export function navTree(agentCount: number): readonly NavGroup[] {
+export function navTree(agentCount: number, newSessions = 0): readonly NavGroup[] {
   const shown = AGENTS.slice(0, agentCount);
   return [
     {
@@ -131,13 +131,25 @@ export function navTree(agentCount: number): readonly NavGroup[] {
           key: 'recordings',
           label: 'Recordings',
           icon: 'recordings',
+          /* ⚠ THE SAME ROLLUP THE AGENTS GET (Gabriel, 2026-09-04: "add the new
+             sessions in the Recordings item, just like in agents"). A parent
+             carries the sum of what is inside it, so a closed row still says
+             whether there is anything in there - and here there is exactly one
+             counted child, so the two figures agree by construction rather
+             than by being kept in step.
+
+             It counts sessions you have NOT WATCHED, which is what "new" means
+             for a list you come back to. Bookmarks and Segments count nothing:
+             a bookmark is something you chose, not something waiting. */
+          count: newSessions,
+          countNoun: 'not watched yet',
           /* ⚠ THESE THREE WERE THE SESSIONS PAGE'S TAB STRIP until 09-04. They
              are marked (Subitem) in the spec, and a thing cannot be a tab and a
              menu row at once without two controls that have to be kept in
              agreement - which is the rule at the top of this file. The strip
              came out of `SessionsPage`; the route drives the section now. */
           items: [
-            { key: 'recordings/sessions', label: 'Sessions' },
+            { key: 'recordings/sessions', label: 'Sessions', count: newSessions, countNoun: 'not watched yet' },
             { key: 'recordings/bookmarks', label: 'Bookmarks' },
             { key: 'recordings/segments', label: 'Segments' },
           ],

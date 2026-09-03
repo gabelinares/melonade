@@ -5105,3 +5105,113 @@ that is meant to be one colour. The header's copy is flat and solid now. Flat
 deliberately: the gradient exists to cover a long **value** sliding under the
 glyph as the table scrolls sideways, and a header cell holds a title or nothing —
 a fade there would only reintroduce the translucent sliver it is fixing.
+
+---
+
+## §34 — The 09-04 batch: the mark, the hue, the window (2026-09-04)
+
+**The play is the OpenReplay mark.** It was `CirclePlay` — the glyph every media
+player on the internet uses. The product's own mark *is* a play button, so the
+one affordance on the row now says whose recording this is, which is the second
+half of Mehdi's recognition argument: the avatar on the left, this on the right,
+*"right away I understand I'm on the sessions page."*
+
+It is **stroked, two triangles** — `OR_OUTER` and `OR_INNER`, `fill: none`.
+Stroking `OR_OUTLINE` would draw its hole as a third outline: a triangle inside a
+triangle inside a triangle. 3.8 is lucide's own weight carried across (1.75 on a
+24-unit box → ×52/24).
+
+**Its states, after three passes.** White at rest, muted once watched, **the
+row's hue when you hover the glyph itself**. It was tinted at rest first, which
+made the column a rainbow saying nothing the first column doesn't. Then the hue
+moved to the *row's* hover, which fired every time a cursor crossed a line on the
+way somewhere else. On the glyph it means what a hover means. And it is **only on
+the row you are pointing at** — twelve of them down a column is a texture you
+stop seeing, and the row is clickable anyway, so the glyph is the reminder that
+there is a way in rather than the only one.
+
+**One hue per row, and the row carries it.** `--m-avatar-i` is set on the `<tr>`,
+so the avatar's ground and the mark's ink read one property. That is what makes
+it one hue rather than two elements that agree. Lightness differs because the
+jobs do: 0.93 behind an illustration, 0.52 as a stroked glyph on the same
+surface.
+
+**It follows the density control**, which the `size` prop cannot — an attribute is
+written once at render. CSS on the svg overrides it: 14px compact, 17px spaced.
+
+### The tab strip is back, beside the menu rows
+
+Both, and there is no contradiction — because there is still only **one piece of
+state**. `model.tab` is written by the strip, and the menu's highlight is
+*derived* from it rather than kept as a second route. The standing objection was
+never to two controls; it was to two copies. The pair earns its keep: the menu is
+where you go from anywhere, the strip is where you move between siblings without
+leaving the page you are reading.
+
+### Two dates, not a range picker
+
+antd's `RangePicker` was four complaints in one screenshot: the pair and its
+arrow do not fit a menu this narrow, so both ends truncate to `Start da…` and
+`Oct 13, 2(`; the start field read **empty** after a date had been chosen; the
+selection reset on its own; and moving the panel to months or years broke it.
+
+All four are the same thing — one control holding a pair, with its own idea of
+which end you are editing, its own hover preview and its own panel state. **A
+window is two dates, and two dates are two fields**: each holds one value, each
+is full width so it fits, and neither can reset the other. The one thing the pair
+keeps is the order — picking a start opens the end, so the common case is still
+two clicks and no aiming. The hint under it is gone: *"Both ends, and the list
+narrows"* was explaining a control that now explains itself.
+
+### One alignment rule and one width rhythm
+
+Gabriel: *"Started and Events are different and Duration is really close to
+Location."* Both halves were the same bug. **Every column is left-aligned** except
+the two glyph columns. Right-aligned figures are correct in a table you compare
+magnitudes down — this is not one, you scan it for a session — and the cost was
+exactly what he saw: a right-aligned Duration ends where a left-aligned Location
+begins, so two values touch while their columns are 96 and 160 apart. Right
+alignment puts the whitespace on the wrong side of the number.
+
+**Every width is a multiple of 8**: 88, 96, 112, 160, 200, and 56 for the two
+glyph columns. Started and Events were 104 and 82 — no rhythm, and 2px is the
+sort of thing you feel without being able to name.
+
+⚠ **"Centred" is not centred if the paddings differ.** The table gives its last
+column a 20px right inset and every cell an 8px left one, and `text-align:
+center` centres inside the *content* box — so the play sat 6px off. Both paddings
+are zeroed on that cell, and the 56px column centres the 24px target itself.
+
+### The menu counts sessions you have not watched
+
+The same rollup the agents get: a parent carries the sum of what is inside it, so
+a closed Recordings row still says whether there is anything in there. It counts
+**unwatched** sessions, which is what "new" means for a list you come back to, and
+it is counted against the model — so watching one takes it off the badge.
+Bookmarks and Segments count nothing: a bookmark is something you chose, not
+something waiting.
+
+### The switch was invisible when it was on
+
+⚠ `Switch.colorPrimary` was `action-primary-bg`, which is near-**black** in light
+and near-**white** in dark, because a primary button inverts with the theme. The
+handle is white and does not. So a switch that was on in dark mode was a white
+circle on a white track: **1.06:1**, and Gabriel's screenshot of it is a blank
+pill.
+
+The handle cannot be fixed instead — flipping it dark solves the on state and
+breaks the off one, whose track is a mid grey; one handle colour cannot read
+against both a near-white and a mid-dark track. So the **track** stops being the
+primary. It comes from the **palette** rather than a role, and that is the point:
+a role is allowed to flip with the theme and this value must not. `a-500` and
+`a-600` read 4.8:1 and 6.4:1 against white in *every* theme, because they are the
+same colour in every theme.
+
+### The column picker stays, and says what it is for
+
+Mehdi was right that nobody adds a column — *"we don't have more information to
+give"* — and that does not mean the control should go. Every column is on by
+default, so the list is for turning things **off**: a narrow window, a projector,
+someone who does not care about metadata. The heading says "Columns to hide",
+because "Columns" over a row of already-lit pills sends you looking for the other
+half.

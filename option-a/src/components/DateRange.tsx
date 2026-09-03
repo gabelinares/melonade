@@ -5,7 +5,6 @@ import { CalendarRange, ChevronDown } from 'lucide-react';
 import {
   RANGE_PRESETS,
   type DateRangeValue,
-  isCustomComplete,
   rangeIsDefault,
   rangeLabel,
 } from '@shared/date-range.ts';
@@ -43,10 +42,16 @@ export interface DateRangeProps {
  * ── CUSTOM IS A REAL RANGE ────────────────────────────────────────────────
  * ⚠ It used to be a preset that quietly applied ninety days. A control that
  * lies is worse than one that is missing: nothing on screen contradicted it,
- * so the only way to find out was to count rows. Picking it now reveals a real
- * two-ended picker, and until BOTH ends are chosen the list keeps every row -
- * see `withinRange`. Half a range is an answer in progress, and emptying a
- * list while somebody is mid-decision is the least helpful moment to do it.
+ * so the only way to find out was to count rows. Picking it now reveals two
+ * date fields, and until BOTH are chosen the list keeps every row - see
+ * `withinRange`. Half a range is an answer in progress, and emptying a list
+ * while somebody is mid-decision is the least helpful moment to do it.
+ *
+ * ⚠ TWO FIELDS RATHER THAN A RANGE PICKER, and the reasoning is at `onFrom`.
+ * There is no hint under them any more either: "Both ends, and the list
+ * narrows" was explaining a control that now explains itself - one empty field
+ * is the whole message, and the start field opens the end field the moment it
+ * is filled.
  *
  * ⚠ The picker's own panel is rendered INSIDE this popover's DOM node. Left in
  * the body it is "outside" as far as the popover's click-away is concerned, so
@@ -67,17 +72,45 @@ export function DateRange({ value, onChange, field }: DateRangeProps) {
 
   const pickCustom = () => onChange({ preset: 'custom', from: value.from, to: value.to });
 
-  const onRange = (v: null | (Dayjs | null)[]) => {
-    const from = v?.[0]?.valueOf();
-    const to = v?.[1]?.valueOf();
+  /* ⚠ TWO PICKERS, NOT A RANGE PICKER (2026-09-04). antd's `RangePicker` was
+     four separate complaints from Gabriel in one screenshot: the two fields and
+     the arrow do not fit a menu this narrow, so both dates truncate to "Oct
+     13, 2(" and "Start da…"; the start field read EMPTY after a date had been
+     chosen; the selection reset on its own; and moving the panel to months or
+     years broke it outright.
+
+     All four are the same thing - a RangePicker is one control holding a pair,
+     with its own idea of which end you are editing, its own hover preview and
+     its own panel state. None of that is wanted here. A window is two dates,
+     and two dates are two fields: each holds one value, each is full width so
+     it fits, and neither can reset the other.
+
+     The one thing the pair does keep is the ORDER: picking a start opens the
+     end, so the common case is still two clicks and no aiming. */
+  const [endOpen, setEndOpen] = useState(false);
+
+  const onFrom = (d: Dayjs | null) => {
+    const from = d?.valueOf();
+    /* A start after the end would be a window with nothing in it. Rather than
+       refuse the click, keep the date the person just chose and drop the other
+       end - they are clearly re-picking from here. */
+    const to = from != null && value.to != null && value.to < from ? undefined : value.to;
     onChange({ preset: 'custom', from, to });
-    if (from != null && to != null) setOpen(false);
+    if (from != null && to == null) setEndOpen(true);
+    else if (from != null && to != null) setOpen(false);
   };
 
-  const asDayjs: [Dayjs | null, Dayjs | null] = [
-    value.from != null ? dayjs(value.from) : null,
-    value.to != null ? dayjs(value.to) : null,
-  ];
+  const onTo = (d: Dayjs | null) => {
+    const to = d?.valueOf();
+    onChange({ preset: 'custom', from: value.from, to });
+    setEndOpen(false);
+    if (to != null && value.from != null) setOpen(false);
+  };
+
+  const fromDay = value.from != null ? dayjs(value.from) : null;
+  const toDay = value.to != null ? dayjs(value.to) : null;
+  /* Nothing recorded in the future, so nothing to ask for there. */
+  const future = (d: Dayjs) => d.isAfter(dayjs(), 'day');
 
   return (
     /* ⚠ ESCAPE CLOSES IT. A menu that traps you until you find somewhere
@@ -125,18 +158,31 @@ export function DateRange({ value, onChange, field }: DateRangeProps) {
             </CheckRow>
             {custom && (
               <div className="m-dr__picker">
-                <DatePicker.RangePicker
+                <DatePicker
                   size="small"
                   autoFocus
-                  allowEmpty={[true, true]}
-                  value={asDayjs}
-                  onChange={onRange}
+                  placeholder="Start date"
+                  value={fromDay}
+                  onChange={onFrom}
                   format="MMM D, YYYY"
+                  /* Never past the end, and never in the future. */
+                  disabledDate={(d) => future(d) || (toDay != null && d.isAfter(toDay, 'day'))}
                   getPopupContainer={() => body.current ?? document.body}
                 />
-                {!isCustomComplete(value) && (
-                  <p className="m-dr__hint">Both ends, and the list narrows.</p>
-                )}
+                <DatePicker
+                  size="small"
+                  placeholder="End date"
+                  value={toDay}
+                  onChange={onTo}
+                  /* ⚠ CONTROLLED, so picking a start can open it. That is the
+                     whole of what the range picker was doing for us that two
+                     fields do not do for free, and it is four lines. */
+                  open={endOpen}
+                  onOpenChange={setEndOpen}
+                  format="MMM D, YYYY"
+                  disabledDate={(d) => future(d) || (fromDay != null && d.isBefore(fromDay, 'day'))}
+                  getPopupContainer={() => body.current ?? document.body}
+                />
               </div>
             )}
           </div>

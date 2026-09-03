@@ -5,15 +5,29 @@ import {
   OR_HOLE,
   OR_INNER,
   OR_INNER_ORIGIN,
+  OR_OUTER,
   OR_OUTLINE,
   OR_VIEWBOX,
 } from '@shared/openreplay-mark.ts';
 import './openreplay-mark.css';
 
 export interface OpenReplayMarkProps {
-  /** Rendered height in px. The nav uses 16. */
+  /** Rendered height in px. The nav uses 16. ⚠ CSS wins if it sets one, which
+   *  is how the sessions list makes the glyph follow the density control. */
   size?: number;
   className?: string;
+  /**
+   * ⚠ `plain` IS THE SAME SHAPE WITHOUT THE BRAND OR THE MACHINERY. Both paths
+   * take `currentColor`, so the mark wears whatever colour it sits in - the
+   * sessions list gives every row a hue and this takes it - and none of the
+   * clip, mask or animation is rendered at all.
+   *
+   * That last part is correctness rather than economy: the shape shift is bound
+   * to `[data-mark-host]`, its defs need an id per instance, and a list of a
+   * hundred and thirty-four rows would mint 268 of them for an animation that
+   * can never fire there.
+   */
+  variant?: 'brand' | 'plain';
 }
 
 /**
@@ -88,7 +102,7 @@ export interface OpenReplayMarkProps {
  * stylesheet. There is nothing to lose: the logo is a logo either way.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function OpenReplayMark({ size = 17, className }: OpenReplayMarkProps) {
+export function OpenReplayMark({ size = 17, className, variant = 'brand' }: OpenReplayMarkProps) {
   /* ⚠ Two marks render at once (the wide nav's and the collapsed one's), so the
      clip needs an id per instance or the second `url(#...)` resolves to the
      first one's node. `useId` returns `:r3:`, and the colons are legal in an
@@ -96,6 +110,46 @@ export function OpenReplayMark({ size = 17, className }: OpenReplayMarkProps) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const clip = `or-hole-${uid}`;
   const mask = `or-cut-${uid}`;
+
+  if (variant === 'plain') {
+    return (
+      <svg
+        className={`m-ormark is-plain${className ? ` ${className}` : ''}`}
+        viewBox={OR_VIEWBOX}
+        height={size}
+        width={(size * 52) / 59}
+        aria-hidden="true"
+      >
+        {/* ⚠ TWO OUTLINES, NOT TWO FILLS (Gabriel, 2026-09-04: "the play icon
+            should be outline like all the other icons"). Every glyph in this
+            product is a lucide stroke, and a solid mark in a row of outlines
+            reads as the heaviest thing on the page.
+
+            So it strokes `OR_OUTER` - the silhouette ALONE, without the hole -
+            and `OR_INNER`. Stroking `OR_OUTLINE` would draw its hole as a third
+            outline, which is a triangle inside a triangle inside a triangle.
+            Two paths, two triangles, exactly what the logo is.
+
+            3.8 is lucide's own optical weight carried across: 1.75 on a 24-unit
+            box is 1.75 x 52/24 here. Round joins because the silhouette already
+            has round corners in its own geometry. */}
+        <path
+          d={OR_OUTER}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={3.8}
+          strokeLinejoin="round"
+        />
+        <path
+          d={OR_INNER}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={3.8}
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
 
   return (
     <svg

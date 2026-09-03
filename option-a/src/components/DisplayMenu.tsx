@@ -110,9 +110,21 @@ export function DisplayShell({ rows, fields, onToggleField, changeCount, onReset
         ))}
       </div>
 
+      {/* ⚠ THE COLUMN PICKER STAYS, AND IT IS FOR REMOVING (Gabriel, 2026-09-04,
+          settling Mehdi's "I don't think people would be adding any other
+          column, because we don't have more information to give"). He is right
+          about adding and it does not follow that the control should go: every
+          column is ON by default, so what this list is actually for is turning
+          things OFF - a narrow window, a projector, a person who does not care
+          about metadata.
+
+          Which is why the heading says so. "Columns" over a row of pills is a
+          menu you read as "pick some"; the pills are all lit, so the only move
+          available is to unpick one, and the heading should not send you
+          looking for the other half. */}
       {fields && fields.length > 0 && (
         <div className="m-dm__section">
-          <p className="m-dm__heading">Columns</p>
+          <p className="m-dm__heading">Columns to hide</p>
           <div className="m-dm__pills">
             {fields.map((f) => (
               <button

@@ -18,6 +18,18 @@
   flex: none;
 }
 
+/* The plain variant takes its colour from whatever it is in, and it sizes from
+   CSS rather than from the `height` attribute - which is how the sessions list
+   makes it follow the density control.
+
+   ⚠ `overflow: visible` because it is STROKED: a stroke is centred on its path,
+   so half of it sits outside the 52x59 box and the silhouette's outer edge
+   would be shaved off by the viewport. The filled variant does not need it. */
+.m-ormark.is-plain {
+  overflow: visible;
+  color: inherit;
+}
+
 .m-ormark__outline { fill: var(--m-brand-blue, #394eff); }
 .m-ormark__fill { fill: var(--m-brand-teal, #27a2a8); }
 /* ⚠ `.m-ormark__eye` has NO colour here and must not get one. It lives inside

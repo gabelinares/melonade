@@ -82,14 +82,15 @@
   border-top: 1px solid var(--m-border-subtle);
 }
 
-.m-dr__picker { padding: var(--m-space-3) var(--m-space-3) var(--m-space-2); }
-.m-dr__picker .ant-picker { width: 100%; }
-
-/* An unfinished range is not an error. It says what is missing in the same
-   quiet voice the rest of the menu uses, because the list has not changed and
-   nothing has gone wrong. */
-.m-dr__hint {
-  padding-top: var(--m-space-2);
-  color: var(--m-content-muted);
-  font-size: var(--m-text-2xs);
+/* ⚠ TWO FIELDS, STACKED, EACH FULL WIDTH. A `RangePicker` puts two dates and an
+   arrow in one field, and in a menu this narrow that is "Start da… → Oct 13, 2("
+   - both ends truncated, which is the state Gabriel screenshotted. One date per
+   line is the only arrangement where `MMM D, YYYY` fits at this width, and it
+   is also the arrangement that matches the interaction: two dates, chosen one
+   at a time. */
+.m-dr__picker {
+  display: grid;
+  gap: var(--m-space-2);
+  padding: var(--m-space-3) var(--m-space-3) var(--m-space-3);
 }
+.m-dr__picker .ant-picker { width: 100%; }

@@ -377,12 +377,33 @@ export function antdTheme(mode: Mode, overrides?: ThemeOverrides): ThemeConfig {
         controlInteractiveSize: 14,
       },
 
+      /* ⚠ THE ON TRACK IS THE ACCENT, NOT THE PRIMARY (2026-09-04). It was
+         `action-primary-bg`, which is near-BLACK in light and near-WHITE in
+         dark - because a primary button inverts with the theme. The handle is
+         white and does not invert, so a switch that was on in dark mode was a
+         white circle on a white track: 1.06:1, and Gabriel's screenshot of it
+         is a blank pill.
+
+         The handle cannot be fixed instead. Flipping it dark in dark mode
+         solves the ON state and breaks the OFF one, whose track is a mid grey
+         (#5c6568) - one handle colour cannot read against both a near-white
+         and a mid-dark track. So the TRACK has to stop being near-white, which
+         means it has to stop being the primary.
+
+         ⚠ AND IT COMES FROM THE PALETTE, NOT FROM A ROLE. A role is allowed to
+         flip with the theme - that is what a role is for - and this one value
+         must not, because the handle on top of it does not flip either. Both
+         `content-accent` and `focus-ring` are lighter in dark mode, and using
+         either put a white handle back on a pale track (1.65:1) the moment you
+         hovered it. `a-500` and `a-600` are ramp entries: white reads 4.8:1 and
+         6.4:1 on them in every theme, because they ARE the same colour in every
+         theme. */
       Switch: {
         handleSize: 12,
         trackHeight: 16,
         trackMinWidth: 28,
-        colorPrimary: c['action-primary-bg'],
-        colorPrimaryHover: c['action-primary-bg-hover'],
+        colorPrimary: p['a-500'],
+        colorPrimaryHover: p['a-600'],
       },
 
       Divider: { colorSplit: c['border-subtle'], marginLG: 12 },

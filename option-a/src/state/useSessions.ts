@@ -361,6 +361,13 @@ export function useSessions() {
     replaceFilter,
     removeFilter,
     filterToUser,
+    /* ⚠ WHAT THE MENU COUNTS. Sessions you have not opened, over the whole
+       fixture - NOT over the search, and not over the window. It is the same
+       reading every agent's count uses ("open", "waiting on you") and it has to
+       be, because a badge on a menu row is answering "is there anything in
+       there for me" from outside the page. Counted against `all`, so watching
+       one takes it off the badge. */
+    newCount: all.filter((s) => !s.viewed).length,
     /* the replay */
     watching: watchingId ? (all.find((s) => s.sessionId === watchingId) ?? null) : null,
     openSession,

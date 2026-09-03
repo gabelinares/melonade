@@ -1,10 +1,10 @@
-import { Button, Dropdown, Table, Tooltip } from 'antd';
+import type { CSSProperties } from 'react';
+import { Button, Dropdown, Table, Tabs, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
   Angry,
   BookOpen,
   CircleAlert,
-  CirclePlay,
   type LucideIcon,
   MessageCircleWarning,
   Monitor,
@@ -31,7 +31,7 @@ import {
   type SessionTag,
 } from '@shared/sessions-logic.ts';
 import type { useSessions } from '../state/useSessions.ts';
-import { seedFor } from '@shared/avatar.ts';
+import { hueIndexFor, seedFor } from '@shared/avatar.ts';
 import { displayNameOf } from '@shared/sessions-data.ts';
 import { DateRange } from '../components/DateRange.tsx';
 import { PageCard } from '../components/PageCard.tsx';
@@ -48,6 +48,7 @@ import { SearchCard } from './SearchCard.tsx';
 import { SegmentDrawer } from './SegmentDrawer.tsx';
 import { SegmentsPanel } from './SegmentsPanel.tsx';
 import { SessionReplay } from './SessionReplay.tsx';
+import { OpenReplayMark } from '../nav/OpenReplayMark.tsx';
 import './sessions-page.css';
 
 /* ── THE DEVICE, AS ONE GLYPH ────────────────────────────────────────────────
@@ -169,6 +170,25 @@ export function SessionsPage({ model }: SessionsPageProps) {
   const has = (f: SessionField) => display.fields.includes(f);
 
 
+  /* ── ONE ALIGNMENT RULE AND ONE WIDTH RHYTHM (2026-09-04) ─────────────────
+     Gabriel: *"you need to standardize the column width and alignment, I feel
+     that Started and Events are different and Duration is really close to
+     Location."* Both halves of that were true and they were the same bug.
+
+     ⚠ EVERY COLUMN IS LEFT-ALIGNED except the device glyph, which is centred
+     because a lone glyph has nothing to hold a line with, and the play, which
+     is pinned right because it is the row's affordance. Events, Pages and
+     Duration were right-aligned - which is correct in a table you compare
+     magnitudes down, and this is not one; you scan it for a session. What it
+     cost is exactly what he saw: a right-aligned Duration ends where the
+     left-aligned Location begins, so the two values touch while their columns
+     are 96 and 160 apart. Right alignment puts the whitespace on the wrong
+     side of the number.
+
+     ⚠ AND EVERY WIDTH IS A MULTIPLE OF 8: 88, 96, 112, 160, 200, with 56 for
+     the two glyph columns. Started and Events were 104 and 82 - no rhythm, and
+     the 2px is the sort of thing you feel without being able to name. Pages
+     takes Events' width because it is the same kind of thing. */
   const columns: TableColumnsType<SessionRow> = [
     {
       title: 'Session',
@@ -216,7 +236,7 @@ export function SessionsPage({ model }: SessionsPageProps) {
           {
             title: 'Started',
             key: 'started',
-            width: 104,
+            width: 112,
             ...sortable,
             render: (_: unknown, s: SessionRow) => <RelativeTime minutesAgo={s.startedAgoMin} />,
           },
@@ -227,8 +247,7 @@ export function SessionsPage({ model }: SessionsPageProps) {
           {
             title: 'Events',
             key: 'events',
-            width: 82,
-            align: 'right' as const,
+            width: 88,
             ...sortable,
             render: (_: unknown, s: SessionRow) => <span className="m-ss__fig">{s.eventsCount}</span>,
           },
@@ -247,8 +266,11 @@ export function SessionsPage({ model }: SessionsPageProps) {
           {
             title: 'Pages',
             key: 'pages',
-            width: 74,
-            align: 'right' as const,
+            /* The same width as Events, because it is the same KIND of thing -
+               a count of something in the session. Two counts of different
+               widths is the kind of difference a reader notices and cannot
+               explain. */
+            width: 88,
             render: (_: unknown, s: SessionRow) => <span className="m-ss__fig">{s.pagesCount}</span>,
           },
         ]
@@ -259,7 +281,6 @@ export function SessionsPage({ model }: SessionsPageProps) {
             title: 'Duration',
             key: 'duration',
             width: 96,
-            align: 'right' as const,
             /* ⚠ NOT SORTABLE, and neither is anything but Started and Events.
                The backend orders on `startTs` and `eventsCount` only - see
                SORT_CHOICES - because anything else means reloading a list that
@@ -277,7 +298,7 @@ export function SessionsPage({ model }: SessionsPageProps) {
           {
             title: 'Location',
             key: 'location',
-            width: 150,
+            width: 160,
             render: (_: unknown, s: SessionRow) => (
               <span className="m-ss__where m-truncate">
                 <span className="m-ss__cc">{s.countryCode}</span>
@@ -303,7 +324,7 @@ export function SessionsPage({ model }: SessionsPageProps) {
                The 98px it still gives back go to the session name - the only
                column with no width of its own and the one that runs out of
                room. */
-            width: 60,
+            width: 56,
             align: 'center' as const,
             /* ⚠ ONE GLYPH, AND THE WORDS MOVE TO THE TOOLTIP (Gabriel,
                2026-09-04, on Mehdi's ask): the device type is drawn, the browser
@@ -416,13 +437,29 @@ export function SessionsPage({ model }: SessionsPageProps) {
       /* Narrower by the bookmark's width, and the glyph is a size down: with
          nothing beside it there is no pair to hold an edge against, and Mehdi's
          last word on it was "keep the play button, but make it much smaller". */
-      width: 52,
+      width: 56,
+      /* ⚠ CENTRED, not pinned right (Gabriel, 2026-09-04). Right-aligned it sat
+         hard against the plane's edge with the cell's whole width of empty
+         behind it, which reads as a thing that fell off the row rather than a
+         column. Centred it has a column of its own, the way the device glyph
+         two along does. */
+      align: 'center' as const,
       className: 'm-ss__playcell',
+      /* ⚠ THE OPENREPLAY MARK, NOT A GENERIC PLAY (Gabriel, 2026-09-04: "the
+         recording icon should be two triangles, like the OpenReplay logo").
+         It was `CirclePlay` - a circle with a triangle in it, the same glyph
+         every media player on the internet uses. The product's own mark is a
+         play button already, and using it here makes the one affordance on the
+         row say WHOSE recording this is. It is also the second half of Mehdi's
+         recognition argument: the avatar on the left and this on the right, and
+         "right away I understand I'm on the sessions page."
+
+         No colour of its own: it inherits the row's hue. See the stylesheet. */
       render: () => (
-        <span className="m-ss__play" aria-hidden="true">
-          <CirclePlay size={15} strokeWidth={1.75} />
+        <span className="m-ss__play">
+          <OpenReplayMark variant="plain" />
         </span>
-            ),
+      ),
     },
   ];
 
@@ -476,22 +513,43 @@ export function SessionsPage({ model }: SessionsPageProps) {
 
   return (
     <PageCard
-      /* ⚠ NO `tabs` SLOT SINCE 2026-09-04, and the three that were in it are
-         menu rows now. Gabriel's spec marks Sessions / Bookmarks / Segments as
-         **(Subitem)** while Synthetics' three stay **(Tab)**, and the two are
-         not interchangeable: a thing drawn in the menu AND in the page is two
-         controls showing one fact, which is exactly what the "tabs don't show
-         in the sidemenu" rule exists to prevent. `model.tab` is still the one
-         source - the shell writes it from the route and reads it back for the
-         highlight, so applying a segment (which moves you to the session list)
-         moves the menu with it.
+      /* ⚠ THE STRIP IS BACK, AND SO ARE THE MENU ROWS (Gabriel, 2026-09-04:
+         "also bring back the sessions/bookmarks/segments tab, same tab as the
+         synthetics"). It came out that morning because the spec marked the
+         three as (Subitem), and a thing drawn in the menu AND in the page had
+         been the standing objection - two controls showing one fact.
 
-         Which is also why the TITLE moves now and did not before. A tab strip
-         under one title says *these are three views of Sessions*; three menu
-         rows say *these are three destinations*, and a destination whose header
-         does not name it is a page you cannot tell you have arrived at. */
+         What makes both correct here is that there is still only one fact.
+         `model.tab` is the single source: the strip writes it, and the shell
+         DERIVES the menu's highlight from it rather than keeping a route of its
+         own. So the two controls cannot disagree - and applying a segment,
+         which moves you to the session list without either being clicked,
+         moves both. The objection was never to two controls; it was to two
+         copies of the state behind them.
+
+         And the pair earns its keep: the menu is where you go from anywhere,
+         the strip is where you move between siblings without leaving the page
+         you are reading. Synthetics has exactly this strip, which is what "same
+         tab as the synthetics" asks for.
+
+         The TITLE still moves. A destination whose header does not name it is a
+         page you cannot tell you have arrived at, and these three are
+         destinations in the menu whatever the strip does. */
       title={SECTION[model.tab].title}
       subtitle={SECTION[model.tab].sub}
+      tabs={
+        <Tabs
+          activeKey={model.tab}
+          onChange={(k) => model.setTab(k as SessionTab)}
+          /* The menu's own words, not a second set. "All sessions" here and
+             "Sessions" in the column would be one section with two names. */
+          items={[
+            { key: 'all', label: 'Sessions' },
+            { key: 'bookmarks', label: 'Bookmarks' },
+            { key: 'segments', label: 'Segments' },
+          ]}
+        />
+      }
       actions={
         <>
           {/* ⚠ THE SEGMENTS DROPDOWN IS GONE. It listed four names and did one
@@ -704,6 +762,18 @@ export function SessionsPage({ model }: SessionsPageProps) {
                control somebody adds without updating it would silently open the
                replay instead of doing its own job. */
             onRow={(s) => ({
+              /* ⚠ ONE HUE PER ROW, SET ON THE ROW - which is what makes it one
+                 hue rather than two things that agree. Mehdi's own resolution
+                 to his twenty-colours objection: "on each line the colour of
+                 the play button and the colour of whatever this widget you use
+                 could be the same. You'll have some consistency, you'll still
+                 recognise the page, but it wouldn't be too many colours."
+
+                 The avatar on the left and the mark on the right both read this
+                 one property, so the two ends of a wide row are visibly the
+                 same row. Twelve hues, seeded on the identity, so a person's
+                 rows are always the same colour - see shared/avatar.ts. */
+              style: { '--m-avatar-i': hueIndexFor(seedFor(s)) } as CSSProperties,
               onClick: (e) => {
                 const el = e.target as HTMLElement;
                 if (el.closest('button') || el.closest('.ant-dropdown')) return;

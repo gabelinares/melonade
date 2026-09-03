@@ -86,23 +86,26 @@ const shell = await p.evaluate(() => ({
   planeBg: getComputedStyle(document.querySelector('.m-page')).backgroundColor,
 }));
 check('the page renders with the shell every other page uses',
-  shell.title === 'Sessions' && shell.tabs.length === 0,
-  `${shell.title}, ${shell.tabs.length} tabs in the header`);
+  shell.title === 'Sessions' && shell.tabs.length === 3,
+  `${shell.title}, tabs ${shell.tabs.join('/')}`);
 /* ⚠ THREE SECTIONS SINCE 2026-09-02: Segments became a tab rather than a
    dropdown at the top of the page. Same argument Bookmarked won on - a section
    replaces the body, a filter narrows it, and a list of segments is a list of a
    different thing. */
-/* ⚠ INVERTED ON 09-04, and it is the third rewrite of this assertion. The
-   three were a dropdown (killed 09-02), then text tabs in the header, and they
-   are MENU ROWS now - so what has to be checked is that they are in exactly one
-   place. A thing drawn in the menu and in the page is two controls showing one
-   fact, which is what the "tabs don't show in the sidemenu" rule exists to
-   stop. */
-check('the three sections are menu rows and the page draws no strip of its own',
+/* ⚠ FOURTH REWRITE OF THIS ASSERTION IN THREE DAYS. The three were a dropdown
+   (killed 09-02), then text tabs, then menu rows only (09-04 morning), and they
+   are BOTH now - Gabriel asked for the strip back beside the rows.
+
+   Which is fine, and the reason it is fine is the thing worth asserting: there
+   is still only ONE piece of state. `model.tab` is written by the strip and the
+   menu's highlight is DERIVED from it, so the two controls cannot disagree. The
+   standing objection was never to two controls; it was to two copies. Checked
+   below, at "the strip and the menu move together". */
+check('the three sections are in the strip and in the menu, with the same names',
   !shell.tabsArePills
-    && shell.tabs.length === 0
+    && shell.tabs.join('/') === 'Sessions/Bookmarks/Segments'
     && ['Sessions', 'Bookmarks', 'Segments'].every((n) => shell.menuSections.includes(n)),
-  `page ${shell.tabs.length} tabs, menu ${shell.menuSections.join('/')}`);
+  `page ${shell.tabs.join('/')}, menu ${shell.menuSections.join('/')}`);
 /* Mehdi, 2026-09-02: keep only the two tabs. The issue-type strip went and its
    toolbar row went with it - the date range and the display menu moved onto the
    search's own bar, which is the row that STICKS. */
@@ -154,14 +157,21 @@ const figs = await p.evaluate(() => {
   const cs = cells.length ? getComputedStyle(cells[0]) : null;
   return {
     n: cells.length,
-    rights: [...new Set(cells.map((e) => Math.round(e.getBoundingClientRect().right)))].length,
+    lefts: [...new Set(cells.map((e) => Math.round(e.getBoundingClientRect().left)))].length,
     numeric: cs?.fontVariantNumeric,
     family: cs?.fontFamily.split(',')[0],
   };
 });
-check('every figure in a column shares one right edge and one face',
-  figs.n === 12 && figs.rights === 1 && /tabular/.test(figs.numeric ?? ''),
-  `${figs.n} cells, ${figs.rights} edge, ${figs.numeric}`);
+/* ⚠ ONE LEFT EDGE, NOT ONE RIGHT ONE (2026-09-04). Every column in this table
+   is left-aligned now except the two glyph columns. Right-aligned figures are
+   correct in a table you compare magnitudes down and this is not one - you scan
+   it for a session - and the cost was visible: a right-aligned Duration ends
+   where the left-aligned Location begins, so two values touch while their
+   columns are 96 and 160 apart. The tabular face still matters, because that is
+   what keeps the digits themselves in column. */
+check('every figure in a column shares one left edge and one face',
+  figs.n === 12 && figs.lefts === 1 && /tabular/.test(figs.numeric ?? ''),
+  `${figs.n} cells, ${figs.lefts} edge, ${figs.numeric}`);
 
 /* ── 2. ONE BUTTON ───────────────────────────────────────────────────────────
    The claim, and the whole reason this is a cheap change: one picker holds both
@@ -1110,13 +1120,28 @@ await openRange();
 await p.locator('.m-dr__menu .m-checkrow', { hasText: 'Custom range' }).click();
 await p.waitForTimeout(300);
 const halfPicked = {
+  /* ⚠ TWO FIELDS, NOT ONE RANGE PICKER (2026-09-04). antd's RangePicker was
+     four complaints in one screenshot: the pair and its arrow do not fit a menu
+     this narrow so both dates truncate, the start field read empty after a date
+     was chosen, the selection reset on its own, and moving the panel to months
+     or years broke it. All four are one control holding a pair and having its
+     own idea of which end you are editing. Two fields have none of that. */
   picker: await p.locator('.m-dr__picker .ant-picker').count(),
+  placeholders: await p.locator('.m-dr__picker input').evaluateAll((e) => e.map((i) => i.placeholder)),
+  /* The hint is gone: "Both ends, and the list narrows" was explaining a
+     control that now explains itself - an empty field IS the message. */
   hint: await p.locator('.m-dr__hint').count(),
+  fits: await p.locator('.m-dr__picker .ant-picker').evaluateAll((e) =>
+    e.every((x) => x.querySelector('input').scrollWidth <= x.querySelector('input').clientWidth + 1)),
   rows: await total(),
 };
-check('picking custom opens a two-ended picker and narrows nothing until both ends are in',
-  halfPicked.picker === 1 && halfPicked.hint === 1 && halfPicked.rows === windows['90d'],
-  `picker ${halfPicked.picker}, hint ${halfPicked.hint}, ${halfPicked.rows} rows`);
+check('picking custom opens two date fields and narrows nothing until both are in',
+  halfPicked.picker === 2
+    && halfPicked.hint === 0
+    && halfPicked.placeholders.join('/') === 'Start date/End date'
+    && halfPicked.rows === windows['90d'],
+  `${halfPicked.picker} fields (${halfPicked.placeholders.join(', ')}), ${halfPicked.hint} hints, ${halfPicked.rows} rows`);
+check('and each date fits its own field', halfPicked.fits);
 
 const day = (back) => {
   const d = new Date(Date.now() - back * 86400000);
@@ -1301,20 +1326,72 @@ check('and it holds that edge while the table scrolls under it',
   !held.moved || held.before === held.after,
   held.moved ? `${held.before} → ${held.after}` : 'nothing to scroll at this width');
 
-await p.hover('.m-ss__row');
-await p.waitForTimeout(250);
-const playHover = await p.evaluate(() => {
-  const root = getComputedStyle(document.documentElement);
-  const hex = root.getPropertyValue('--m-content-accent').trim().replace('#', '');
-  const n = Number.parseInt(hex, 16);
+/* ── THE PLAY IS THE MARK, AND ITS HOVER IS ITS OWN (2026-09-04) ──────────
+   Three changes at once, and they answer each other. It is the OpenReplay mark
+   rather than `CirclePlay` - the product's own glyph, so the one affordance on
+   the row says whose recording this is. It is STROKED, because every other
+   glyph here is. And the row's hue arrives when you hover THE GLYPH, not the
+   row: on the row it fired every time a cursor crossed a line on the way
+   somewhere else, which is a colour nobody asked for. */
+const playShape = await p.evaluate(() => {
+  const svg = document.querySelector('.m-ss__play svg');
+  const paths = [...svg.querySelectorAll('path')];
+  const cell = svg.closest('.m-ss__playcell').getBoundingClientRect();
+  const box = svg.getBoundingClientRect();
   return {
-    colour: getComputedStyle(document.querySelector('.m-ss__play')).color,
-    accent: `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`,
+    paths: paths.length,
+    outlined: paths.every((x) => getComputedStyle(x).fill === 'none' && parseFloat(getComputedStyle(x).strokeWidth) > 0),
+    offCentre: Math.round((box.left + box.right) / 2 - (cell.left + cell.right) / 2),
+    target: Math.round(document.querySelector('.m-ss__play').getBoundingClientRect().width),
   };
 });
-check('and it takes the accent on the ROW\'s hover, because the row is the target',
-  playRest.colour !== playHover.colour && playHover.colour === playHover.accent,
-  `${playRest.colour} → ${playHover.colour}`);
+check('the play is the mark: two triangles, outlined like every other glyph',
+  playShape.paths === 2 && playShape.outlined, `${playShape.paths} paths, outlined ${playShape.outlined}`);
+/* ⚠ CENTRED ON THE CELL, not on the cell's CONTENT box. The table gives its
+   last column a 20px right inset and every cell an 8px left one, so
+   `text-align: center` put the glyph 6px off - a mistake you can see and cannot
+   name. Both paddings are zeroed on this cell. */
+check('and it is centred in its column, with a target bigger than itself',
+  playShape.offCentre === 0 && playShape.target >= 24,
+  `${playShape.offCentre}px off centre, ${playShape.target}px target`);
+
+/* ⚠ AND IT IS ONLY ON THE ROW YOU ARE POINTING AT. Twelve of them down a
+   column is a texture you stop seeing; the row is clickable anyway, so the
+   glyph is the reminder that there is a way in rather than the only one. */
+await p.mouse.move(1500, 950);
+await p.waitForTimeout(300);
+const hidden = await p.evaluate(() =>
+  [...document.querySelectorAll('.m-ss__play')].map((e) => getComputedStyle(e).opacity));
+check('the play is on no row until one is hovered',
+  hidden.every((o) => o === '0'), `${hidden.filter((o) => o !== '0').length} of ${hidden.length} showing`);
+
+await p.hover('.m-ss__name');
+await p.waitForTimeout(300);
+const onRowHover = await p.evaluate(() => {
+  const all = [...document.querySelectorAll('.m-ss__play')];
+  return { colour: getComputedStyle(all[0]).color,
+    shown: all.filter((e) => getComputedStyle(e).opacity === '1').length };
+});
+check('hovering the ROW reveals exactly one, and does not colour it',
+  onRowHover.shown === 1 && onRowHover.colour === playRest.colour,
+  `${onRowHover.shown} shown, ${playRest.colour} → ${onRowHover.colour}`);
+
+await p.hover('.m-ss__play');
+await p.waitForTimeout(300);
+const playHover = await p.evaluate(() => ({
+  colour: getComputedStyle(document.querySelector('.m-ss__play')).color,
+  hue: getComputedStyle(document.querySelector('.m-ss__row')).getPropertyValue('--m-avatar-i').trim(),
+  ground: getComputedStyle(document.querySelector('.m-ss__row .m-savatar')).backgroundColor,
+}));
+/* ⚠ THE ROW'S OWN HUE, and the avatar's ground is mixed from the same one -
+   which is the whole of Mehdi's "one hue per row, used twice". The lightness
+   differs because the jobs do: 0.93 behind an illustration, 0.52 as a stroked
+   glyph on the same surface. */
+check('and hovering the PLAY takes the row\'s own hue',
+  playHover.colour !== playRest.colour
+    && playHover.colour.includes(`${Number(playHover.hue) * 30}`)
+    && playHover.ground.includes(`${Number(playHover.hue) * 30}`),
+  `${playRest.colour} → ${playHover.colour}, avatar ${playHover.ground}`);
 
 /* ── THE RING IS A DASH ON A PATH ────────────────────────────────────────
    Third attempt, and the two before it failed on the same fact - the field is
