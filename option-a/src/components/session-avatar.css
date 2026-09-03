@@ -33,9 +33,16 @@
      it can be RECOLOURED after the fact, which is a possibility worth
      remembering the next time a third-party asset is the wrong weight.
 
-     Light: 0.93 ground, robot darkened. Dark: 0.30 ground, robot as it comes. */
-  --m-avatar-l: 0.96;
-  --m-avatar-c: 0.03;
+     Light: a near-white ground with the hue barely in it, and the robot
+     darkened almost to black. Dark: 0.30 ground, robot as it comes.
+
+     ⚠ The light ground went 0.93 → 0.96 → 0.985 over three rounds and the hue
+     came down with it. It has to stay a hint rather than a wash: the robot's
+     body is 40% black over this, so anything with real colour in it tints the
+     BODY as much as the chip, and the silhouette stops reading as a robot and
+     starts reading as a stain. */
+  --m-avatar-l: 0.985;
+  --m-avatar-c: 0.015;
   display: block;
   flex: none;
   overflow: hidden;
