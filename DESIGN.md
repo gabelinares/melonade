@@ -4991,6 +4991,13 @@ design, and the replay is explicitly a placeholder this week (BACKLOG §22.5.5:
 "drop in the existing issue-replay page"). All the new work is an adapter in
 `shared/session-replay.ts` plus a header.
 
+**The whole row wears the click cursor.** Gabriel, immediately after: *"the row
+cursor should be the click cursor."* The play glyph on the right had been
+carrying the entire affordance — at the far edge of a wide table, which is
+exactly the corner a reader is not looking at while they read a name on the left.
+The two exceptions inside the row keep `pointer` too, because they are also
+clicks; what would be wrong is a row that looked inert.
+
 **One guard covers both exceptions.** The name and the metadata pills are both
 `<button>`s, so `el.closest('button')` handles them — and handles whatever gets
 added next. Writing the exceptions out by class would have been a list to

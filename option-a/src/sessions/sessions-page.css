@@ -289,6 +289,19 @@
    one edge. Without a ground of its own the header's gradient would resolve to
    nothing and the column titles would scroll out from under the glyph. */
 .m-ss__table { --m-ss-play-ground: var(--m-surface-sunken); }
+/* ⚠ THE WHOLE ROW IS THE CLICK, so the whole row says so (Gabriel,
+   2026-09-04). It opens the replay, and a row that opens something while the
+   cursor stays an arrow is a row nobody discovers is clickable - the play glyph
+   on the right was carrying that job alone, at the far edge of a wide table,
+   which is exactly the corner a reader is not looking at while they read a name
+   on the left.
+
+   The two exceptions inside the row keep their own cursor: `.m-ss__name` and
+   `.m-ss__meta-chip` are buttons and set `pointer` themselves for their own
+   verb, which happens to be the same glyph - and that is fine, because both ARE
+   clicks. What would be wrong is a row that looked inert. */
+.m-ss__table .m-ss__row { cursor: pointer; }
+
 .m-ss__table .m-ss__row { --m-ss-play-ground: var(--m-surface-default); }
 .m-ss__table .m-ss__row:hover { --m-ss-play-ground: var(--m-surface-hover); }
 

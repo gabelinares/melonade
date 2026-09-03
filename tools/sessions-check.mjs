@@ -503,6 +503,22 @@ await p.waitForTimeout(350);
    still look right until you tried to click a name. */
 const replayOpen = () => p.locator('.m-sreplay').count();
 
+/* ⚠ AND THE ROW SAYS IT IS A CLICK (Gabriel, 2026-09-04: "the row cursor should
+   be the click cursor"). The play glyph on the right was carrying the whole
+   affordance, at the far edge of a wide table - which is the corner a reader is
+   not looking at while they read a name on the left. Asserted on a plain CELL,
+   not on a control inside one, because a `<button>` sets its own. */
+const rowCursor = await p.evaluate(() => {
+  const row = document.querySelector('.m-ss__row');
+  return {
+    row: getComputedStyle(row).cursor,
+    cell: getComputedStyle(row.querySelector('td:nth-child(3)')).cursor,
+  };
+});
+check('the row wears the click cursor, and so does a plain cell in it',
+  rowCursor.row === 'pointer' && rowCursor.cell === 'pointer',
+  `row ${rowCursor.row}, cell ${rowCursor.cell}`);
+
 await p.locator('.m-ss__name').first().click();
 await p.waitForTimeout(500);
 check('clicking the name does not open the replay', (await replayOpen()) === 0);
