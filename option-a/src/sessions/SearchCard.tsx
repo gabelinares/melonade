@@ -37,6 +37,13 @@ import './search-card.css';
    whole reason this line is now four words long. */
 const LEAD = 'Filter these sessions';
 
+/** ⚠ THE SAME COPY IN THE SEGMENT DRAWER, in that drawer's own words. It is
+ *  the same control doing the same job, so it says the same thing - but "these
+ *  sessions" points at a list, and in a drawer there is no list to point at:
+ *  you are saying which sessions the segment will hold. One word changes and
+ *  the sentence keeps its shape. */
+const LEAD_PANEL = 'Filter the sessions this segment holds';
+
 const ORDER_OPTIONS: ReadonlyArray<{ value: EventsOrder; label: string; hint: string }> = [
   { value: 'then', label: 'then', hint: 'In this order, one after another' },
   { value: 'and', label: 'and', hint: 'All of them, in any order' },
@@ -177,6 +184,7 @@ export function SearchCard({
   const takenProperties = properties.map((f) => f.entryId);
   const rowCount = events.length + properties.length;
   const inPanel = variant === 'panel';
+  const lead = inPanel ? LEAD_PANEL : LEAD;
   const collapse = useFilterCollapse(inPanel ? 0 : rowCount);
   /* A drawer holds still: nothing scrolls past it, so there is nothing for it
      to get out of the way of, and a collapsed rule list in a panel opened to
@@ -226,7 +234,7 @@ export function SearchCard({
           <button
             type="button"
             className="m-sc__field"
-            aria-label={LEAD}
+            aria-label={lead}
           >
             {/* ⚠ AN SVG STROKE, not a gradient (Mehdi, 2026-09-02: "the ring
                 should be a circle, and have a nice modern effect of increasing
@@ -252,7 +260,7 @@ export function SearchCard({
             </span>
             <ListFilter size={16} className="m-sc__field-glyph" aria-hidden="true" />
             <span className="m-sc__field-text" aria-hidden="true">
-              <span className="m-sc__lead">{LEAD}</span>
+              <span className="m-sc__lead">{lead}</span>
             </span>
           </button>
         </FilterPicker>

@@ -136,6 +136,29 @@ export function FilterPicker({
 
   const words = q.split(/\s+/).filter(Boolean).length;
   const nl = useMemo(() => (onTranslate && words >= 2 ? translate(q) : null), [onTranslate, q, words]);
+
+  /* ⚠ SPLIT, IN THE CATALOGUE'S OWN ORDER within each half - so a category the
+     rail is showing keeps the order the rail implies, and only the kind is a
+     new axis. An empty half is not rendered at all, which is what makes the
+     headings disappear when there is nothing to disambiguate. */
+  const kinds = useMemo(() => {
+    const events = shown.filter((e) => e.isEvent);
+    const filters = shown.filter((e) => !e.isEvent);
+    return [
+      {
+        key: 'events',
+        name: 'Things that happened',
+        hint: 'In order, and they can repeat',
+        rows: events,
+      },
+      {
+        key: 'filters',
+        name: 'Conditions on the session',
+        hint: 'Applied to the whole search',
+        rows: filters,
+      },
+    ].filter((g) => g.rows.length > 0);
+  }, [shown]);
   const offerNL = nl != null;
 
   const close = () => {
@@ -255,7 +278,37 @@ export function FilterPicker({
 
           {shown.length === 0 && !offerNL && <p className="m-pick__none">Nothing matches that.</p>}
 
-          {shown.map((e) => {
+          {/* ⚠ THE TWO KINDS ARE SEPARATED, AND ONLY WHEN BOTH ARE THERE
+              (Mehdi, 2026-09-02: keep one button, but "if it's a filter maybe
+              it shows up slightly different").
+
+              Production splits them into two BUTTONS, which is the thing this
+              deletes: you had to know whether what you wanted was an event or
+              a property before you could start looking for it. What production
+              is right about is that they are genuinely two kinds, and the
+              picker had stopped saying so at all.
+
+              So: one search across both, and a heading appears only when the
+              result actually spans them. Type "country" and it is a filter -
+              one group, no heading, nothing to disambiguate. Type "error" and
+              it is both, and the headings earn their two rows.
+
+              ── WHAT THE HEADINGS SAY, and it is not "Events / Filters" ──────
+              The words are the problem Mehdi named: "people don't know right
+              away what an event is, what a filter is." So the headings say what
+              the two kinds DO to your search. An event is something that
+              happened, in order, and it can repeat; a filter is a condition on
+              the session, and it cannot. Those two sentences are the whole
+              distinction, and printing them once beats a glossary. */}
+          {kinds.map((g) => (
+            <div key={g.key} className="m-pick__kind">
+              {kinds.length > 1 && (
+                <p className="m-pick__kind-head">
+                  <span className="m-pick__kind-name">{g.name}</span>
+                  <span className="m-pick__kind-hint">{g.hint}</span>
+                </p>
+              )}
+              {g.rows.map((e) => {
             /* An event is repeatable, a property is not: two Clicks in a
                sequence is the normal case, two Country filters is a
                contradiction. */
@@ -280,7 +333,9 @@ export function FilterPicker({
                 {dead && <span className="m-pick__cat-tag">added</span>}
               </button>
             );
-          })}
+              })}
+            </div>
+          ))}
         </div>
       </div>
     </div>

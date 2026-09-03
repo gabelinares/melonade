@@ -4522,3 +4522,107 @@ way.
 Bookmarked is already a tab on Sessions — two rows meaning "saved" in one column
 is the confusion worth avoiding. ⚠ Mehdi also said on 09-02 that Highlights is
 *"probably"* being removed, so this row may not survive its own kill list.
+
+## 27. The OpenReplay mark, and the picker starts saying which kind (2026-09-03)
+
+### The logo is the product's own file
+
+Copied out of `openreplay-repo/frontend/app/svg/logo-small.svg` into
+`shared/openreplay-mark.ts` — two paths, one viewBox, both brand colours as the
+file carries them: the outline in `#394EFF` and the inner play in `#27A2A8`.
+
+⚠ **Not redrawn.** A logo is the one asset in a design system where "close
+enough" is worth nothing, because it is the thing every reader already knows
+the shape of.
+
+**Reading the shape is what gave the animation away.** The mark is *a play
+button inside a play button* — the outer triangle has the inner one cut out of
+it (one path, two subpaths, `fill-rule: nonzero`) and a small solid play sits in
+the hole. Nothing had to be added to make it move; the two halves were always
+separable, which is how Mehdi's *"keep it as a play button"* and *"slightly
+lift it up"* are satisfied at once.
+
+So on hover **the inner play advances**: it slides 2.5 viewBox units along the
+direction it points and grows 9%, as though the thing had been pressed and
+started. Three rules keep it from being a toy:
+
+1. **One move, and it ends.** No loop, no pulse, no spin. It travels on enter
+   and returns on leave. A logo that animates forever is a logo you learn to
+   ignore — and this one now sits beside a control people are actually aiming
+   at (the collapse).
+2. **It moves along its own axis.** A play glyph has a direction, so forward is
+   the only motion that does not fight the shape. Scaling from the centre would
+   make it a bubble; rotating it would make it a spinner.
+3. ⚠ **The pivot is the inner play's own centre**, `21px 29.5px` in viewBox
+   units, not the box's. The glyph sits left of centre, so scaling about the box
+   would drag it sideways and the growth would read as a drift.
+
+**The outline holds still**, always — a logo whose silhouette changes on hover
+reads as a different logo. It deepens a shade instead, so the pair responds as
+one object rather than a part coming loose.
+
+⚠ **The colours are tokens with the brand's values as fallbacks**
+(`--m-brand-blue`, `--m-brand-teal`). The day the palette moves to OpenReplay's
+blue — *"maybe change it to a slightly different blue"* — the logo follows from
+the same place every other accent does, instead of holding a hex the rest of the
+build has moved past.
+
+And the wordmark says **OpenReplay**. The strategy question closed on the
+facelift, so the Melonade name went with it.
+
+### The picker says which kind, and only when that is a question
+
+> *"Separating the filters from the events… if it's a filter maybe it shows up
+> slightly different."*
+
+**Verified against production first**, in `types/filter/newFilter.js` and
+`filterType.ts`, and the shape is more tangled than either screenshot suggests:
+
+- **23 events and 35 filters**, over seven categories: Autocapture, DevTools,
+  User, Metadata, Session, Issue, Events.
+- ⚠ **The categories are shared, not split.** DevTools holds events (Error,
+  GraphQL, the performance metrics) *and* filters (Fetch URL, Console). Session
+  is filters only. So "which category" cannot tell you "which kind" — which is
+  exactly what Gabriel said on the call: *"both of them are auto captures in my
+  opinion."*
+- **Production's own pickers already print the namespace on every row**
+  (`Autocapture ›  Label`) and show a data-type glyph — `Aa`, `#` — **in the
+  Filters list only.** That is the real discriminator hiding in their UI: **an
+  event has no data type; a filter does.**
+
+Our picker already carried those glyphs. What it had stopped doing was saying
+there are two kinds at all — the merge into one button took the distinction out
+along with the two headings.
+
+**So: one search across both, and a heading that appears only when the result
+spans them.** Type `country` and it is a filter — one group, no heading, nothing
+to disambiguate. Type `error` and it is both, and the two headings earn their
+rows. That keeps the win (you no longer have to know the kind before you can
+start looking) and returns the fact (they behave differently once they land).
+
+⚠ **And the headings are not "Events" and "Filters".** Those two nouns are
+precisely what Mehdi says people do not know on arrival — *"people don't know
+right away what an event is, what a filter is."* So the headings say what each
+kind does to your search:
+
+| | |
+| --- | --- |
+| **Things that happened** | In order, and they can repeat |
+| **Conditions on the session** | Applied to the whole search |
+
+Those two lines are the entire distinction, and printing them once beats a
+glossary. The heading is a caption rather than a section title — smaller than
+the rows it introduces, outside their left inset — so the eye reads down the
+names and picks the heading up peripherally.
+
+⚠ **What is still owed here**: production's **block-level** filter (a condition
+on every event above it) versus an **event-level** one is a third thing this
+does not yet distinguish, and it is where Mehdi's *"group filters"* rename
+belongs. Options are in the session notes; nothing is built for it yet.
+
+### And the segment drawer says the same thing in its own words
+
+The field's copy carries into the drawer, one word different: **"Filter the
+sessions this segment holds"** rather than "Filter these sessions". Same control
+doing the same job — but *these sessions* points at a list, and a drawer has no
+list to point at: you are saying which sessions the segment will hold.

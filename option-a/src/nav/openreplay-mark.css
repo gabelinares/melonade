@@ -1,0 +1,53 @@
+/* ── THE OPENREPLAY MARK ─────────────────────────────────────────────────────
+   See OpenReplayMark.tsx for what moves and why. What is here is the two
+   colours and the one transition.
+
+   ⚠ THE COLOURS ARE TOKENS THAT DEFAULT TO THE BRAND'S OWN. `--m-brand-blue`
+   and `--m-brand-teal` fall back to the values in the product's SVG, so the
+   mark is correct with no theme work at all - and the day the palette moves to
+   OpenReplay's blue ("maybe change it to a slightly different blue"), the logo
+   follows from the same place every other accent does instead of holding a
+   hardcoded hex the rest of the build has moved past. */
+.m-ormark {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+
+.m-ormark__outline { fill: var(--m-brand-blue, #394eff); }
+.m-ormark__play { fill: var(--m-brand-teal, #27a2a8); }
+
+/* ── THE LIFT ────────────────────────────────────────────────────────────────
+   The inner play advances along its own axis and grows a little: the thing was
+   pressed and started. 1.5 viewBox units is about half a pixel at 17px, which
+   is the whole point - at this size the move has to be small enough to read as
+   life rather than as a layout shift.
+
+   ⚠ THE PIVOT IS THE GLYPH'S OWN CENTRE (21px 29.5px in viewBox units), not
+   the box's. The inner play sits left of centre, so scaling about the box would
+   drag it sideways and the growth would read as a drift. */
+.m-ormark__play {
+  transform-box: view-box;
+  transform-origin: 21px 29.5px;
+  transition: transform var(--m-duration-normal) var(--m-ease-out);
+}
+
+/* `[data-mark-host]` is the row, so the whole brand row is the trigger rather
+   than the 12px triangle inside it - a hover target you have to hit precisely
+   is a hover target nobody finds. It is the same hook the previous mark used,
+   so the nav did not have to change to keep it. */
+[data-mark-host]:hover .m-ormark__play {
+  transform: translateX(2.5px) scale(1.09);
+}
+
+/* The outline holds still, always: a logo whose silhouette changes on hover
+   reads as a different logo. What it does instead is deepen a shade, so the
+   pair reads as one object responding rather than as a part coming loose. */
+.m-ormark__outline { transition: opacity var(--m-duration-normal) var(--m-ease-out); }
+[data-mark-host]:hover .m-ormark__outline { opacity: 0.88; }
+
+@media (prefers-reduced-motion: reduce) {
+  .m-ormark__play,
+  .m-ormark__outline { transition: none; }
+  [data-mark-host]:hover .m-ormark__play { transform: none; }
+}

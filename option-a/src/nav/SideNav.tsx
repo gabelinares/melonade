@@ -12,7 +12,7 @@ import { navTree } from './tree.ts';
 import { DEFAULT_PROJECT, ORG, projectName } from './account.ts';
 import { AccountMenu } from './AccountMenu.tsx';
 import { AGENT_ICONS, PAGE_ICONS } from './icons.ts';
-import { BrandMark } from './BrandMark.tsx';
+import { OpenReplayMark } from './OpenReplayMark.tsx';
 import { NavItem } from './NavItem.tsx';
 import { NavFlyout } from './NavFlyout.tsx';
 import { COLLAPSE_KEY } from './useNavCollapse.ts';
@@ -159,14 +159,18 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
               aria-expanded={false}
               onClick={onToggleCollapsed}
             >
-              <BrandMark size={15} playOnMount className="m-nav__mark" />
+              <OpenReplayMark size={16} className="m-nav__mark" />
               <PanelLeftOpen size={15} className="m-nav__brand-open" aria-hidden="true" />
             </button>
           </Tooltip>
         ) : (
           <>
-            <BrandMark size={15} playOnMount className="m-nav__mark" />
-            <span className="m-nav__brand-name">melonade</span>
+            <OpenReplayMark size={16} className="m-nav__mark" />
+            {/* ⚠ THE PRODUCT IS OPENREPLAY (Mehdi, 2026-09-02). The strategy
+                question closed on the facelift rather than the separate brand,
+                so the name search and the whole Melonade wordmark went with it.
+                One word, because "OpenReplay" is one word in their own logo. */}
+            <span className="m-nav__brand-name">OpenReplay</span>
             <Tooltip title={`${collapseLabel}  ${COLLAPSE_KEY}`} placement="right">
               <button
                 type="button"

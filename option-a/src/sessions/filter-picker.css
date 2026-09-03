@@ -197,3 +197,42 @@
   font-size: var(--m-text-xs);
   color: var(--m-content-muted);
 }
+
+/* ── THE TWO KINDS ───────────────────────────────────────────────────────────
+   One search, two headings, and the headings appear only when the result spans
+   both. See FilterPicker for why the words are "things that happened" and
+   "conditions on the session" rather than "Events" and "Filters": the two
+   nouns are exactly what Mehdi says people do not know on arrival.
+
+   The heading is a CAPTION, not a section title - it is smaller than the rows
+   it introduces and it does not take the row's left inset, so the eye reads
+   down the names and picks the heading up peripherally. A heading as loud as
+   its own content is how a nine-row list starts to feel like a form. */
+.m-pick__kind + .m-pick__kind { margin-top: var(--m-space-4); }
+
+.m-pick__kind-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--m-space-3);
+  padding: var(--m-space-2) var(--m-space-4) var(--m-space-2);
+}
+
+.m-pick__kind-name {
+  flex: none;
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-wide);
+  color: var(--m-content-secondary);
+}
+
+/* The second half of the heading is the DISTINCTION, and it is the reason the
+   heading exists at all - so it is present rather than tucked into a tooltip.
+   One step quieter than the name, and it truncates before the name does. */
+.m-pick__kind-hint {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--m-content-muted);
+  font-size: var(--m-text-2xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
