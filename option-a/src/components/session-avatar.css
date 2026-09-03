@@ -41,8 +41,8 @@
      body is 40% black over this, so anything with real colour in it tints the
      BODY as much as the chip, and the silhouette stops reading as a robot and
      starts reading as a stain. */
-  --m-avatar-l: 0.995;
-  --m-avatar-c: 0.012;
+  --m-avatar-l: 1;
+  --m-avatar-c: 0;
   display: block;
   flex: none;
   overflow: hidden;
@@ -83,7 +83,7 @@
    and darkening it would undo that. This is the one place in the app where a
    theme changes an IMAGE rather than a token, and it is because the image is
    the one asset here nobody controls. */
-.m-savatar__img { filter: saturate(2.4) brightness(0.1); }
+.m-savatar__img { filter: saturate(2.6) brightness(0.04) contrast(1.15); }
 :root[data-theme='dark'] .m-savatar__img { filter: none; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .m-savatar__img { filter: none; }
