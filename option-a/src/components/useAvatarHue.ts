@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from 'react';
-import { avatarUrl, dominantFill, hueOf } from '@shared/avatar.ts';
+import { avatarUrl, dominantFill, hueOf, lightVariant } from '@shared/avatar.ts';
 
 /* ══════════════════════════════════════════════════════════════════════════
    THE ROW'S HUE, READ OFF THE ROBOT.
@@ -27,6 +27,9 @@ import { avatarUrl, dominantFill, hueOf } from '@shared/avatar.ts';
    ══════════════════════════════════════════════════════════════════════════ */
 
 const hues = new Map<string, number>();
+/** The same robot redrawn for a pale ground - see `lightVariant`. One entry per
+ *  seed, built from the text this already fetched. */
+const lightArt = new Map<string, string>();
 const inflight = new Set<string>();
 const listeners = new Set<() => void>();
 let version = 0;
@@ -44,8 +47,10 @@ function load(seed: string) {
     .then((r) => (r.ok ? r.text() : null))
     .then((text) => {
       const hex = text ? dominantFill(text) : null;
-      if (hex == null) return;
+      if (hex == null || text == null) return;
       hues.set(seed, hueOf(hex));
+      const light = lightVariant(text);
+      if (light != null) lightArt.set(seed, light);
       version += 1;
       listeners.forEach((fn) => fn());
     })
@@ -71,4 +76,15 @@ export function useAvatarHues(seeds: readonly string[]): ReadonlyMap<string, num
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   return hues;
+}
+
+/**
+ * One seed's artwork: the hue every element on the row is mixed from, and the
+ * light-ground redraw. Both are absent until the fetch lands, and both callers
+ * fall back to something correct in the meantime.
+ */
+export function useAvatarArt(seed: string): { hue: number | undefined; light: string | undefined } {
+  useSyncExternalStore(subscribe, getVersion, getVersion);
+  useEffect(() => { load(seed); }, [seed]);
+  return { hue: hues.get(seed), light: lightArt.get(seed) };
 }

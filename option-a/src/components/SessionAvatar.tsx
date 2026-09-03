@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { avatarUrl, hueIndexFor } from '@shared/avatar.ts';
+import { useAvatarArt } from './useAvatarHue.ts';
 import './session-avatar.css';
 
 export interface SessionAvatarProps {
@@ -47,6 +48,10 @@ export function SessionAvatar({ seed, size = 20, className }: SessionAvatarProps
      changes. Without that, a failed avatar would leave the NEXT person on that
      row without one - React keeps the state, not the person. */
   const [failed, setFailed] = useState(false);
+  /* The redraw for a pale ground. Absent until the fetch lands, and absent for
+     good if it never does - in which case the remote robot is shown in both
+     themes, which is worse in light and still an avatar. */
+  const { light } = useAvatarArt(seed);
 
   return (
     <span
@@ -57,9 +62,18 @@ export function SessionAvatar({ seed, size = 20, className }: SessionAvatarProps
       style={{ '--m-avatar-i': hueIndexFor(seed), width: size, height: size } as CSSProperties}
       aria-hidden="true"
     >
+      {/* ⚠ TWO IMAGES, AND CSS CHOOSES. The light ground needs a REDRAWN robot -
+          body faded, face deepened - and an `src` cannot be picked by a media
+          query. It could be picked in JS from the theme, except this app has
+          three theme states (light, dark, and system-default) and only CSS can
+          see the third. So both are rendered and one is hidden, which costs a
+          data URI that was built from bytes already in hand. */}
+      {!failed && light != null && (
+        <img className="m-savatar__img is-light" src={light} alt="" width={size} height={size} decoding="async" />
+      )}
       {!failed && (
         <img
-          className="m-savatar__img"
+          className={`m-savatar__img${light != null ? ' is-dark' : ''}`}
           src={avatarUrl(seed)}
           alt=""
           width={size}

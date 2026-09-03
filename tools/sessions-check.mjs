@@ -455,7 +455,7 @@ await p.locator('.m-ss__name', { hasText: many }).first().click();
 await p.waitForTimeout(600);
 const narrowed = await p.evaluate(() => ({
   names: [...new Set([...document.querySelectorAll('.m-ss__name')].map((e) => e.textContent.trim()))],
-  seeds: [...new Set([...document.querySelectorAll('.m-savatar__img')].map((i) => new URL(i.src).searchParams.get('seed')))],
+  seeds: [...new Set([...document.querySelectorAll('.m-savatar__img:not(.is-light)')].map((i) => new URL(i.src).searchParams.get('seed')))],
   rows: document.querySelectorAll('.m-ss__table tbody tr.ant-table-row').length,
   clauses: document.querySelectorAll('.m-srow').length,
   subject: document.querySelector('.m-srow__name')?.textContent?.trim(),
@@ -637,7 +637,7 @@ const player = await p.evaluate(() => {
     kinds: [...new Set(marks.map((m) => m.className.match(/m-tl__mark--(\w+)/)?.[1]))],
     labels: marks.map((m) => m.getAttribute('aria-label')),
     seed: (() => {
-      const i = document.querySelector('.m-sreplay .m-savatar__img');
+      const i = document.querySelector('.m-sreplay .m-savatar__img:not(.is-light)');
       return i ? new URL(i.src).searchParams.get('seed') : null;
     })(),
   };
@@ -1214,7 +1214,7 @@ await p.waitForTimeout(350);
 const avatarsHere = () => p.evaluate(() =>
   [...document.querySelectorAll('.m-ss__table tbody tr.ant-table-row')].map((r) => {
     const a = r.querySelector('.m-savatar');
-    const img = r.querySelector('.m-savatar__img');
+    const img = r.querySelector('.m-savatar__img:not(.is-light)');
     const u = img ? new URL(img.src) : null;
     return {
       name: r.querySelector('.m-ss__name')?.textContent?.trim() ?? null,
@@ -1398,7 +1398,7 @@ const playHover = await p.evaluate(() => ({
    not the CSS. */
 const fromRobot = await p.evaluate(async () => {
   const row = document.querySelector('.m-ss__row');
-  const txt = await (await fetch(row.querySelector('.m-savatar__img').src)).text();
+  const txt = await (await fetch(row.querySelector('.m-savatar__img:not(.is-light)').src)).text();
   const counts = new Map();
   for (const m of txt.matchAll(/fill="(#[0-9a-fA-F]{6})"/g)) {
     const h = m[1].toLowerCase();

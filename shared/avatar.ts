@@ -186,3 +186,69 @@ export function hueOf(hex: string): number {
   const bb = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
   return (Math.atan2(bb, a) * 180) / Math.PI;
 }
+
+/* ── REWRITING THE ROBOT FOR A LIGHT GROUND ────────────────────────────────
+   ⚠ A CSS FILTER CANNOT FIX THIS ONE, and three rounds of trying is what
+   established it. A pixelbot has two layers: a BODY drawn as `#000000` at 40%
+   opacity, and a FACE in a bright pastel. On a dark chip that is exactly right -
+   the body sinks in, the face glows. On a light chip the body composites to a
+   mid grey and becomes the loudest thing in the tile, a heavy checkerboard with
+   a small dark spot in it.
+
+   Filters multiply RGB. The body's weight comes from its ALPHA, so no
+   combination of brightness, contrast or saturate moves it: black times
+   anything is black, and 40% of it over white is grey whatever you do. And
+   anything that fades the body (`opacity()`) fades the face with it.
+
+   So the SVG is rewritten instead: the body's opacity comes down and the face's
+   colour is replaced outright with a deep version of its own hue. Two layers,
+   two edits, no filter - and the result is what Gabriel described: *"pastel in
+   light mode, the background super pale, low opacity, giving space to the
+   contrastly saturated darker face."*
+
+   ⚠ IT IS STILL NEVER PARSED INTO THE DOM. Two string replacements on text we
+   already fetched, handed back to an `<img>` as a data URI. */
+
+/** How much of the body's 40% survives on a light ground. Enough to read as a
+ *  silhouette, not enough to be the subject. */
+const LIGHT_BODY_OPACITY = 0.14;
+/** Where the face lands: deep enough to carry on near-white, saturated enough
+ *  to still be its own colour rather than a dark grey. */
+const LIGHT_FACE = { l: 0.46, c: 0.17 };
+
+/** OKLCH to a `#rrggbb`, clamped into sRGB. */
+export function oklchToHex(l: number, c: number, hueDeg: number): string {
+  const h = (hueDeg * Math.PI) / 180;
+  const a = c * Math.cos(h);
+  const b = c * Math.sin(h);
+  const l3 = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m3 = (l - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s3 = (l - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  const gamma = (v: number) => {
+    const x = Math.min(1, Math.max(0, v));
+    const g = x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055;
+    return Math.round(g * 255).toString(16).padStart(2, '0');
+  };
+  return `#${gamma(4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3)}${gamma(
+    -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3,
+  )}${gamma(-0.0041960863 * l3 - 0.7034186147 * m3 + 1.707614701 * s3)}`;
+}
+
+/**
+ * The same robot, redrawn for a pale chip: body faded, face deepened into its
+ * own hue. Returns a `data:` URI ready for an `<img>`, or null if the SVG is
+ * not the shape this expects - in which case the caller keeps the original,
+ * which is the right failure.
+ */
+export function lightVariant(svg: string): string | null {
+  const face = dominantFill(svg);
+  if (face == null) return null;
+  const deep = oklchToHex(LIGHT_FACE.l, LIGHT_FACE.c, hueOf(face));
+  const out = svg
+    /* The body. DiceBear writes it as `fill-opacity=".4"`; matched loosely so a
+       formatting change upstream does not silently stop this working. */
+    .replace(/fill-opacity="0?\.4"/g, `fill-opacity="${LIGHT_BODY_OPACITY}"`)
+    /* The face, everywhere it appears - eyes and mouth are separate groups. */
+    .replaceAll(face, deep);
+  return `data:image/svg+xml;utf8,${encodeURIComponent(out)}`;
+}
