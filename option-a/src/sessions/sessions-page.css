@@ -165,6 +165,25 @@
    sprites in a monochrome interface, and the two-letter code is both narrower
    and unambiguous - "GB" cannot be mistaken for "IE" at 16px the way the flags
    can. */
+/* ── the device, as one glyph ────────────────────────────────────────────────
+   ⚠ IT IS DRAWN AT THE SAME WEIGHT AS THE INK AROUND IT, not at an icon's. A
+   15px 1.75-stroke glyph reads darker than 13px text at the same colour - the
+   strokes are thicker than a letter's - so at `content-secondary` it would have
+   been the loudest thing in a row of names and figures, for the least reason.
+   One step quieter puts it level.
+
+   The whole column is 44px and centred: a glyph in a left-aligned column has a
+   ragged edge on both sides of it, because there is no second thing to hold a
+   line with. */
+.m-ss__dev {
+  display: inline-flex;
+  color: var(--m-content-muted);
+}
+
+/* It brightens with the row rather than on its own, so the row still reads as
+   one object under the cursor. */
+.m-ss__row:hover .m-ss__dev { color: var(--m-content-secondary); }
+
 .m-ss__where,
 .m-ss__device {
   display: flex;

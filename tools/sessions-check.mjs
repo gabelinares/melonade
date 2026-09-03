@@ -501,6 +501,54 @@ await p.waitForTimeout(350);
    Both are `<button>`s and one guard covers them, so what has to be checked is
    that the guard is still there - a row handler that stopped honouring it would
    still look right until you tried to click a name. */
+/* ── 6b-i. THE DEVICE IS ONE GLYPH (2026-09-04) ────────────────────────────
+   Gabriel, on Mehdi's ask: the device should be an icon for tablet / desktop /
+   mobile, and the OS and the browser should appear only in the tooltip.
+
+   It was `Chrome / macOS · desktop` in a 158px cell, set in two sizes. What a
+   reader wants at a glance is *phone or computer*, because it changes what the
+   session means - a rage click and a rage tap are different events. A browser
+   version is a detail you look up about one row, never a thing you compare down
+   a column.
+
+   ⚠ THE GLYPH IS THE DEVICE, NOT THE BROWSER, which is what makes it buildable:
+   browser marks are brand logos, lucide has none, and redrawing one is the
+   thing the design rules here forbid first. Three device types are three shapes
+   that already exist. */
+const device = await p.evaluate(() => {
+  const rows = [...document.querySelectorAll('.m-ss__row')];
+  const th = [...document.querySelectorAll('.m-ss__table thead th')];
+  const col = th.find((t) => t.textContent.trim() === 'Device');
+  return {
+    rows: rows.length,
+    glyphs: rows.filter((r) => r.querySelector('.m-ss__dev svg')).length,
+    text: rows.map((r) => r.querySelector('.m-ss__dev')?.textContent?.trim()).join(''),
+    labels: [...new Set(rows.map((r) => r.querySelector('.m-ss__dev')?.getAttribute('aria-label')))],
+    width: col ? Math.round(col.getBoundingClientRect().width) : null,
+    stale: !!document.querySelector('.m-ss__device'),
+  };
+});
+check('the device cell is one glyph and no words',
+  device.glyphs === device.rows && device.text === '' && !device.stale,
+  `${device.glyphs}/${device.rows} glyphs, text "${device.text}"`);
+/* A glyph needs a column the width of a glyph. The 114px this gave back went to
+   the session name, which is the only column with no width of its own. */
+check('and its column shrank to a glyph\'s width', device.width !== null && device.width <= 56,
+  `${device.width}px`);
+/* ⚠ THE LABEL IS ON THE ELEMENT, not left to the tooltip. A tooltip is a hover,
+   and a hover reaches neither a screen reader nor a keyboard - without this the
+   cell is an unlabelled picture of a phone. */
+check('and the browser and OS are still readable without a mouse',
+  device.labels.length > 1 && device.labels.every((l) => / on .+, (Desktop|Phone|Tablet)$/.test(l ?? '')),
+  device.labels.slice(0, 2).join(' | '));
+await p.locator('.m-ss__dev').first().hover();
+await p.waitForTimeout(600);
+const devTip = (await p.locator('.ant-tooltip').textContent().catch(() => null))?.trim();
+check('and the words moved to the tooltip',
+  / on .+ · (Desktop|Phone|Tablet)$/.test(devTip ?? ''), devTip ?? 'no tooltip');
+await p.mouse.move(1400, 900);
+await p.waitForTimeout(300);
+
 const replayOpen = () => p.locator('.m-sreplay').count();
 
 /* ⚠ AND THE ROW SAYS IT IS A CLICK (Gabriel, 2026-09-04: "the row cursor should

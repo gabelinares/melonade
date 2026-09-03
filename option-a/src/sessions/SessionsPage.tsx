@@ -5,12 +5,16 @@ import {
   BookOpen,
   CircleAlert,
   CirclePlay,
+  type LucideIcon,
   MessageCircleWarning,
+  Monitor,
   MoreHorizontal,
   Plus,
   Settings2,
   Share2,
   Skull,
+  Smartphone,
+  Tablet,
   WifiOff,
 } from 'lucide-react';
 import {
@@ -45,6 +49,25 @@ import { SegmentDrawer } from './SegmentDrawer.tsx';
 import { SegmentsPanel } from './SegmentsPanel.tsx';
 import { SessionReplay } from './SessionReplay.tsx';
 import './sessions-page.css';
+
+/* ── THE DEVICE, AS ONE GLYPH ────────────────────────────────────────────────
+   Three types, three shapes, and lucide has all three - which is the whole
+   reason the icon is the DEVICE and not the browser. A browser mark is a brand
+   logo; lucide carries none, and redrawing one from memory is the thing the
+   design rules here forbid first. */
+const DEVICE_ICONS: Record<SessionRow['deviceType'], LucideIcon> = {
+  desktop: Monitor,
+  mobile: Smartphone,
+  tablet: Tablet,
+};
+
+/** What the tooltip and the screen reader call it. The fixture's own words are
+ *  lower-case route names; these are the words a person would say. */
+const DEVICE_WORD: Record<SessionRow['deviceType'], string> = {
+  desktop: 'Desktop',
+  mobile: 'Phone',
+  tablet: 'Tablet',
+};
 
 /* ⚠ PRODUCTION'S OWN GLYPHS, from `SessionTags.tsx`'s `tagIcons` map. Reused
    rather than re-chosen: which icon means "rage" is a decision this product
@@ -269,18 +292,49 @@ export function SessionsPage({ model }: SessionsPageProps) {
           {
             title: 'Device',
             key: 'device',
-            width: 158,
-            /* Three facts, one cell, and one of them muted: browser is what
-               people filter on, the OS and the device type are context. Three
-               columns for these would be 300px saying almost nothing. */
-            render: (_: unknown, s: SessionRow) => (
-              <span className="m-ss__device m-truncate">
-                {s.browser}
-                <span className="m-ss__quiet">
-                  {s.os} · {s.deviceType}
-                </span>
-              </span>
-            ),
+            /* ⚠ 44px, DOWN FROM 158. One glyph needs a column the width of a
+               glyph, and the 114px this gives back go to the session name -
+               which is the only column with no width of its own and the one
+               that actually runs out of room. */
+            width: 44,
+            align: 'center' as const,
+            /* ⚠ ONE GLYPH, AND THE WORDS MOVE TO THE TOOLTIP (Gabriel,
+               2026-09-04, on Mehdi's ask): the device type is drawn, the browser
+               and the OS are read on hover.
+
+               It was `Chrome / macOS · desktop` set in two sizes. Three facts in
+               a 158px cell is a paragraph in a table, and nobody SCANS a
+               paragraph - which is the only thing a list column is for. What a
+               reader actually wants from this column at a glance is *phone or
+               computer*, because it changes what the session means: a rage
+               click and a rage tap are different events, the viewport is
+               different, and the journey is different. The browser version is a
+               detail you look up about one row, never a thing you compare down
+               a column - so it goes where details go.
+
+               ⚠ THE GLYPH IS THE DEVICE, NOT THE BROWSER, and that is what
+               makes this buildable at all. Browser marks are brand logos, lucide
+               has none of them, and drawing Chrome from memory is the one thing
+               the design rules here forbid outright. Three device types are
+               three shapes that already exist. */
+            render: (_: unknown, s: SessionRow) => {
+              const Glyph = DEVICE_ICONS[s.deviceType];
+              return (
+                <Tooltip title={`${s.browser} on ${s.os} · ${DEVICE_WORD[s.deviceType]}`}>
+                  {/* ⚠ THE LABEL IS ON THE ELEMENT, not left to the tooltip. A
+                      Tooltip is a hover, and a hover is not available to a
+                      screen reader or to a keyboard - so the cell would have
+                      been an unlabelled picture of a phone. */}
+                  <span
+                    className="m-ss__dev"
+                    role="img"
+                    aria-label={`${s.browser} on ${s.os}, ${DEVICE_WORD[s.deviceType]}`}
+                  >
+                    <Glyph size={15} strokeWidth={1.75} />
+                  </span>
+                </Tooltip>
+              );
+            },
           },
         ]
       : []),

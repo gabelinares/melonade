@@ -5045,3 +5045,42 @@ quietly; it was drawing the fixture's opinion of what you had seen, which stops
 being true the first time you open anything. And **leaving the section closes the
 replay** — the three sections are menu rows now, so a Bookmarks row that opened
 onto whatever was playing would be the menu lying about where it took you.
+
+---
+
+## §33 — The device is one glyph (2026-09-04)
+
+*"The device should be an icon of tablet / desktop / mobile, and the OS and the
+browser should appear only in the tooltip, like Mehdi wanted."*
+
+It was `Chrome / macOS · desktop` in a 158px cell, set in two sizes. **Three
+facts in one cell is a paragraph in a table, and nobody scans a paragraph** —
+which is the only thing a list column is for.
+
+What a reader wants from this column at a glance is *phone or computer*, because
+it changes what the session means: a rage click and a rage tap are different
+events, the viewport is different, the journey is different. A browser version is
+a detail you look up about **one row**, never a thing you compare down a column —
+so it goes where details go.
+
+⚠ **The glyph is the DEVICE, not the browser, and that is what makes it
+buildable at all.** This item had been sitting in the backlog with a snag on it:
+*lucide has no browser brand marks*, and drawing Chrome from memory is the one
+thing the design rules here forbid outright. Three device types are three shapes
+that already exist — `Monitor`, `Smartphone`, `Tablet`. The snag was in the
+framing, not the library.
+
+**The column went 158px → 44px** and the 114px went to the session name, which is
+the only column with no width of its own and the one that actually runs out of
+room. Centred, because a glyph in a left-aligned column has a ragged edge on both
+sides — there is no second thing to hold a line with.
+
+**It is drawn one step quieter than the ink around it.** A 15px 1.75-stroke glyph
+reads darker than 13px text at the same colour, because the strokes are thicker
+than a letter's; at `content-secondary` it would have been the loudest thing in a
+row of names and figures, for the least reason. It brightens with the row rather
+than on its own.
+
+⚠ **The label is on the element, not left to the tooltip.** A tooltip is a hover,
+and a hover reaches neither a screen reader nor a keyboard — without an
+`aria-label` the cell is an unlabelled picture of a phone.
