@@ -426,7 +426,19 @@
    the cursor moves down the list. `:focus-within` because a keyboard never
    hovers, and a control that only exists under a mouse does not exist. */
 .m-ss__play {
-  --m-play-l: 0.52;
+  /* ⚠ DEEPER AND MORE COLOURED THAN THE FIRST ATTEMPT, because the hover has to
+     be told apart from the REST STATE, not just from the surface. In dark the
+     rest is white, and 0.74/0.13 sat only 1.94-2.18:1 away from it - the glyph
+     changed and you could barely tell. 0.66/0.16 is 2.4-3.0:1 from white and
+     still 5.6-6.9:1 against the plane. Light moves the same way, 0.52 to 0.55
+     with the chroma up: 3.3-4.1:1 from its near-black rest.
+
+     Chroma stops at 0.16 rather than going further because `oklch()` clips to
+     sRGB, and a clipped colour quietly loses chroma - so past this the deepest
+     hues stop getting deeper while the others keep going, and one hue per row
+     becomes a lottery. */
+  --m-play-l: 0.55;
+  --m-play-c: 0.16;
   opacity: 0;
   transition:
     color var(--m-duration-fast) var(--m-ease-out),
@@ -442,9 +454,9 @@
 
 .m-ss__row:hover .m-ss__play,
 .m-ss__row:focus-within .m-ss__play { opacity: 1; }
-:root[data-theme='dark'] .m-ss__play { --m-play-l: 0.74; }
+:root[data-theme='dark'] .m-ss__play { --m-play-l: 0.66; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .m-ss__play { --m-play-l: 0.74; }
+  :root:not([data-theme='light']) .m-ss__play { --m-play-l: 0.66; }
 }
 
 /* ⚠ THE GLYPH FOLLOWS THE DENSITY CONTROL, which the `size` prop cannot do -
@@ -485,7 +497,7 @@
    glyph are the same colour doing two jobs. */
 .m-ss__play:hover,
 .m-ss__row.is-viewed .m-ss__play:hover {
-  color: oklch(var(--m-play-l) 0.13 var(--m-row-hue));
+  color: oklch(var(--m-play-l) var(--m-play-c) var(--m-row-hue));
 }
 
 /* A watched session is not dimmed, only its name gives up its weight. Dimming

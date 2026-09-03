@@ -5294,6 +5294,39 @@ a token, and that is because the image is the one asset here nobody controls.
 Worth remembering the next time a third-party asset arrives at the wrong weight:
 a filter is a real option, and dismissing it cost a round.
 
+### And then the face vanished, because I had measured the wrong pair
+
+The first filter was picked by measuring the pastel against **the chip**. The
+face does not sit on the chip. **A pixelbot is not a coloured shape on a
+background**: its body is `#000000` at 40% opacity and its *face* — the eyes and
+the mouth — is the bright pastel. It is built for a dark ground, where the body
+all but disappears and the face glows.
+
+So `saturate(1.6) brightness(0.55)` left **face against body at 1.19–1.76:1**,
+and light mode came out as a green checkerboard with no face in it.
+`saturate(2.2) brightness(0.26)` measures the right pair: **3.55–4.39:1** of face
+against body across all eight colours, with the body still 2.81:1 against the
+chip so the silhouette reads too. The chip goes paler at the same time —
+`oklch(0.96 0.03 h)`.
+
+**The lesson is not about pixelbot.** Contrast is a property of a pair, and the
+pair is whatever the thing is actually drawn *on*. Measuring against the nearest
+surface instead of the real one produces a number that is correct and answers
+nothing.
+
+### The hover had the same shape of error
+
+It was measured against the plane and not against **its own rest state**. In dark
+the play rests at white, and `oklch(0.74 0.13)` sits only **1.94–2.18:1** from
+white — the glyph changed colour and you could barely tell. `0.66 / 0.16` is
+2.4–3.0:1 from white and still 5.6–6.9:1 against the plane; light moves the same
+way, 0.52 → 0.55 with the chroma up.
+
+⚠ Chroma stops at 0.16 rather than going further because **`oklch()` clips to
+sRGB**, and a clipped colour quietly loses chroma — past that point the deepest
+hues stop getting deeper while the others keep going, and "one hue per row"
+becomes a lottery.
+
 ### An unwatched session fills its triangle
 
 *"The sessions not watched are still not different enough — maybe the inner

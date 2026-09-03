@@ -34,8 +34,8 @@
      remembering the next time a third-party asset is the wrong weight.
 
      Light: 0.93 ground, robot darkened. Dark: 0.30 ground, robot as it comes. */
-  --m-avatar-l: 0.93;
-  --m-avatar-c: 0.045;
+  --m-avatar-l: 0.96;
+  --m-avatar-c: 0.03;
   display: block;
   flex: none;
   overflow: hidden;
@@ -56,19 +56,27 @@
 }
 
 /* ── RECOLOURING SOMEBODY ELSE'S ARTWORK ────────────────────────────────────
-   ⚠ PIXELBOT'S PALETTE IS TAILWIND'S 300s - #f9a8d4, #bef264, #fdba74 - which
-   are drawn to sit on something dark, and there is no parameter that changes
-   them. On a pale chip they measure 1.0-1.6:1, which is not an avatar, it is a
-   smudge. `saturate(1.6) brightness(0.55)` takes each of them roughly two steps
-   down its own ramp - a 300 becomes something near a 600 - and puts every one
-   of the eight the fixture produces between 3.35:1 and 4.97:1 against the
-   ground behind it. Measured, not guessed.
+   ⚠ READ THE ROBOT BEFORE PICKING A NUMBER, which took two goes. A pixelbot is
+   NOT a coloured shape on a background. Its BODY is `#000000` at 40% opacity
+   and its FACE - the eyes and the mouth - is the bright pastel. It is built for
+   a dark ground: the body all but disappears into it and the face glows.
 
-   ⚠ ONLY IN LIGHT. In dark the pastel is doing exactly the job a pastel is for:
-   4.9-7.2:1 on the 0.30 chip, and darkening it would undo that. This is the
-   one place in the app where a theme changes an IMAGE rather than a token, and
-   it is because the image is the one asset here nobody controls. */
-.m-savatar__img { filter: saturate(1.6) brightness(0.55); }
+   Which is why the first filter failed. It was chosen by measuring the pastel
+   against the CHIP, and the face does not sit on the chip - it sits on the
+   BODY. `saturate(1.6) brightness(0.55)` left face-against-body at 1.19-1.76:1,
+   and Gabriel's screenshot is a green checkerboard with no face in it.
+
+   `saturate(2.2) brightness(0.26)` measures the right pair: 3.55-4.39:1 of face
+   against body across all eight colours the fixture produces, while the body
+   itself stays 2.81:1 against the chip, so the silhouette reads too. It takes
+   the face nearly black-with-a-hue, which is what a face has to be on a pale
+   ground.
+
+   ⚠ ONLY IN LIGHT. In dark the pastel is doing exactly the job a pastel is for
+   and darkening it would undo that. This is the one place in the app where a
+   theme changes an IMAGE rather than a token, and it is because the image is
+   the one asset here nobody controls. */
+.m-savatar__img { filter: saturate(2.2) brightness(0.26); }
 :root[data-theme='dark'] .m-savatar__img { filter: none; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .m-savatar__img { filter: none; }
