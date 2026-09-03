@@ -5275,10 +5275,24 @@ in the row's own hue, which is the difference from what shipped: a fixed
 near-black teal square became a mid-tone chip the same colour as the thing inside
 it.
 
-⚠ It moves less between themes than a surface would, and that is the robot's
-doing rather than the system's — a pastel needs a dark ground in both. If a light
-chip is wanted, the answer is a different DiceBear style, not a different
-lightness.
+⚠ **That was wrong, and it lasted one commit.** Gabriel: *"so you are saying
+there's no way to make the avatar light mode?"* There is. The robot's colour
+cannot be **set** — pixelbot has no option for it, and `robotColor` /
+`primaryColor` validate against the API's merged cross-style schema while
+pixelbot ignores them — but it can be **recoloured after the fact**.
+`saturate(1.6) brightness(0.55)` on the `<img>` takes each pastel about two steps
+down its own ramp, a 300 to something near a 600, and puts all eight the fixture
+produces between **3.35:1 and 4.97:1** against a pale 0.93 chip.
+
+So the avatar follows the app's convention after all: **light chip with dark ink,
+dark chip with light ink**. 0.93 ground with the robot darkened in light; 0.30
+ground with the robot as it comes in dark, where a pastel is doing exactly the
+job a pastel is for (4.9–7.2:1) and darkening it would undo that.
+
+⚠ It is the one place in this app where a **theme changes an image** rather than
+a token, and that is because the image is the one asset here nobody controls.
+Worth remembering the next time a third-party asset arrives at the wrong weight:
+a filter is a real option, and dismissing it cost a round.
 
 ### An unwatched session fills its triangle
 
