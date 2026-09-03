@@ -33,8 +33,15 @@
      it can be RECOLOURED after the fact, which is a possibility worth
      remembering the next time a third-party asset is the wrong weight.
 
-     Light: a near-white ground with the hue barely in it, and the robot
-     darkened almost to black. Dark: 0.30 ground, robot as it comes.
+     Light: a white ground, and the robot's FACE darkened into a deep version
+     of its own colour. Dark: 0.30 ground, robot as it comes.
+
+     ⚠ THE HUE LIVES IN THE FACE, NOT IN THE CHIP. Tinting the ground was the
+     obvious way to put the row's colour in the avatar and it is the wrong one:
+     the robot's body is 40% black composited over the chip, so a tinted ground
+     tints the body just as much and the whole tile drifts one colour. The face
+     is the only part of a pixelbot with a colour of its own - so that is where
+     the colour goes, and the chip stays out of its way.
 
      ⚠ The light ground went 0.93 → 0.96 → 0.985 over three rounds and the hue
      came down with it. It has to stay a hint rather than a wash: the robot's
@@ -83,7 +90,7 @@
    and darkening it would undo that. This is the one place in the app where a
    theme changes an IMAGE rather than a token, and it is because the image is
    the one asset here nobody controls. */
-.m-savatar__img { filter: saturate(2.6) brightness(0.04) contrast(1.15); }
+.m-savatar__img { filter: saturate(2.6) brightness(0.24); }
 :root[data-theme='dark'] .m-savatar__img { filter: none; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .m-savatar__img { filter: none; }
