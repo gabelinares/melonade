@@ -5336,3 +5336,95 @@ in one**. And the weight is on the right state: an unwatched session is the row
 with something in it for you. It stays stroked as well as filled, because a fill
 alone is smaller than the outline by half a stroke on every edge and the two
 states would change size as well as weight.
+
+---
+
+## §36 — Two scopes, named and real (2026-09-04)
+
+Mehdi spent five minutes of the 09-02 call explaining what a filter is, and it
+was the most useful five minutes on the tape. It is also the part the 09-02
+build had got wrong in two different ways at once.
+
+**His explanation, in his own words.** An **event-level** filter narrows one
+event — the little funnel beside it: *"you're looking for replays where it might
+contain multiple events but one of the events you only care about country
+Albania."* A **block-level** filter applies to every event above it: *"if you
+add country in the filters it's going to apply on all the events block… it's a
+group filtering basically."* That is why production has two sections, and he
+gave the cost of not having them: without the block, filtering three events by
+France means *"I would have to error, I have to add France; then page view, you
+have to add France."*
+
+He is not defending the design — *"I know it's confusing. I know that it could
+be better"* — and he named the fix himself: **the name**. *"Not filters, we'll
+call them something else, like group filters."* Because the real complaint is
+*"people don't know right away what an event is, what a filter is."*
+
+### What was wrong
+
+**1. Nothing on screen said which scope a row had.** The 09-02 build deleted the
+two section headings along with the two Add buttons. Only the buttons were what
+he asked to merge; the headings were carrying the scope. The picker, meanwhile,
+printed two headings of its own invention — "Things that happened" and
+"Conditions on the session" — so picking a thing taught you a name that appeared
+nowhere else. Three vocabularies for two kinds.
+
+**2. The event-level filter did not filter.** `eventPosition` returned
+`sessionEvents(s).indexOf(entry.id)` and never looked at `f.properties`. So
+*"Click where URL is /checkout"* returned exactly what *"Click"* returned. The
+one control on the page that expresses event scope was the one control that
+could not change a result — which makes the distinction unfalsifiable, and a
+distinction a reviewer has to take on trust is a caption.
+
+### What it is now
+
+**One vocabulary, in four places** (`vocabulary.ts`, its own module so the row
+can say the same words as the card it lives inside): **Events** and **Group
+filters**, with the behaviour as a hint beside each — `Applied to every event
+above` on the section, and its exact opposite, `Applied to this event only`, on
+the funnel's tooltip and above its picker.
+
+The heading is quiet on purpose: 11px, muted, no rule, lighter than the rows it
+labels. Adding headings back to a three-clause filter risks turning a control
+into a document with chapters, and the rows are the content. What earns the two
+lines is that the scope is otherwise invisible.
+
+**And the event-level filter is real.** `eventAttributes(s, eventId)` gives each
+occurrence the attributes its kind carries — a network request has a status code
+and a rage click does not — sampled from `VALUE_FIXTURES` **with its weights**,
+so the proportion bar in the value picker and the count the filter returns come
+from one distribution. `eventPosition` now honours a row's sub-properties under
+the row's own `and`/`or`, which is what makes those clickable words mean
+something. Measured: *Click* is 40 sessions, *Click where URL is /checkout* is
+10.
+
+An **incomplete** sub-filter still narrows nothing — it is skipped rather than
+matching nothing, so a half-built clause does not empty the list under you.
+
+**The order control moved to the Events heading**, right-aligned, which is where
+production keeps it (`FilterListHeader`). It had been riding the summary strip —
+a strip that also speaks for the group filters below, so it was the wrong row to
+say *how the events relate*.
+
+### A bug found on the way: the collapse cancelled itself
+
+`useFilterCollapse` followed the scroll in both directions, and the filter's own
+height is usually what makes the page scrollable:
+
+> scroll down → collapse → the rows leave → the page no longer overflows → the
+> browser clamps `scrollTop` to 0 → the listener reads 0 → expand.
+
+At a 620px viewport with four clauses that loop settles **open**, so the feature
+did not happen at all; on a tall monitor it worked, which is why it survived. It
+is one-way now — scrolling only ever closes it — which is what the hook's own
+comment already claimed. Nothing is hidden by staying closed: the strip prints
+the whole filter as a sentence, and the caret reopens it.
+
+### What was deliberately not touched
+
+*"No big changes at all for now."* The field, the ring, the value picker, the
+category rail, the collapse and the summary strip are all as they were. The
+three-column picker Gabriel proposed live stays rejected (*"for people it's
+going to be super confusing"*). The natural-language path stays parked behind
+`onTranslate`. **User and metadata are already the filter-only kinds** he named,
+so that cut needed no work.

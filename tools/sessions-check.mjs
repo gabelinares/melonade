@@ -364,6 +364,85 @@ await p.waitForTimeout(300);
 check('and the joint is a control: clicking it switches every one of them',
   (await p.locator('.m-srow__joint').nth(1).textContent())?.trim() === 'or');
 
+/* ── 5b. THE TWO SCOPES: NAMED, AND REAL ────────────────────────────────────
+   The whole of Mehdi's 2026-09-02 explanation, asserted, because it is the one
+   part of this control a screenshot cannot show.
+
+   He spent five minutes on it: an EVENT-level filter narrows one event ("error,
+   where country is Albania"), a BLOCK-level one "will apply to both events on
+   top of it... it's a group filtering basically". Then he named the fix - "not
+   filters, we'll call them something else, like group filters" - and the reason
+   for it: "people don't know right away what an event is, what a filter is."
+
+   Two claims, and each one had failed in a different way:
+
+   1. THE NAMES. The card printed no headings at all, so nothing on screen said
+      which scope a row had. The picker printed two of its own invention
+      ("Things that happened", "Conditions on the session") that no row ever
+      landed under.
+   2. THE BEHAVIOUR. `eventPosition` ignored a row's sub-properties, so the
+      event-level control could not change a result. Two scopes that return the
+      same sessions are one scope with a caption. */
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(350);
+for (const n of ['Click', 'checkout_start', 'Country']) await addEntry(n);
+const scopes = await p.evaluate(() => ({
+  names: [...document.querySelectorAll('.m-sc__head-name')].map((e) => e.textContent.trim()),
+  hint: document.querySelector('.m-sc__head-hint')?.textContent?.trim(),
+  /* production keeps the order control in the Events heading, right-aligned
+     (`FilterListHeader`); it used to ride the summary strip, which also speaks
+     for the group filters below */
+  orderInHead: !!document.querySelector('.m-sc__head .m-sc__order'),
+  orderInStrip: !!document.querySelector('.m-sc__strip .m-sc__order'),
+  /* and the heading sits above its own rows rather than floating */
+  headBeforeRows:
+    document.querySelector('.m-sc__head')?.compareDocumentPosition(document.querySelector('.m-srow'))
+      === Node.DOCUMENT_POSITION_FOLLOWING,
+}));
+check('the card names its two kinds, and the block kind is the word Mehdi asked for',
+  scopes.names.join(' / ') === 'Events / Group filters', scopes.names.join(' / '));
+check('and prints the scope under the name it belongs to',
+  scopes.hint === 'Applied to every event above', scopes.hint);
+check('the order control rides the Events heading, as it does in production',
+  scopes.orderInHead && !scopes.orderInStrip && scopes.headBeforeRows,
+  `head ${scopes.orderInHead}, strip ${scopes.orderInStrip}`);
+
+/* ⚠ AND THE FUNNEL SAYS THE OPPOSITE SENTENCE. Every entry in that picker is
+   one kind, so no kind heading is drawn - which leaves the control looking
+   identical to the one that adds a group filter. */
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(350);
+await addEntry('Click');
+const before = await p.evaluate(() => document.querySelector('.m-sc__count')?.textContent?.trim());
+await p.hover('.m-srow');
+await p.waitForTimeout(200);
+await p.locator('.m-srow__prop-add').first().click();
+await p.waitForTimeout(350);
+const note = await p.evaluate(() => document.querySelector('.m-pick__note')?.textContent?.trim());
+check('the event-level picker says which scope it is, in the words the heading contradicts',
+  note === 'Applied to this event only', note);
+await p.fill('.m-pick__search input', 'URL');
+await p.waitForTimeout(300);
+await p.locator('.m-pick__row').first().click();
+await p.waitForTimeout(400);
+const pending = await p.evaluate(() => document.querySelector('.m-sc__count')?.textContent?.trim());
+check('a sub-filter with no value yet narrows nothing, and says so rather than emptying the list',
+  pending === before, `${before} → ${pending}`);
+
+await p.locator('.m-srow__prop .m-vp__trigger').first().click();
+await p.waitForTimeout(450);
+await p.locator('.m-vp .m-checkrow').first().click();
+await p.waitForTimeout(300);
+await p.mouse.click(900, 40);
+await p.waitForTimeout(450);
+const scoped = await p.evaluate(() => ({
+  count: document.querySelector('.m-sc__count')?.textContent?.trim(),
+  n: Number(document.querySelector('.m-sc__count')?.textContent?.trim().split(' ')[0]),
+}));
+const beforeN = Number((before ?? '0').split(' ')[0]);
+check('AND THE EVENT-LEVEL FILTER ACTUALLY FILTERS — the funnel was decoration until 09-04',
+  scoped.n > 0 && scoped.n < beforeN, `${before} → ${scoped.count}`);
+
 /* ── 6. the metadata chip writes to the search ─────────────────────────────
    ⚠ THE COLUMN IS ON BY DEFAULT since 2026-09-02 ("then it should be by
    default"), so this no longer turns it on - it ASSERTS it is on, then uses it.

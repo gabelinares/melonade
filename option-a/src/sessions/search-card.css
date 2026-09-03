@@ -441,6 +441,46 @@
   padding: 0 var(--m-space-3) var(--m-space-3);
 }
 
+/* ── THE SECTION HEADINGS ────────────────────────────────────────────────────
+   PRODUCTION'S OWN TWO, restored 2026-09-04, and the second one renamed to
+   Mehdi's word: Events, a divider, GROUP FILTERS.
+
+   They are drawn as QUIET AS A HEADING CAN BE AND STILL BE ONE - 11px, muted,
+   no rule of their own, no weight above the rows. That is deliberate and it is
+   the whole difficulty of adding them back: the rows are the content, and a
+   heading that competes with a row it labels turns a three-clause filter into
+   a document with chapters. What earns the two lines is that a reader cannot
+   otherwise tell WHICH SCOPE a row has, which was Mehdi's actual complaint.
+
+   The hint sits beside the name rather than under it, so a section costs one
+   line and not two, and it is `2xs`/decorative because it is a gloss on the
+   name and not a second heading. */
+.m-sc__head {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  margin: 0;
+  padding: var(--m-space-3) var(--m-space-2) var(--m-space-2);
+}
+
+.m-sc__head-name {
+  font-size: var(--m-text-xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: 0.02em;
+  color: var(--m-content-secondary);
+}
+
+.m-sc__head-hint {
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+}
+
+/* THE ORDER CONTROL RIDES THE EVENTS HEADING, right-aligned, which is where
+   production keeps it (`FilterListHeader`). It moved off the summary strip on
+   2026-09-04: it edits a relationship between the EVENT rows, and a strip that
+   also speaks for the group filters below is the wrong place to say so. */
+.m-sc__head .m-sc__order { margin-inline-start: auto; }
+
 /* THE ONE RULE, and only with something on both sides of it: it separates the
    sequence from the constraints. Full-bleed to the well's edges rather than
    inset with the rows, so it reads as a division of the surface rather than as

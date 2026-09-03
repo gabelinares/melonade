@@ -15,6 +15,7 @@ import type { SessionRow } from '@shared/sessions-logic.ts';
 import { noNativeTooltip } from '../components/selectOptions.ts';
 import { FilterPicker } from './FilterPicker.tsx';
 import { ValuePicker } from './ValuePicker.tsx';
+import { EVENT_SCOPE } from './vocabulary.ts';
 import './search-row.css';
 
 export interface SearchRowProps {
@@ -190,11 +191,30 @@ export function SearchRow({
           </>
         )}
 
-        {/* An event's properties. `FunnelPlus`, the same glyph production uses,
-            and it only exists on an event that can carry them. */}
+        {/* ── THE EVENT-LEVEL FILTER ───────────────────────────────────────
+            `FunnelPlus`, the same glyph production uses, on an event that can
+            carry properties.
+
+            ⚠ AND IT NOW SAYS ITS SCOPE, in the exact words the group heading
+            contradicts. This is the distinction Mehdi spent five minutes of
+            2026-09-02 explaining, and the reason production has two sections at
+            all: this narrows ONE event ("error, where country is Albania"),
+            while a group filter below "will apply to both events on top of
+            it... it's a group filtering basically". Two controls that look
+            alike and mean different things is the confusion he named; two
+            sentences that are opposites is the cheapest possible fix.
+
+            ⚠ AND IT FINALLY DOES SOMETHING. Until 09-04 `eventPosition` ignored
+            these rows, so this control could not change a result. See its note
+            in sessions-logic. */}
         {canHaveProperties && onAddProperty && (
-          <FilterPicker entries={EVENT_PROPERTIES} onPick={onAddProperty} placeholder="Narrow this event by">
-            <Tooltip title="Narrow this event" mouseEnterDelay={0.6}>
+          <FilterPicker
+            entries={EVENT_PROPERTIES}
+            onPick={onAddProperty}
+            placeholder="Narrow this event by"
+            note={EVENT_SCOPE}
+          >
+            <Tooltip title={EVENT_SCOPE} mouseEnterDelay={0.6}>
               <button type="button" className="m-srow__prop-add" aria-label={`Narrow ${entry.displayName}`}>
                 <FunnelPlus size={13} />
               </button>

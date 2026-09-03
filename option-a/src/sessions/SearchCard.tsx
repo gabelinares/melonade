@@ -13,6 +13,7 @@ import { ChevronDown } from 'lucide-react';
 import { FilterPicker } from './FilterPicker.tsx';
 import { SearchRow } from './SearchRow.tsx';
 import { useFilterCollapse } from './useFilterCollapse.ts';
+import { EVENTS_HEAD, GROUP_HEAD, GROUP_SCOPE } from './vocabulary.ts';
 import './search-card.css';
 
 /* ── THE PLACEHOLDER ─────────────────────────────────────────────────────────
@@ -43,6 +44,7 @@ const LEAD = 'Filter these sessions';
  *  you are saying which sessions the segment will hold. One word changes and
  *  the sentence keeps its shape. */
 const LEAD_PANEL = 'Filter the sessions this segment holds';
+
 
 const ORDER_OPTIONS: ReadonlyArray<{ value: EventsOrder; label: string; hint: string }> = [
   { value: 'then', label: 'then', hint: 'In this order, one after another' },
@@ -314,53 +316,88 @@ export function SearchCard({
           <span className="m-sc__count">
             {resultCount ?? rows.length} {(resultCount ?? rows.length) === 1 ? 'session' : 'sessions'}
           </span>
-          {/* TWO events, not one: with a single event there is no gap for an
-              operator to sit in, and a control that cannot change the result is
-              a control that teaches you to ignore controls. */}
-          {/* Hidden while collapsed: it edits a relationship between rows you
-              cannot see, and the summary already prints the word. */}
-          {events.length > 1 && !collapsed && (
-            <span className="m-sc__order">
-              <Tooltip title="How the events relate to each other, across the whole search.">
-                <span className="m-sc__order-label">matching</span>
-              </Tooltip>
-              <Select
-                className="m-sc__order-select"
-                size="small"
-                variant="borderless"
-                popupMatchSelectWidth={false}
-                value={eventsOrder}
-                onChange={onEventsOrder}
-                options={noNativeTooltip(
-                  ORDER_OPTIONS.map((o) => ({
-                    value: o.value,
-                    label: (
-                      <span className="m-sc__order-option">
-                        <span>{o.label}</span>
-                        <span className="m-sc__order-hint">{o.hint}</span>
-                      </span>
-                    ),
-                  })),
-                )}
-                /* The closed control shows the word alone; the open list shows
-                   the word and what it means. A dropdown whose closed state
-                   repeats its own explanation is a dropdown twice as wide as it
-                   needs to be. */
-                labelRender={({ value }) => <span>{String(value)}</span>}
-                aria-label="How the events relate"
-              />
-            </span>
-          )}
-
+          {/* ⚠ THE ORDER CONTROL LEFT THIS ROW on 2026-09-04 and went to the
+              Events heading, which is where production keeps it
+              (`FilterListHeader`, right-aligned above the event rows). It edits
+              a relationship BETWEEN THE EVENT ROWS, so it belongs over them
+              rather than in a summary bar that also speaks for the group
+              filters below. See `m-sc__head` in the list. */}
           <Button type="text" size="small" className="m-sc__clear" onClick={onClear}>
             Clear
           </Button>
         </div>
       )}
 
-      {/* ── the list ── */}
+      {/* ── THE LIST, IN PRODUCTION'S OWN TWO SECTIONS ──────────────────────
+          ⚠ THE HEADINGS ARE BACK, AND THE SECOND ONE IS RENAMED (Mehdi,
+          2026-09-02). Two instructions of his pull in the same direction here
+          and the build had honoured neither:
+
+            "Keep everything the same, even the layout of the search itself."
+            "Not filters - we'll call them something else, like group filters."
+
+          Production draws this as a Card holding `Events`, a Divider, and
+          `Filters`, each with its own heading (`SessionFilters.tsx`). The 09-02
+          build deleted both headings along with the two Add buttons - but only
+          the BUTTONS were what Mehdi asked to merge. The headings were carrying
+          something the buttons were not, and it is the thing he spent five
+          minutes explaining: WHICH SCOPE A ROW HAS.
+
+          ── WHY THE NAME IS THE FIX, in his words ──────────────────────────
+          "People don't know right away what an event is, what a filter is." A
+          filter here is not a filter on the list - it is a condition applied to
+          every event above it, which production calls "a group filtering
+          basically". So the heading says GROUP FILTERS and prints the scope
+          under it, and the funnel on an event row says the opposite scope in
+          the same voice. Two labels, one distinction, no glossary.
+
+          ⚠ A HEADING APPEARS ONLY OVER ROWS THAT EXIST. Production shows both
+          always, because each owns an Add button that has to be reachable. With
+          one picker there is nothing to reach, so an empty section would be a
+          heading over nothing - and the scope line under "Group filters" would
+          be false, since there would be no events for it to apply to. */}
       {any && !collapsed ? (
         <div className="m-sc__list" id="m-sc-rows">
+          {events.length > 0 && (
+            <div className="m-sc__head">
+              <span className="m-sc__head-name">{EVENTS_HEAD}</span>
+              {/* TWO events, not one: with a single event there is no gap for
+                  an operator to sit in, and a control that cannot change the
+                  result is a control that teaches you to ignore controls. */}
+              {events.length > 1 && (
+                <span className="m-sc__order">
+                  <Tooltip title="How the events relate to each other, across the whole search.">
+                    <span className="m-sc__order-label">matching</span>
+                  </Tooltip>
+                  <Select
+                    className="m-sc__order-select"
+                    size="small"
+                    variant="borderless"
+                    popupMatchSelectWidth={false}
+                    value={eventsOrder}
+                    onChange={onEventsOrder}
+                    options={noNativeTooltip(
+                      ORDER_OPTIONS.map((o) => ({
+                        value: o.value,
+                        label: (
+                          <span className="m-sc__order-option">
+                            <span>{o.label}</span>
+                            <span className="m-sc__order-hint">{o.hint}</span>
+                          </span>
+                        ),
+                      })),
+                    )}
+                    /* The closed control shows the word alone; the open list
+                       shows the word and what it means. A dropdown whose closed
+                       state repeats its own explanation is a dropdown twice as
+                       wide as it needs to be. */
+                    labelRender={({ value }) => <span>{String(value)}</span>}
+                    aria-label="How the events relate"
+                  />
+                </span>
+              )}
+            </div>
+          )}
           {events.map((f, i) => (
             <SearchRow
               key={f.key}
@@ -385,10 +422,21 @@ export function SearchCard({
             />
           ))}
 
-          {/* The one rule, and only when there is something on both sides of
-              it. It separates the sequence from the constraints - which is a
-              real difference and the only one the list needs stated. */}
+          {/* Production's own Divider, and only when there is something on both
+              sides of it. */}
           {events.length > 0 && properties.length > 0 && <hr className="m-sc__rule" />}
+
+          {properties.length > 0 && (
+            <div className="m-sc__head">
+              <span className="m-sc__head-name">{GROUP_HEAD}</span>
+              {/* ⚠ THE SCOPE, PRINTED, and only when it is true. With no events
+                  above there is nothing for a group filter to apply TO, and a
+                  line saying otherwise would be the caption teaching the wrong
+                  model - which is the failure this whole section exists to
+                  stop. */}
+              {events.length > 0 && <span className="m-sc__head-hint">{GROUP_SCOPE}</span>}
+            </div>
+          )}
 
           {properties.map((f) => (
             <SearchRow

@@ -86,7 +86,29 @@ export function useFilterCollapse(rowCount: number) {
          page does without being asked, so it waits until the filter is
          actually in the way; offering the caret is not, so it does not. */
       if (rowCount <= WORTH_COLLAPSING_ON_SCROLL) return;
-      setCollapsed(scroller.scrollTop > READING_AT);
+      /* ⚠ ONE-WAY, AND IT HAD TO BECOME ONE-WAY (2026-09-04). This was
+         `setCollapsed(scrollTop > READING_AT)`, which follows the scroll in
+         both directions - and on the page it was written for it CANCELS
+         ITSELF, because the filter's own height is usually what makes the page
+         scrollable in the first place:
+
+           scroll down 220 → collapse → the rows leave → the page no longer
+           overflows → the browser clamps scrollTop to 0 → this listener reads
+           0 → expand → the page overflows again.
+
+         At a 620px viewport with four clauses that loop settles with the
+         filter OPEN at scrollTop 0, so the feature simply did not happen; on a
+         taller page it worked, which is why it survived. A control whose
+         behaviour depends on whether its own effect changed the scroll range
+         is a control that works on the reviewer's monitor and not on the
+         customer's laptop.
+
+         So scrolling only ever CLOSES it, which is what this hook's own
+         sentence already claimed: "scrolling collapses it, and you override
+         that until the filter changes". Nothing is hidden by staying closed -
+         the strip prints the whole filter as a sentence - and re-opening is
+         the one click the caret is there for. */
+      if (scroller.scrollTop > READING_AT) setCollapsed(true);
     };
     onScroll();
     scroller.addEventListener('scroll', onScroll, { passive: true });

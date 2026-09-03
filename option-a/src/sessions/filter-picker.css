@@ -236,3 +236,20 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* ── THE SCOPE NOTE ──────────────────────────────────────────────────────────
+   Only the EVENT-LEVEL picker carries one. Every entry in that list is the same
+   kind, so no kind heading is drawn, and without this line the control is
+   indistinguishable from the one that adds a GROUP filter - which is exactly
+   the pair Mehdi said people cannot tell apart.
+
+   Under the search field and above the body, so it is read before the first row
+   rather than found after it. Muted and 2xs: it is a caption on the list, and a
+   caption that shouts is a caption you stop reading by the third time. */
+.m-pick__note {
+  margin: 0;
+  padding: var(--m-space-2) var(--m-space-4) var(--m-space-3);
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-muted);
+  border-bottom: var(--m-border-width) solid var(--m-border-subtle);
+}

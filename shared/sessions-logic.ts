@@ -501,6 +501,107 @@ export function sessionEvents(s: SessionRow): string[] {
   return out;
 }
 
+/* ── WHAT ONE OCCURRENCE CARRIED ──────────────────────────────────────────────
+   The second half of the event fixture, and it exists for one reason: the
+   EVENT-LEVEL filter had nothing to filter.
+
+   `sessionEvents` models WHICH events a session contains. That was enough while
+   the funnel was decoration, and it stopped being enough the moment the two
+   scopes had to be told apart on screen: a group filter narrows the session, an
+   event filter narrows ONE EVENT, and if an event's properties are unreadable
+   the two produce identical lists and the distinction is a caption.
+
+   ⚠ THE VALUES COME FROM `VALUE_FIXTURES`, WITH ITS WEIGHTS. The picker draws a
+   proportion bar off those weights, so an occurrence sampled from any other
+   distribution would make the bar a lie - "/checkout, 31% of traffic" followed
+   by a filter that returns four sessions. Same list, same weights, one source.
+
+   Deterministic per (session, event, attribute): the same row filtered twice
+   returns the same sessions, and a session that matched before an unrelated
+   edit still matches after it.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export type EventAttributes = Record<string, string | number | undefined>;
+
+/** Which attributes an event of this kind carries. Production fetches this per
+ *  event (`filterStore.getEventFilters(id)`); here it is a table, because what
+ *  the design needs is that DIFFERENT EVENTS OFFER DIFFERENT PROPERTIES - a
+ *  network request has a status code and a rage click does not. */
+const ATTRS_BY_EVENT: Record<string, readonly string[]> = {
+  click: ['selector', 'label', 'url'],
+  input: ['selector', 'label', 'url', 'value'],
+  location: ['url'],
+  rageclick: ['selector', 'label', 'url'],
+  deadclick: ['selector', 'label', 'url'],
+  error: ['value', 'url'],
+  request: ['url', 'status', 'method', 'durationMs'],
+  graphql: ['label', 'status', 'method', 'durationMs'],
+  statechange: ['label', 'url'],
+  crash: ['value'],
+  taprage: ['selector', 'url'],
+  swipe: ['selector', 'url'],
+};
+/** A customer's own event carries the page it fired on and nothing else the
+ *  tracker can see. */
+const DEFAULT_ATTRS: readonly string[] = ['url'];
+
+export const attributesFor = (eventId: string): readonly string[] =>
+  ATTRS_BY_EVENT[eventId] ?? DEFAULT_ATTRS;
+
+/** FNV-1a over a string, avalanched. The same hash `avatar.ts` uses and for the
+ *  same reason: the low bits of a plain FNV barely move between neighbouring
+ *  keys, and every use of this is a modulo. */
+function hash32(str: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x7feb352d);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x846ca68b);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+/** One value from a weighted candidate list, chosen by hash. The weights are
+ *  the picker's own, so a value holding a third of the bar holds roughly a
+ *  third of the occurrences. */
+function weightedPick(candidates: readonly ValueCandidate[], seed: number): string | undefined {
+  if (candidates.length === 0) return undefined;
+  const total = candidates.reduce((n, c) => n + c.weight, 0);
+  let at = seed % total;
+  for (const c of candidates) {
+    if (at < c.weight) return c.value;
+    at -= c.weight;
+  }
+  return candidates[candidates.length - 1]!.value;
+}
+
+const attrCache = new Map<string, EventAttributes>();
+
+/** What this session's occurrence of this event carried. */
+export function eventAttributes(s: SessionRow, eventId: string): EventAttributes {
+  const cacheKey = `${s.sessionId}\u0000${eventId}`;
+  const hit = attrCache.get(cacheKey);
+  if (hit) return hit;
+  const out: EventAttributes = {};
+  for (const name of attributesFor(eventId)) {
+    const seed = hash32(`${s.sessionId}|${eventId}|${name}`);
+    if (name === 'durationMs') {
+      /* A long tail, because that is what request timings are: most fast, a few
+         awful. The threshold filter is only interesting if both exist. */
+      out[name] = 20 + (seed % 40) * (seed % 17 === 0 ? 120 : 6);
+      continue;
+    }
+    const picked = weightedPick(VALUE_FIXTURES[name] ?? [], seed);
+    if (picked != null) out[name] = picked;
+  }
+  attrCache.set(cacheKey, out);
+  return out;
+}
+
 /**
  * Whether a session is in a saved segment - by RUNNING THE SEGMENT'S OWN RULES.
  *
@@ -713,21 +814,57 @@ export function matchProperty(s: SessionRow, f: SearchFilter): boolean {
   return matchString(f.operator, String(actual), f.value);
 }
 
-/** Where an event row sits in the session's own event order, or -1.
- *  An event's PROPERTIES cannot be evaluated against the fixture - the stand-in
- *  models which events a session contains, not what each one carried - so a
- *  property on an event narrows nothing here and says so in the row's own
- *  tooltip. That is the one place the prototype knowingly under-filters, and
- *  it is under rather than over on purpose. */
+/**
+ * Where an event row sits in the session's own event order, or -1.
+ *
+ * ⚠ AND IT NOW HONOURS THE ROW'S OWN PROPERTIES, which is the whole difference
+ * between the two scopes Mehdi walked through on 2026-09-02. Until 09-04 the
+ * funnel wrote sub-rows that `matchEvents` never read: "Click where URL is
+ * /checkout" returned exactly what "Click" returned, so the control that
+ * expresses event scope was the one control on the page that could not change
+ * a result. A distinction you cannot demonstrate is a distinction the reviewer
+ * has to take on trust, and this one is the point of the section headings.
+ *
+ * An event's occurrence carries attributes (`eventAttributes`), so a property
+ * on the row is matched against THAT OCCURRENCE and nothing else - while a
+ * group filter is matched against the session. That is the contrast in one
+ * sentence, and now both halves of it are true.
+ */
 export function eventPosition(s: SessionRow, f: SearchFilter, seen?: ReadonlySet<string>): number {
   const entry = entryOf(f.entryId);
   if (!entry) return -1;
+  /* ⚠ NEITHER TAKES PROPERTIES, and production says so too: `hasProperties` is
+     false on both, so the funnel never appears on them and there is nothing to
+     honour here. */
   if (entry.category === 'segments') return inSegment(s, entry.id, seen) ? 0 : -1;
   if (entry.category === 'features') {
     /* a flag is on for roughly a third of sessions, deterministically */
     return s.numericHash % 3 === 0 ? 0 : -1;
   }
-  return sessionEvents(s).indexOf(entry.id);
+  const at = sessionEvents(s).indexOf(entry.id);
+  if (at < 0) return -1;
+  const props = f.properties?.filter((p) => !isIncomplete(p)) ?? [];
+  if (props.length === 0) return at;
+  const attrs = eventAttributes(s, entry.id);
+  const hit = (p: SearchFilter) => matchAttribute(attrs, p);
+  /* ⚠ THE SAME AND/OR THE ROW PRINTS. `propertyOrder` is what the "where … and
+     … or …" rail edits, so reading it here is what makes those words mean
+     something. Defaulting to `and` matches the row's own default. */
+  const ok = (f.propertyOrder ?? 'and') === 'or' ? props.some(hit) : props.every(hit);
+  return ok ? at : -1;
+}
+
+/** One property of an event's own occurrence. Same operator semantics as a
+ *  session property - `matchProperty` and this differ only in where the value
+ *  comes from, which is exactly the scope difference and nothing else. */
+function matchAttribute(attrs: EventAttributes, f: SearchFilter): boolean {
+  const entry = entryOf(f.entryId);
+  if (!entry) return true;
+  const actual = attrs[f.entryId];
+  if (f.operator === 'isAny') return actual != null;
+  if (actual == null) return false;
+  if (entry.dataType === 'number') return matchNumber(f.operator, Number(actual), f.value);
+  return matchString(f.operator, String(actual), f.value);
 }
 
 /** The events clause, under whichever of the three orders is set.

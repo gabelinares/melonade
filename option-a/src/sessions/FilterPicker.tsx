@@ -20,6 +20,7 @@ import {
   type CatalogueEntry,
   type SearchFilter,
 } from '@shared/sessions-logic.ts';
+import { EVENTS_HEAD, GROUP_HEAD, GROUP_SCOPE } from './vocabulary.ts';
 import './filter-picker.css';
 
 /** An entry's glyph, chosen from what it IS rather than from its name. Events
@@ -67,6 +68,12 @@ export interface FilterPickerProps {
    *  subject came from instead of at the top of everything. */
   initialCategory?: string;
   placeholder?: string;
+  /** One line above the results saying what the picked thing will narrow. The
+   *  main picker needs none - its two headings already say it, one per kind.
+   *  The EVENT-LEVEL picker does: everything in it is one kind, so no heading
+   *  appears, and "Applied to this event only" is the entire difference between
+   *  this list and the identical-looking rows in the group filters below. */
+  note?: string;
   children: ReactElement;
 }
 
@@ -117,6 +124,7 @@ export function FilterPicker({
   onTranslate,
   initialCategory,
   placeholder = 'An event, a property, or a sentence',
+  note,
   children,
 }: FilterPickerProps) {
   const [open, setOpen] = useState(false);
@@ -147,14 +155,14 @@ export function FilterPicker({
     return [
       {
         key: 'events',
-        name: 'Things that happened',
-        hint: 'In order, and they can repeat',
+        name: EVENTS_HEAD,
+        hint: 'Something that happened, in order',
         rows: events,
       },
       {
         key: 'filters',
-        name: 'Conditions on the session',
-        hint: 'Applied to the whole search',
+        name: GROUP_HEAD,
+        hint: GROUP_SCOPE.toLowerCase(),
         rows: filters,
       },
     ].filter((g) => g.rows.length > 0);
@@ -200,6 +208,8 @@ export function FilterPicker({
           aria-label="Events, properties and sentences"
         />
       </div>
+
+      {note && <p className="m-pick__note">{note}</p>}
 
       <div className="m-pick__body">
         {/* ── the rail ── */}
@@ -293,13 +303,18 @@ export function FilterPicker({
               one group, no heading, nothing to disambiguate. Type "error" and
               it is both, and the headings earn their two rows.
 
-              ── WHAT THE HEADINGS SAY, and it is not "Events / Filters" ──────
-              The words are the problem Mehdi named: "people don't know right
-              away what an event is, what a filter is." So the headings say what
-              the two kinds DO to your search. An event is something that
-              happened, in order, and it can repeat; a filter is a condition on
-              the session, and it cannot. Those two sentences are the whole
-              distinction, and printing them once beats a glossary. */}
+              ── WHAT THE HEADINGS SAY ────────────────────────────────────────
+              ⚠ THE SAME TWO WORDS THE ROWS WILL LAND UNDER, and until 09-04
+              they were not. The picker said "Things that happened" and
+              "Conditions on the session"; the card said nothing; production
+              says "Events" and "Filters". Three vocabularies for two kinds, so
+              picking a thing here taught you a name you would never see again.
+
+              Now it is `vocabulary.ts` in both places: EVENTS and GROUP FILTERS,
+              which are Mehdi's own words ("not filters - we'll call them
+              something else, like group filters"), with the behaviour as the
+              hint beside each. The name is what he asked for; the hint is what
+              makes the name learnable the first time. */}
           {kinds.map((g) => (
             <div key={g.key} className="m-pick__kind">
               {kinds.length > 1 && (
