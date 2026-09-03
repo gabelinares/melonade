@@ -292,11 +292,18 @@ export function SessionsPage({ model }: SessionsPageProps) {
           {
             title: 'Device',
             key: 'device',
-            /* ⚠ 44px, DOWN FROM 158. One glyph needs a column the width of a
-               glyph, and the 114px this gives back go to the session name -
-               which is the only column with no width of its own and the one
-               that actually runs out of room. */
-            width: 44,
+            /* ⚠ 60px, DOWN FROM 158, and the number is the HEADER's not the
+               glyph's. It was 44 - a glyph needs a column the width of a glyph -
+               and "Device" is 38px of 12px medium plus 16px of cell padding, so
+               it wrapped to two lines and took the whole header row from 33px
+               to 49px with it. A header that does not fit does not overflow its
+               own cell; it makes every column taller, which is why this looked
+               like a table bug rather than a column one.
+
+               The 98px it still gives back go to the session name - the only
+               column with no width of its own and the one that runs out of
+               room. */
+            width: 60,
             align: 'center' as const,
             /* ⚠ ONE GLYPH, AND THE WORDS MOVE TO THE TOOLTIP (Gabriel,
                2026-09-04, on Mehdi's ask): the device type is drawn, the browser

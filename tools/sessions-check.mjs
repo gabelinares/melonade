@@ -531,10 +531,36 @@ const device = await p.evaluate(() => {
 check('the device cell is one glyph and no words',
   device.glyphs === device.rows && device.text === '' && !device.stale,
   `${device.glyphs}/${device.rows} glyphs, text "${device.text}"`);
-/* A glyph needs a column the width of a glyph. The 114px this gave back went to
-   the session name, which is the only column with no width of its own. */
-check('and its column shrank to a glyph\'s width', device.width !== null && device.width <= 56,
-  `${device.width}px`);
+/* ⚠ SIZED TO THE HEADER, NOT TO THE GLYPH, which is the whole lesson of it.
+   At 44px - a glyph's width - the word "Device" did not fit, and a `th` that
+   does not fit its own title WRAPS: the header row went from 31px to 49px and
+   every other column got taller with it. The least local failure a table has,
+   and invisible until you look straight at the header band. */
+check('and its column is sized to its title rather than to its glyph',
+  device.width !== null && device.width >= 56 && device.width <= 72, `${device.width}px`);
+const headers = await p.evaluate(() => {
+  const th = [...document.querySelectorAll('.m-ss__table thead th')];
+  return {
+    height: Math.round(th[0]?.getBoundingClientRect().height ?? 0),
+    tight: th.filter((t) => t.scrollWidth > t.clientWidth + 1).map((t) => t.textContent.trim()),
+  };
+});
+check('and no column title is wider than the column it names',
+  headers.tight.length === 0 && headers.height < 40,
+  `${headers.height}px header, tight: ${headers.tight.join(', ') || 'none'}`);
+/* ⚠ AND THE TITLE ROW IS ONE COLOUR ALL THE WAY ACROSS. The play column is
+   sticky and sets its cell `transparent` over a gradient fading to a property
+   only the BODY rows carry - which the `th` matches too, so the last 52px of
+   the title row was a hole showing the plane through it. Compared against the
+   NEIGHBOUR rather than against a literal: `Table.headerBg` is a token, and if
+   it moves this should go red rather than drift. */
+const headerBand = await p.evaluate(() => {
+  const th = [...document.querySelectorAll('.m-ss__table thead th')];
+  return th.map((t) => getComputedStyle(t).backgroundColor);
+});
+check('and the title row is one colour from end to end',
+  new Set(headerBand).size === 1 && !/, 0\)$/.test(headerBand[0] ?? ''),
+  [...new Set(headerBand)].join(' | '));
 /* ⚠ THE LABEL IS ON THE ELEMENT, not left to the tooltip. A tooltip is a hover,
    and a hover reaches neither a screen reader nor a keyboard - without this the
    cell is an unlabelled picture of a phone. */

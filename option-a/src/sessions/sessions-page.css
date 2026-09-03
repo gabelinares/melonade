@@ -165,6 +165,18 @@
    sprites in a monochrome interface, and the two-letter code is both narrower
    and unambiguous - "GB" cannot be mistaken for "IE" at 16px the way the flags
    can. */
+/* ⚠ A COLUMN TITLE NEVER WRAPS. A `th` narrower than its own word does not
+   overflow or ellipsize - it wraps, and because every header shares one row,
+   ONE tight column makes the whole header band taller. It is the least local
+   failure a table has and it is invisible until somebody looks at the header
+   band and says it is weird, which is exactly how the Device column was found
+   at 44px.
+
+   Nowrap turns that into a local, visible overflow instead: a title that does
+   not fit is a column that needs a number, and it says so in its own cell
+   rather than by reshaping the table. */
+.m-ss__table thead th { white-space: nowrap; }
+
 /* ── the device, as one glyph ────────────────────────────────────────────────
    ⚠ IT IS DRAWN AT THE SAME WEIGHT AS THE INK AROUND IT, not at an icon's. A
    15px 1.75-stroke glyph reads darker than 13px text at the same colour - the
@@ -275,6 +287,30 @@
   z-index: 1;
   background: transparent;
   text-align: right;
+}
+
+/* ⚠ AND THE HEADER'S COPY OF IT IS SOLID, NOT TRANSPARENT. The rule above
+   matches the `th` as well as the `td` - both carry the class - so the last
+   header cell was `transparent` over a `::before` fading to a custom property
+   that only the BODY rows set. The result was a 52px hole at the right end of
+   the column-title row, showing the plane through a band that is meant to be
+   one colour.
+
+   It is flat here rather than a fade, and that is deliberate: the gradient
+   exists to cover a long VALUE sliding under the play glyph as the table
+   scrolls sideways. A header cell holds a title or nothing, and this one holds
+   nothing - there is no text to fade out, so a fade would only reintroduce the
+   translucent sliver this is fixing.
+
+   `--m-surface-sunken` is what the theme hands antd as `Table.headerBg`
+   (theme/antd.ts), which is why the assertion in sessions-check compares this
+   cell to its neighbour rather than to a literal: if that token moves, the
+   check should go red rather than this quietly drifting. */
+.m-page__body .ant-table-wrapper .ant-table thead th.m-ss__playcell {
+  background: var(--m-surface-sunken);
+}
+.m-page__body .ant-table-wrapper .ant-table thead th.m-ss__playcell::before {
+  content: none;
 }
 
 /* The fade, drawn on the cell rather than as a sibling: a pseudo-element

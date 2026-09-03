@@ -5084,3 +5084,24 @@ than on its own.
 ⚠ **The label is on the element, not left to the tooltip.** A tooltip is a hover,
 and a hover reaches neither a screen reader nor a keyboard — without an
 `aria-label` the cell is an unlabelled picture of a phone.
+
+### Two things the narrow column broke, both in the header row
+
+⚠ **44px is a glyph's width, not a title's, and the column is sized to the
+title.** "Device" is 38px of 12px medium plus 16px of cell padding, so at 44 it
+wrapped — and a `th` that does not fit its own word does not overflow or
+ellipsize, **it wraps and takes every other column's header with it**. The header
+band went 31px → 49px. It is the least local failure a table has: one tight
+column reshapes the whole row, and nothing about it points at the column that
+caused it. 60px, and `thead th` is `nowrap` now so the next tight column
+overflows its own cell instead of reshaping the table.
+
+⚠ **The sticky play column made a hole in the title row.** The sticky rule sets
+its cell `background: transparent` over a `::before` gradient fading to
+`--m-ss-play-ground` — a property only the **body** rows set. The `th` carries
+the same class, so the last 52px of the title row was transparent with a
+transparent fade over it: a differently-coloured band at the right end of a row
+that is meant to be one colour. The header's copy is flat and solid now. Flat
+deliberately: the gradient exists to cover a long **value** sliding under the
+glyph as the table scrolls sideways, and a header cell holds a title or nothing —
+a fade there would only reintroduce the translucent sliver it is fixing.
