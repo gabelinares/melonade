@@ -41,8 +41,8 @@
      body is 40% black over this, so anything with real colour in it tints the
      BODY as much as the chip, and the silhouette stops reading as a robot and
      starts reading as a stain. */
-  --m-avatar-l: 0.985;
-  --m-avatar-c: 0.015;
+  --m-avatar-l: 0.995;
+  --m-avatar-c: 0.012;
   display: block;
   flex: none;
   overflow: hidden;
@@ -83,7 +83,7 @@
    and darkening it would undo that. This is the one place in the app where a
    theme changes an IMAGE rather than a token, and it is because the image is
    the one asset here nobody controls. */
-.m-savatar__img { filter: saturate(2.2) brightness(0.26); }
+.m-savatar__img { filter: saturate(2.4) brightness(0.1); }
 :root[data-theme='dark'] .m-savatar__img { filter: none; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .m-savatar__img { filter: none; }
@@ -95,7 +95,12 @@
   height: 100%;
 }
 
-/* A row you have already watched is quieter in every other cell, so the avatar
-   is quieter too - otherwise it becomes the one thing on a read row still
-   asking for attention. */
-.m-ss__row.is-viewed .m-savatar { opacity: 0.6; }
+/* ⚠ NO DIMMING ON A WATCHED ROW'S AVATAR. It had `opacity: 0.6`, on the
+   reasoning that a read row is quieter everywhere else - and the avatar is the
+   one thing here that cannot afford it. Its contrast is already the tightest on
+   the row (a 40%-black body over a near-white chip), so six tenths of it is a
+   smudge: Gabriel, on the watched rows, "the seen section even worse".
+
+   The row still says it has been read - the name gives up its weight and the
+   play goes muted. Those two are type and ink, which have contrast to spare.
+   This does not. */
