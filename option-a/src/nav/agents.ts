@@ -6,6 +6,13 @@
    both the nav and the prototype's agent-count control read from it. You can
    see the menu at 3 agents and at 11 without editing a component.
 
+   ⚠ THE ROSTER NO LONGER CARRIES SECTIONS. Synthetics had three - Tests, Runs,
+   Environments - and the nav drew them as nested rows. They are TABS, they live
+   on the page, and as of 2026-09-03 they appear only there: "the tabs don't
+   show in the sidemenu, only subitems." The keys they navigated to are
+   unchanged and `TestsPage`'s own strip still writes them, so nothing was lost
+   except a second copy of the same three rows.
+
    The first three ship today. The rest are plausible next agents for a
    session-replay product, listed in the order they would most likely arrive:
    they exist here to prove the nav holds, not as a roadmap.
@@ -14,12 +21,6 @@
 import { AUDITS } from '@shared/audits-data.ts';
 import { TESTS } from '@shared/tests-data.ts';
 import { attentionCount } from '@shared/tests-logic.ts';
-
-export interface AgentSection {
-  /** The nav key, which is also the route: `tests/runs`. */
-  key: string;
-  label: string;
-}
 
 export interface AgentEntry {
   key: string;
@@ -34,13 +35,6 @@ export interface AgentEntry {
    *  number - and a rail that has room for the dot but not the figure has to be
    *  able to say which one it is on hover. */
   countNoun?: string;
-  /** An agent with more than one body under its name. The nav expands to show
-   *  them; an agent without sections is a single destination.
-   *
-   *  This is DATA rather than a special case in the nav, because the question
-   *  the menu has to survive is not "what does Tests do" but "what happens when
-   *  the fourth agent grows a second screen". */
-  sections?: AgentSection[];
 }
 
 export type AgentIconName =
@@ -69,17 +63,6 @@ export const AGENTS: readonly AgentEntry[] = [
     count: attentionCount(TESTS),
     shipped: true,
     countNoun: 'waiting on you',
-    /* THE FIRST SECTION IS "TESTS", 2026-08-31. It was called List for exactly
-       as long as the agent was called Tests, because a child repeating its
-       parent reads as a mistake. Renaming the agent to Synthetics - which is
-       what this category is called everywhere else - frees the word up, and
-       "Tests / Runs / Environments" says what is in each of the three where
-       "List" only said what shape it is. */
-    sections: [
-      { key: 'tests', label: 'Tests' },
-      { key: 'tests/runs', label: 'Runs' },
-      { key: 'tests/environments', label: 'Environments' },
-    ],
   },
   {
     key: 'audits',

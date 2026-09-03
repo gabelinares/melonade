@@ -4425,3 +4425,100 @@ Three separate steps broke that way today, each reporting a locator instead of a
 claim. Where a step depends on the previous block's leftovers, it now clears
 state explicitly rather than reaching for a Clear button that only exists
 sometimes.
+
+## 26. The menu gets its shape (2026-09-03)
+
+Gabriel's structure, which is the first version of Mehdi's 09-02 ask —
+*"the name of the product… limit the number of stuff you have visible, and then
+have sub menus"* — drawn out in full. The whole tree is data now, in
+`nav/tree.ts`.
+
+```
+                          Search              ⌐ no label: the top of a menu
+                          Sessions            | does not need to be told
+                          Highlights          ⌐ it is the top
+        ── Agents ──
+                          Issues          11
+                          Synthetics       7
+                          Audits           1
+        ── Product ──
+                          Analytics
+                            Data Management
+                            Dashboards
+                          Activity
+```
+
+### One rule decides what is in it
+
+> *"The tabs don't show in the sidemenu, only subitems. Tabs only appear in the
+> container."*
+
+**A tab belongs to the page it is on, and the page already draws it.**
+Synthetics' Tests / Runs / Environments strip lives in `TestsPage`; the
+sessions strip lives in `SessionsPage`. Carrying the same three rows in the nav
+as well meant one set of sections existed in two places that had to be kept in
+agreement — and it is exactly why Mehdi asked for two levels rather than three:
+*"synthetics will not have anything below it… we can rely on these tabs like
+tests, runs, whatever."*
+
+So `AgentEntry.sections` is gone from the roster. **Nothing was lost but the
+duplicate**: the keys those rows navigated to are unchanged and the page's own
+strip still writes them, which is what made the deletion safe rather than
+merely tidy.
+
+⚠ **The consequence worth noticing: exactly one row in the whole column
+expands.** Analytics, holding two subitems. The disclosure caret, the nested
+rail, the flyout card at 52px — all of that machinery now serves a single row.
+It stays because subitems are a real level that will grow (Data Management and
+Dashboards are two of a set, not a pair), but it is worth knowing that the
+column is now essentially flat.
+
+### And the groups are named again
+
+The "AGENTS" label became a bare rule on 09-02, and the argument was good: one
+group does not need to be told what it is, and the word was the only uppercase
+type in the column.
+
+**That argument dies at two groups.** A rule between Audits and Analytics says
+*something changed*; it cannot say *changed to what*, so the reader is left
+inferring the category from the rows — which is the one-word job a label does.
+
+So both come back, doing different work: **the rule is the break, the label says
+what broke.** And the label is not the old one — 11px, the row's own case,
+`content-muted`. What made "AGENTS" read as shouting was the uppercase, not the
+existence of a word. The first group keeps no label.
+
+### The collapse moved to the corner
+
+> *"Remove the collapse sidebar from the footer and bring it to the top right."*
+
+It was the fifth glyph in the foot, on the argument that it belongs with the
+other preferences about the chrome. **What that missed: every other control down
+there opens something, and this one reshapes the thing they all sit in.** It
+read as a sibling of Support when it is a property of the column itself.
+
+⚠ **Narrow, the brand row becomes the control.** 52px does not hold a mark and a
+button side by side, and a collapsed menu whose only way out is a keyboard
+shortcut is a trap. So the mark stays where it is, the row carries the tooltip
+and the click, and the expand glyph crossfades in over the mark on hover — both
+layers in the same 28px box, so nothing moves as they swap. That keeps the
+control in the same corner in both states, which was the one good property of
+having it in the foot.
+
+### Two smaller calls
+
+**The first group scrolls now.** It used to be pinned above the single divider,
+which worked while there was one group below it; with three, a pinned first
+group would leave a rule at the top of a scroller with nothing above it to
+separate.
+
+⚠ **Search is kept and it is not in the list.** It became a row on 09-02 on
+Mehdi's own ask, and a list about the item hierarchy omitting it is not the same
+as a decision to remove it — deleting a three-day-old choice on an omission
+would be reading too much into it. Flagged rather than assumed; one line either
+way.
+
+**Highlights gets the marker glyph, not a star.** A star means favourite, and
+Bookmarked is already a tab on Sessions — two rows meaning "saved" in one column
+is the confusion worth avoiding. ⚠ Mehdi also said on 09-02 that Highlights is
+*"probably"* being removed, so this row may not survive its own kill list.

@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { Popover, Tooltip } from 'antd';
-import type { AgentSection } from './agents.ts';
+import type { NavEntry } from './tree.ts';
 import { NavItem } from './NavItem.tsx';
 import './nav-flyout.css';
 
@@ -12,7 +12,9 @@ export interface NavFlyoutProps {
   /** What the count counts, so the tooltip can say "11 open" rather than "11". */
   countNoun?: string;
   badge?: string;
-  sections?: readonly AgentSection[];
+  /** SUBITEMS, and only Analytics has any - a tab never reaches the nav (see
+   *  tree.ts), so at 52px this card is the only place a subitem can go. */
+  sections?: readonly NavEntry[];
   /** The shell's one route string, so the sections in here light up like the
    *  ones in the open menu. */
   active?: string;

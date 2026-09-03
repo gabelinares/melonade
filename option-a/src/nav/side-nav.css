@@ -104,6 +104,63 @@
    rows' 13px regular is one clear step and no second voice - it is not
    uppercase, not tracked out, not semibold. Lowercase, because that is the
    logotype: the landing page sets the same word the same way. */
+/* ── THE COLLAPSE, IN THE TOP RIGHT CORNER (Gabriel, 2026-09-03) ─────────────
+   It was the fifth glyph in the foot. What that placement missed: every other
+   control down there OPENS something, and this one reshapes the thing they all
+   sit in - so it read as a sibling of Support when it is a property of the
+   column itself.
+
+   `margin-left: auto` rather than a spacer, so the brand row stays two objects
+   and a gap. It is quiet at rest and takes the row's own hover fill, like the
+   foot's tools - a control in a corner does not need to advertise itself, it
+   needs to be findable, and the corner is where people look. */
+.m-nav__collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-left: auto;
+  border-radius: var(--m-radius-control);
+  color: var(--m-content-decorative);
+  transition: background-color var(--m-duration-fast) var(--m-ease-out),
+    color var(--m-duration-fast) var(--m-ease-out);
+}
+.m-nav__collapse:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
+.m-nav__collapse:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: -2px; }
+
+/* ⚠ NARROW, THE BRAND ROW *IS* THE CONTROL. 52px does not hold a mark and a
+   button side by side, and a collapsed menu whose only way out is a keyboard
+   shortcut is a trap. So the mark stays where it is, the row carries the
+   tooltip and the click, and the expand glyph crossfades in over the mark on
+   hover: the control is in the same corner in both states, which was the one
+   good property of having it in the foot. */
+.m-nav__brand-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--m-radius-control);
+  color: var(--m-content-decorative);
+  transition: background-color var(--m-duration-fast) var(--m-ease-out);
+}
+.m-nav__brand-toggle:hover { background: var(--m-surface-hover); }
+.m-nav__brand-toggle:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: -2px; }
+
+/* Both layers sit in the same 28px box, so nothing moves as they swap - a mark
+   that shifted a pixel on hover would read as the logo being a button, which
+   is exactly the confusion the 09-02 pass removed from the switcher. */
+.m-nav__brand-toggle .m-nav__mark,
+.m-nav__brand-open {
+  transition: opacity var(--m-duration-fast) var(--m-ease-out);
+}
+.m-nav__brand-open { position: absolute; inset: 0; margin: auto; opacity: 0; }
+.m-nav__brand-toggle:hover .m-nav__mark { opacity: 0; }
+.m-nav__brand-toggle:hover .m-nav__brand-open { opacity: 1; color: var(--m-content-primary); }
+
 .m-nav__brand-name {
   min-width: 0;
   font-size: var(--m-text-lg);
@@ -273,22 +330,54 @@
    gaps it already has, not by adding elements to hold air. */
 .m-nav__group { display: flex; flex-direction: column; gap: var(--m-space-1); }
 
-/* No margin of its own: the separator below it carries that gap, so the space
-   between Sessions and the first agent is declared once. */
-.m-nav__group--top { flex: none; }
+/* ── A GROUP, AND ITS NAME ───────────────────────────────────────────────────
+   Three groups since 2026-09-03, so the rule alone stopped being enough: it can
+   say THAT the category changed and not WHAT it changed to. The label is back
+   as a word, and the rule stays as the break - see tree.ts.
 
-/* ── WHERE THE AGENTS START ──────────────────────────────────────────────────
-   A RULE, NOT A WORD (Mehdi, 2026-09-02). "AGENTS" was the only uppercase type
-   in the column and it was labelling the obvious: eleven rows carrying agent
-   glyphs and open counts do not need to be told what they are. What the group
-   needs is a START, and a start is a line - one pixel of ink instead of six
-   letters, with the air around it reading as room rather than as a heading.
+   The section owns the whole block (rule, label, rows) so the spacing between
+   groups is declared once here rather than as a margin on three different
+   children. */
+.m-nav__section { display: flex; flex-direction: column; }
+/* The first section starts flush: the brand and the switcher above it already
+   carry the gap, and the rule that separates the others has nothing to
+   separate here. */
+.m-nav__section:first-child .m-nav__sep { display: none; }
 
-   It is also ONE OBJECT AT BOTH WIDTHS now, where the label had to become a
-   rule when the menu narrowed: only its length changes. And it sits above the
-   scroller rather than inside it, so it stays put and the list scrolls under
-   it. The group keeps the name for anyone who cannot see a hairline - it is on
-   `aria-label` in SideNav. */
+/* ⚠ ONE STEP QUIETER THAN A DISABLED ROW, and not uppercase. The old "AGENTS"
+   was the only uppercase type in the column, which is what made it read as
+   shouting a category nobody needed shouted; at 11px in the row's own case it
+   is a caption. It is `content-muted` rather than `content-decorative` because
+   it has to be readable - a label you cannot read is the rule with a cost. */
+.m-nav__label {
+  padding: 0 var(--m-space-4) var(--m-space-2);
+  font-size: var(--m-text-2xs);
+  font-weight: var(--m-weight-medium);
+  letter-spacing: var(--m-tracking-wide);
+  color: var(--m-content-muted);
+  white-space: nowrap;
+}
+
+/* Narrow, the word goes and the rule above it is the whole separator. It
+   collapses to nothing rather than truncating: three letters of "Prod" is worse
+   than a hairline, which already says a group started. */
+.m-nav.is-collapsed .m-nav__label {
+  height: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+/* ── WHERE A GROUP STARTS ────────────────────────────────────────────────────
+   THE RULE IS THE BREAK; THE LABEL SAYS WHAT BROKE. On 09-02 the rule replaced
+   the word, and it was right for one group - eleven rows carrying agent glyphs
+   and counts do not need to be told what they are. Three groups need both: the
+   line gives the pause, the word gives the category, and the word is the only
+   one of the two that survives being read aloud.
+
+   ⚠ It is INSIDE the scroller now, one per section, where it used to sit above
+   it as the single divider. A rule pinned above a scroller with three groups in
+   it would separate the first group from nothing. */
 .m-nav__sep {
   flex: none;
   width: 100%;

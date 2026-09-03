@@ -47,7 +47,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'The menu, and the piece the brief asks to be judged on: does it survive more stuff going into it. Drag the agent count and watch what happens — the products list is the only thing that scrolls, so Sessions above it and the tools, credits and account below it never move. Only an agent with more than one body expands, and what it expands into is data rather than a special case in the component. Note also what is NOT here: no background and no border on the nav itself, so the ground wraps around the content plane instead of meeting it at a seam. Toggle the collapse control at the foot, or the `collapsed` arg: the narrow menu keeps its count column, which is why it is 76px and not a 56px icon rail, and the labels come back on hover. The top of the column was redrawn on 2026-09-02: the logo and the product name are their own row rather than a mark standing in for both inside the switcher, the switcher is a two-line control with an edge, Search is a row like Sessions instead of the one filled button in the menu, and the agents start at a rule rather than at the word AGENTS. Everything in it reduces to itself at the narrow width - the logo keeps its mark, the account keeps its badge, the rule keeps its rule.',
+          'The menu, and the piece the brief asks to be judged on: does it survive more stuff going into it. Drag the agent count and watch what happens — the three groups scroll together, so the logo and the switcher above them and the tools and credits below never move.\n\nTHE SHAPE IS GABRIEL\'S, 2026-09-03, drawing out Mehdi\'s 09-02 ask for product-named groups and sub-menus. Three groups: an unlabelled one (Search, Sessions, Highlights), then Agents, then Product. ⚠ TABS ARE NOT IN HERE — only subitems. Synthetics is one row and its Tests / Runs / Environments strip stays on its page, which is why the only expanding row in the whole column is Analytics, holding Data Management and Dashboards. The groups are named again because a bare rule can say that a category changed and not what it changed to; that argument only held while there was one group.\n\nThe collapse moved to the top right corner, opposite the mark: every control in the foot opens something, and this one reshapes the thing they all sit in. Narrow, the brand row becomes the control — 52px does not hold a mark and a button, and a collapsed menu whose only way out is a keyboard shortcut is a trap.\n\nNote also what is NOT here: no background and no border on the nav itself, so the ground wraps around the content plane instead of meeting it at a seam.',
       },
     },
   },
@@ -73,7 +73,9 @@ export const OnTheList: Story = { args: { active: 'tests' } };
  * The narrow menu. Two columns — a glyph and a figure — because the counts are
  * the menu's whole argument and they are the part still legible at this width;
  * an icon rail would have saved 20px and thrown the argument away. Hover a row
- * for the label the width took, and hover Tests for its three sections.
+ * for the label the width took, and hover Analytics for its two subitems -
+ * which is the only card in the column now, because it is the only row with
+ * anything under it.
  */
 export const Collapsed: Story = { args: { collapsed: true } };
 

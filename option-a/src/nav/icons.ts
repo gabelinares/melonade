@@ -1,13 +1,18 @@
 import {
   Accessibility,
+  Activity,
   Bell,
   Bug,
+  ChartColumn,
   CircleHelp,
   ClipboardCheck,
+  Database,
   FlaskConical,
   Gauge,
+  Highlighter,
   History,
   House,
+  LayoutDashboard,
   Languages,
   type LucideIcon,
   PlayCircle,
@@ -36,12 +41,22 @@ export const AGENT_ICONS: Record<AgentIconName, LucideIcon> = {
   languages: Languages,
 };
 
-/** The destinations that are not agents. */
+/** The destinations that are not agents. Keyed by `NavIconName` for the ones
+ *  in the tree, plus the foot's own glyphs, which are named there. */
 export const PAGE_ICONS: Record<string, LucideIcon> = {
   home: House,
+  search: Search,
   sessions: PlayCircle,
+  /* A highlight is a passage somebody marked, so the glyph is the marker
+     rather than a star: a star means favourite, and Bookmarked is already a
+     tab on Sessions. Two rows meaning "saved" in one column is the confusion
+     worth avoiding here. */
+  highlights: Highlighter,
+  analytics: ChartColumn,
+  dataManagement: Database,
+  dashboards: LayoutDashboard,
+  activity: Activity,
   preferences: Settings2,
   support: CircleHelp,
   notifications: Bell,
-  search: Search,
 };

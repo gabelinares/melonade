@@ -6,14 +6,12 @@ import {
   CircleHelp,
   PanelLeftClose,
   PanelLeftOpen,
-  PlayCircle,
-  Search,
   Settings2,
 } from 'lucide-react';
-import { AGENTS } from './agents.ts';
+import { navTree } from './tree.ts';
 import { DEFAULT_PROJECT, ORG, projectName } from './account.ts';
 import { AccountMenu } from './AccountMenu.tsx';
-import { AGENT_ICONS } from './icons.ts';
+import { AGENT_ICONS, PAGE_ICONS } from './icons.ts';
 import { BrandMark } from './BrandMark.tsx';
 import { NavItem } from './NavItem.tsx';
 import { NavFlyout } from './NavFlyout.tsx';
@@ -47,21 +45,39 @@ export interface SideNavProps {
  *
  * Four decisions carry the scaling argument:
  *
- * 1. AGENTS ARE PEERS UNDER ONE RULE. They are a flat list below one separator,
- *    so a new agent costs exactly one row and nothing has to be expanded to
- *    reach it. Only an agent with more than one body expands, and what it
- *    expands into is data (`AgentEntry.sections`), not a special case here.
- * 2. THE SHOULDERS ARE PINNED. Only the agents list scrolls. The logo, the
- *    account, Search and Sessions sit above it, the tools and the credits
- *    below, so none of them can be pushed off-screen by growth - which is
- *    exactly what happens to a nav that is one long scrolling column.
+ * 1. THREE NAMED GROUPS, AND ONLY TWO LEVELS (Gabriel, 2026-09-03, drawing out
+ *    Mehdi's 09-02 ask). ⚠ **TABS ARE NOT IN THE MENU. ONLY SUBITEMS ARE** -
+ *    see `tree.ts`, which is where the whole shape now lives as data. So
+ *    Synthetics is one row and its Tests / Runs / Environments strip stays on
+ *    its page, and the only expanding row in the column is Analytics, which
+ *    holds two real subitems. A new agent still costs exactly one row.
+ * 2. THE SHOULDERS ARE PINNED. Only the groups scroll. The logo and the
+ *    account sit above them, the tools and the credits below, so none of those
+ *    can be pushed off-screen by growth - which is exactly what happens to a
+ *    nav that is one long scrolling column. ⚠ Since 09-03 the FIRST group
+ *    scrolls too, because there are three groups now and pinning one of them
+ *    would put a rule in the middle of a scroller with nothing above it.
  * 3. THE NAV IS THE QUEUE. Each agent carries its open count, so eleven agents
  *    read as a worklist rather than eleven doors. Length is only a problem when
  *    the rows say nothing.
- * 4. THE FOOT IS A ROW, NOT A LIST. Settings, notifications, help and theme are
- *    four things you touch rarely and never search for, so they are four icons
- *    on one line instead of four labelled rows competing with the agents for
- *    vertical space and attention.
+ * 4. THE FOOT IS A ROW, NOT A LIST. Preferences, notifications, support, theme
+ *    and the person are things you touch rarely and never search for, so they
+ *    are icons on one line instead of labelled rows competing with the agents
+ *    for vertical space and attention.
+ *
+ * ── AND THE COLLAPSE MOVED TO THE TOP RIGHT (Gabriel, 2026-09-03) ───────────
+ * It was the fifth glyph in the foot, on the argument that it belongs with the
+ * other preferences about the chrome. What that missed is that it is not a
+ * preference about the chrome, it IS the chrome: every other control down there
+ * opens something, and this one reshapes the thing they all sit in. It is on
+ * the brand row now, opposite the mark - the top right corner of the menu,
+ * which is where every application that has one puts it.
+ *
+ * ⚠ Narrow, the brand row BECOMES the control. There is no room for a mark and
+ * a button in 52px, and a collapsed menu whose only way out is a keyboard
+ * shortcut is a trap - so the row keeps the mark, carries the tooltip, and
+ * shows the expand glyph over it on hover. Same place in both states, which
+ * was the one good property of having it in the foot.
  *
  * ── AND SINCE 2026-08-31 IT HAS A NARROW STATE ──────────────────────────────
  * ONE RULE, and every consequence below follows from it: THE COLLAPSE TAKES THE
@@ -97,11 +113,11 @@ export interface SideNavProps {
  * ════════════════════════════════════════════════════════════════════════════
  */
 export function SideNav({ active, onNavigate, agentCount, collapsed = false, onToggleCollapsed }: SideNavProps) {
-  const agents = AGENTS.slice(0, agentCount);
-  /* Expansion is remembered per agent and starts open for whatever you are
-     inside, so arriving on Runs never shows a collapsed Tests. */
+  const groups = navTree(agentCount);
+  /* Expansion is remembered per row and starts open for whatever you are
+     inside, so arriving on Data Management never shows a collapsed Analytics. */
   const [expanded, setExpanded] = useState<string[]>(() =>
-    active.includes('/') ? [active.split('/')[0]!] : ['tests'],
+    active.includes('/') ? [active.split('/')[0]!] : [],
   );
   const toggle = (key: string) =>
     setExpanded((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
@@ -114,21 +130,56 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
   const [project, setProject] = useState(DEFAULT_PROJECT);
   const [accountOpen, setAccountOpen] = useState(false);
 
+  const collapseLabel = `${collapsed ? 'Expand' : 'Collapse'} menu`;
+
   return (
     <nav className={`m-nav${collapsed ? ' is-collapsed' : ''}`} aria-label="Main">
-      {/* ── the logo. Pinned, and it is NOT a control. ─────────────────────
-          The mark and the name, and nothing else on the row. Until 09-02 the
-          mark stood in for the logo INSIDE the switcher, which made the one
-          permanent thing in the column look like part of a control you change
-          all day - and left the product unnamed on its own first screen.
+      {/* ── the logo, and the collapse opposite it ──────────────────────────
+          The mark and the name on the left; the collapse in the top right
+          corner (Gabriel, 2026-09-03), where it reshapes the column from the
+          column's own corner rather than from a row of unrelated glyphs at the
+          bottom.
 
-          It sits in the glyph column like every other icon here: same 15px
-          glyph, same 8px inset, so the mark, Search's glyph and every agent's
+          The mark sits in the glyph column like every other icon here: same
+          15px glyph, same 8px inset, so it, Search's glyph and every agent's
           share one centre in both widths. A logo that is nearly in the column
           is worse than one that is obviously not. */}
       <div className="m-nav__brand" data-mark-host>
-        <BrandMark size={15} playOnMount className="m-nav__mark" />
-        <span className="m-nav__brand-name">melonade</span>
+        {collapsed ? (
+          /* ⚠ NARROW, THE WHOLE ROW IS THE CONTROL. 52px does not hold a mark
+             and a button, and a collapsed menu whose only way out is a
+             keyboard shortcut is a trap. So the mark stays, the row carries the
+             tooltip, and the expand glyph comes up over the mark on hover -
+             which keeps the control in the same corner in both states. */
+          <Tooltip title={`${collapseLabel}  ${COLLAPSE_KEY}`} placement="right">
+            <button
+              type="button"
+              className="m-nav__brand-toggle"
+              aria-label={collapseLabel}
+              aria-expanded={false}
+              onClick={onToggleCollapsed}
+            >
+              <BrandMark size={15} playOnMount className="m-nav__mark" />
+              <PanelLeftOpen size={15} className="m-nav__brand-open" aria-hidden="true" />
+            </button>
+          </Tooltip>
+        ) : (
+          <>
+            <BrandMark size={15} playOnMount className="m-nav__mark" />
+            <span className="m-nav__brand-name">melonade</span>
+            <Tooltip title={`${collapseLabel}  ${COLLAPSE_KEY}`} placement="right">
+              <button
+                type="button"
+                className="m-nav__collapse"
+                aria-label={collapseLabel}
+                aria-expanded
+                onClick={onToggleCollapsed}
+              >
+                <PanelLeftClose size={15} aria-hidden="true" />
+              </button>
+            </Tooltip>
+          </>
+        )}
       </div>
 
       {/* ── the account. Pinned. ───────────────────────────────────────────
@@ -177,123 +228,79 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
         </button>
       </AccountMenu>
 
-      {/* HOME IS GONE (Mehdi, 08-28). It was going to carry the weekly review and
-          the digest, and both of those are backend work - "otherwise it would be
-          a project that would be too long to implement". Sessions stays, and it
-          is the one destination above the agents because every agent's evidence
-          is a session.
-
-          SEARCH IS A ROW HERE, not a filled button beside the switcher
-          (2026-09-02). It was the one accent-filled control in the whole column,
-          which said "this is the thing to do next" about a thing you reach for
-          when you already know what you are looking for. It is a destination
-          like Sessions, so it is drawn like Sessions - and being a NavItem it
-          collapses, flies out and highlights with the same code as the rest,
-          instead of being a shape of its own that has to be maintained. */}
-      <div className="m-nav__group m-nav__group--top">
-        <NavFlyout enabled={collapsed} label="Search">
-          <div className="m-nav__row">
-            <NavItem
-              icon={<Search size={15} />}
-              label="Search"
-              active={active === 'search'}
-              onClick={() => onNavigate('search')}
-            />
-          </div>
-        </NavFlyout>
-        <NavFlyout enabled={collapsed} label="Sessions">
-          <div className="m-nav__row">
-            <NavItem
-              icon={<PlayCircle size={15} />}
-              label="Sessions"
-              active={active === 'sessions'}
-              onClick={() => onNavigate('sessions')}
-            />
-          </div>
-        </NavFlyout>
-      </div>
-
-      {/* ── WHERE THE AGENTS START ─────────────────────────────────────────
-          A RULE, NOT A WORD (Mehdi, 2026-09-02). "AGENTS" was the only piece of
-          uppercase type in the column, and it was labelling the obvious: eleven
-          rows carrying agent glyphs and open counts do not need to be told what
-          they are. What the group actually needs is a START, and a start is a
-          line. One pixel of ink instead of six letters, and the air around it
-          reads as room rather than as a heading nobody reads.
-
-          It is also the same object in both widths now - it only changes length
-          - where the label had to become a rule when the menu narrowed. And it
-          sits ABOVE the scroller rather than inside it, so it stays put and the
-          list scrolls under it. */}
-      <hr className="m-nav__sep" />
-
-      {/* ── the scrolling middle ── */}
+      {/* ── the scrolling middle ────────────────────────────────────────────
+          ⚠ ALL THREE GROUPS SCROLL now. The first used to be pinned above the
+          separator, which worked while there was one group below it; with three
+          groups a pinned first one would leave a rule at the top of a scroller
+          with nothing above it to separate. */}
       <div className="m-nav__scroll">
-        {/* The rule says where the group starts to anyone LOOKING at it; the
-            name still has to exist for anyone who is not. */}
-        <div className="m-nav__group" role="group" aria-label="Agents">
-          {agents.map((a) => {
-            const Icon = AGENT_ICONS[a.icon];
-            const open = expanded.includes(a.key);
-            const inside = active === a.key || active.startsWith(`${a.key}/`);
-            return (
-              <NavFlyout
-                key={a.key}
-                enabled={collapsed}
-                label={a.label}
-                count={a.count}
-                countNoun={a.countNoun}
-                badge={a.shipped ? undefined : 'Soon'}
-                sections={a.sections}
-                active={active}
-                onNavigate={onNavigate}
-              >
-                <div className="m-nav__row">
-                  <NavItem
-                    icon={<Icon size={15} />}
-                    label={a.label}
-                    count={a.count}
-                    badge={a.shipped ? undefined : 'Soon'}
-                    active={a.sections ? inside && !open : inside}
-                    /* Narrow, there is nothing to expand INTO - the sections
-                       live in the flyout - so the caret is not merely hidden,
-                       it is not a control. */
-                    expandable={a.sections != null && !collapsed}
-                    expanded={open}
-                    onToggle={() => toggle(a.key)}
-                    onClick={() => {
-                      onNavigate(a.key);
-                      if (a.sections && !open && !collapsed) toggle(a.key);
-                    }}
-                  />
-                  {/* The sections. Present only while open, so the list has one
-                      length at rest and the products below never shift under a
-                      cursor that was aiming at them. */}
-                  {a.sections && open && !collapsed && (
-                    <div className="m-nav__sections">
-                      {a.sections.map((s) => (
-                        <NavItem
-                          key={s.key}
-                          nested
-                          label={s.label}
-                          active={active === s.key}
-                          onClick={() => onNavigate(s.key)}
-                        />
-                      ))}
+        {groups.map((group, gi) => (
+          <div key={group.label ?? 'top'} className="m-nav__section">
+            {/* THE GROUP'S NAME, and it is a word again (see tree.ts). The
+                first group has none: the top of a menu does not need to be told
+                it is the top, so it gets the rule's spacing without the rule. */}
+            {gi > 0 && <hr className="m-nav__sep" />}
+            {group.label && <p className="m-nav__label">{group.label}</p>}
+            <div className="m-nav__group" role="group" aria-label={group.label ?? 'Overview'}>
+              {group.entries.map((e) => {
+                /* Two maps, one row: a page names its glyph in the tree, an
+                   agent names it in the roster. See tree.ts. */
+                const Icon = e.icon ? PAGE_ICONS[e.icon] : e.agentIcon ? AGENT_ICONS[e.agentIcon] : undefined;
+                const open = expanded.includes(e.key);
+                const inside = active === e.key || active.startsWith(`${e.key}/`);
+                return (
+                  <NavFlyout
+                    key={e.key}
+                    enabled={collapsed}
+                    label={e.label}
+                    count={e.count}
+                    countNoun={e.countNoun}
+                    badge={e.badge}
+                    sections={e.items}
+                    active={active}
+                    onNavigate={onNavigate}
+                  >
+                    <div className="m-nav__row">
+                      <NavItem
+                        icon={Icon ? <Icon size={15} /> : undefined}
+                        label={e.label}
+                        count={e.count}
+                        badge={e.badge}
+                        active={e.items ? inside && !open : inside}
+                        /* Narrow, there is nothing to expand INTO - the
+                           subitems live in the flyout - so the caret is not
+                           merely hidden, it is not a control. */
+                        expandable={e.items != null && !collapsed}
+                        expanded={open}
+                        onToggle={() => toggle(e.key)}
+                        onClick={() => {
+                          onNavigate(e.key);
+                          if (e.items && !open && !collapsed) toggle(e.key);
+                        }}
+                      />
+                      {/* The subitems. Present only while open, so the list has
+                          one length at rest and the rows below never shift
+                          under a cursor that was aiming at them. */}
+                      {e.items && open && !collapsed && (
+                        <div className="m-nav__sections">
+                          {e.items.map((sub) => (
+                            <NavItem
+                              key={sub.key}
+                              nested
+                              label={sub.label}
+                              active={active === sub.key}
+                              onClick={() => onNavigate(sub.key)}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </NavFlyout>
-            );
-          })}
-          {/* ⚠ "ADD AGENT" IS OUT, 2026-08-31 - hidden, not redesigned. The row
-              was answering "where does the next agent go", which is a question
-              about a roster you can extend; the eleven below are ours, and
-              nothing in this build creates one. It comes back the day there is
-              something for it to open. The `.m-nav__add` styles stay - they are
-              two lines on top of `.m-nav-item` - so it comes back as a row and
-              not as a shape of its own. */}
-        </div>
+                  </NavFlyout>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ── the foot. Pinned, so it never scrolls away. ──────────────────────
@@ -301,7 +308,12 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
           out of the width the menu is already animating: five across when it is
           open, one when it is narrow, and every count in between on the way. A
           row that flipped to a column would snap to a column while the menu was
-          still 256px wide. */}
+          still 256px wide.
+
+          ⚠ FIVE GLYPHS, NOT SIX: the collapse left for the top right corner on
+          2026-09-03. What is here is what Gabriel listed - preferences,
+          notifications, support, theme, the person - and every one of them
+          OPENS something, which is what the collapse never did. */}
       <div className="m-nav__foot">
         <div className="m-nav__tools">
           <Tooltip title="Preferences" placement="right">
@@ -340,21 +352,6 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
             </button>
           </Tooltip>
           <ThemeToggle />
-          {/* The collapse sits with the other preferences about the chrome
-              rather than floating on the menu's edge: it is in the same place
-              in both states, it costs nothing on hover, and it is the one
-              control here whose glyph draws the thing it does. */}
-          <Tooltip title={`${collapsed ? 'Expand' : 'Collapse'} menu  ${COLLAPSE_KEY}`} placement="right">
-            <button
-              type="button"
-              className="m-nav__tool"
-              aria-label={`${collapsed ? 'Expand' : 'Collapse'} menu`}
-              aria-expanded={!collapsed}
-              onClick={onToggleCollapsed}
-            >
-              {collapsed ? <PanelLeftOpen size={15} aria-hidden="true" /> : <PanelLeftClose size={15} aria-hidden="true" />}
-            </button>
-          </Tooltip>
           <Tooltip title="Gabriel Linares" placement="right">
             <button type="button" className="m-nav__avatar" aria-label="Gabriel Linares">
               GL
