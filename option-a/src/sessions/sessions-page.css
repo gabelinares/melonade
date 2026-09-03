@@ -65,10 +65,52 @@
   min-width: 0;
 }
 
+/* ── THE NAME IS A CONTROL (2026-09-04) ─────────────────────────────────────
+   Clicking it narrows the list to that person. It is a `<button>`, so the reset
+   is here rather than an inherited paragraph style - and the type has to be
+   restated, because a button does not inherit the table's font.
+
+   ⚠ IT LOOKS LIKE TEXT AT REST, ON PURPOSE. Twenty rows of underlined links is
+   a page of links, and the name is still first of all the row's SUBJECT: what
+   this session is. The affordance arrives on hover, as a dotted underline -
+   dotted rather than solid because a solid underline is a navigation, and this
+   does not take you anywhere. It refines what you are already looking at.
+
+   The offset is 2px so the rule clears the descenders in an email address,
+   which is what most of these are. */
 .m-ss__name {
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
   color: var(--m-content-primary);
   font-weight: var(--m-weight-medium);
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline dotted transparent;
+  text-underline-offset: 2px;
+  transition: color var(--m-duration-fast) var(--m-ease-out),
+    text-decoration-color var(--m-duration-fast) var(--m-ease-out);
+}
+
+/* Muted, not brightened: the row already has one accent (the play, on the right)
+   and a name that lit up on hover would be a second thing competing for the
+   click on a row where hovering is how you read. Stepping BACK is the quietest
+   way for a control to say it is one. */
+.m-ss__name:hover {
+  color: var(--m-content-secondary);
+  text-decoration-color: currentcolor;
+}
+
+/* The keyboard gets the same answer plus the app's ring - a dotted underline
+   alone is not a focus indicator. */
+.m-ss__name:focus-visible {
+  color: var(--m-content-secondary);
+  text-decoration-color: currentcolor;
+  outline: 2px solid var(--m-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--m-radius-chip);
 }
 
 /* AN ANONYMOUS SESSION READS AS ONE. Production colours identified users teal

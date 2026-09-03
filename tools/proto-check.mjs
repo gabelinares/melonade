@@ -55,6 +55,8 @@ const nav = await p.evaluate(() => {
     ].filter(Boolean),
     seps: nav.querySelectorAll('.m-nav__sep').length,
     groupLabels: [...nav.querySelectorAll('.m-nav__label')].map((l) => l.textContent.trim()),
+    tops: [...nav.querySelectorAll('.m-nav__scroll .m-nav__row')].map((r) =>
+      r.querySelector('.m-nav-item:not(.is-nested) .m-nav-item__label')?.textContent?.trim()),
     groupNames: [...nav.querySelectorAll('.m-nav__scroll [role="group"]')].map((g) => g.getAttribute('aria-label')),
     weights: (() => {
       const rows = [...nav.querySelectorAll('.m-nav__scroll .m-nav-item')];
@@ -70,6 +72,7 @@ const nav = await p.evaluate(() => {
           ? getComputedStyle(top).fontSize : 'two sizes',
         activeBg: on ? getComputedStyle(on).backgroundColor : null,
         activeFilled: on ? getComputedStyle(on).backgroundColor !== 'rgba(0, 0, 0, 0)' : false,
+        activeNested: on ? on.classList.contains('is-nested') : null,
       };
     })(),
     /* THE WRAP. The ground is the menu's colour, the menu paints nothing of its
@@ -102,23 +105,33 @@ check('the logo names the product, and it is not the switcher',
 check('the account says whose workspace and which project, on two lines',
   !!nav && nav.account?.length === 2 && nav.account[1] === 'Acme, Inc.',
   nav?.account?.join(' / '));
-/* ⚠ INVERTED ON 09-03. The 09-02 pass made "AGENTS" a bare rule, and the
-   argument held at one group: a single group does not need to be told what it
-   is, and the word was the only uppercase type in the column. It dies at
-   three. A rule between Audits and Analytics says something changed; it cannot
-   say changed to what. The first group keeps no label - the top of a menu does
-   not need to be told it is the top. */
-check('the groups are named again, except the first',
-  !!nav && nav.seps === 2 && nav.groupLabels.join(',') === 'Agents,Product'
-    && nav.groupNames.join(',') === 'Overview,Agents,Product',
-  `${nav?.seps} rules, labels ${nav?.groupLabels.join(' | ')}, groups ${nav?.groupNames.join(' | ')}`);
+/* ⚠ THE GROUPS ARE GONE, and this assertion has now been written three ways in
+   three days: an uppercase label (09-02), a bare rule (09-03), a label again
+   (09-03 evening), and none at all (09-04). The argument settled by dissolving
+   - "Agents" turned out to be a PAGE with the roster inside it, not a heading
+   over it, and once each area is a parent row there is nothing left for a
+   label to sort. Six rows, no rules, no words above them. */
+check('the menu is six parent rows with no headings between them',
+  !!nav && nav.seps === 0 && nav.groupLabels.length === 0 && nav.groupNames.length === 1,
+  `${nav?.seps} rules, ${nav?.groupLabels.length} labels, ${nav?.groupNames.length} group`);
+check('and they are the six product areas, in order',
+  !!nav && nav.tops.join(',') === 'Recordings,Agents,CoBrowse,Spot,Product Analytics,Data Management',
+  nav?.tops.join(' | '));
 /* THE WEIGHT STEP IS BETWEEN A PARENT AND ITS SECTIONS, not between the current
    row and the other ten. An agent and one of its sections were the same 13px
    regular, told apart by an indent, a hairline and a colour but not by the type
    - which is the thing you actually read. */
+/* ⚠ AGAINST ITS OWN LEVEL, not against the top one. Every destination is a
+   subitem since 09-04, so the row you are on is normally nested and weighs 400
+   - and comparing it to a parent's 500 failed a menu that is doing exactly what
+   the weight rule asks. The claim was never "the current row is bold"; it is
+   that selection is a FILL and adds no weight, which is checked by comparing a
+   row to its own kind. */
 check('and the current row is a fill rather than a third weight',
-  !!nav && nav.weights?.active === nav.weights?.top && nav.weights?.activeFilled,
-  `${nav?.weights?.active} on ${nav?.weights?.activeBg}`);
+  !!nav
+    && nav.weights?.active === (nav.weights?.activeNested ? nav.weights?.nested : nav.weights?.top)
+    && nav.weights?.activeFilled,
+  `${nav?.weights?.active} on ${nav?.weights?.activeBg}, nested ${nav?.weights?.activeNested}`);
 
 /* ⚠ NOTHING IS NESTED UNTIL YOU OPEN IT, and since 09-03 only one row can be
    opened at all. This used to read the weights straight off the first render,
@@ -126,7 +139,7 @@ check('and the current row is a fill rather than a third weight',
    now Analytics is the only entry with subitems and nothing starts open unless
    you arrived inside it. So the check opens it and then measures - which also
    proves the caret is a control rather than a decoration. */
-await p.locator('[aria-label="Show Analytics subitems"]').click();
+await p.locator('[aria-label="Show Product Analytics subitems"]').click();
 await p.waitForTimeout(300);
 const sub = await p.evaluate(() => {
   const nav = document.querySelector('.m-nav');
@@ -138,7 +151,15 @@ const sub = await p.evaluate(() => {
     top: w(top), nested: w(nested),
     size: top && nested && getComputedStyle(top).fontSize === getComputedStyle(nested).fontSize
       ? getComputedStyle(top).fontSize : 'two sizes',
-    labels: [...nav.querySelectorAll('.m-nav__sections .m-nav-item__label')].map((l) => l.textContent.trim()),
+    /* ⚠ SCOPED TO THE ROW THAT WAS JUST OPENED. Unscoped, this collected every
+       nested label in the menu - and since 09-04 Agents is open by default, so
+       it returned the roster's three followed by the three being asserted. */
+    labels: (() => {
+      const row = [...nav.querySelectorAll('.m-nav__scroll .m-nav__row')]
+        .find((r) => /Product Analytics/.test(r.textContent));
+      return [...(row?.querySelectorAll('.m-nav__sections .m-nav-item__label') ?? [])]
+        .map((l) => l.textContent.trim());
+    })(),
   };
 });
 /* THE WEIGHT STEP IS BETWEEN A PARENT AND ITS SUBITEMS, not between the current
@@ -147,8 +168,8 @@ const sub = await p.evaluate(() => {
    - which is the thing you actually read. */
 check('a parent is set a weight above its own subitems',
   sub.top === '500' && sub.nested === '400', `parent ${sub.top}, subitem ${sub.nested}, both ${sub.size}`);
-check('and it expands into the two pages under it, not into tabs',
-  sub.labels.join('/') === 'Data Management/Dashboards', sub.labels.join('/') || 'nothing opened');
+check('and it expands into the three pages under it, not into tabs',
+  sub.labels.join('/') === 'Dashboards/Cards/Alerts', sub.labels.join('/') || 'nothing opened');
 check('the foot is a row of tools', !!nav && nav.tools >= 4, `${nav?.tools} tools`);
 check('the credits are always on screen', !!nav && /Credits/.test(nav.credits ?? ''), nav?.credits);
 check('the menu paints nothing of its own',
@@ -189,14 +210,23 @@ const geom = () =>
       /* every glyph in the column, measured by its centre: the logo's mark, the
          account's badge, the separator, an agent, the credits bar and a foot
          tool have to agree on one x. */
-      centres: [
-        glyph('.m-nav__brand svg'),
-        glyph('.m-nav__account-badge'),
-        glyph('.m-nav__sep'),
-        glyph('.m-nav__scroll .m-nav-item__icon'),
-        glyph('.m-nav__foot .m-credits .m-bar'),
-        glyph('.m-nav__tools button'),
-      ],
+      /* ⚠ NO SEPARATOR IN THIS LIST SINCE 09-04. `.m-nav__sep` was one of the
+         six things that had to share the rail's centre line, and the menu has
+         no rules in it any more - six parent rows, nothing between them. A
+         missing element measured null, which joined into an empty string and
+         failed the "one column" check on a menu that is correct. */
+      /* ⚠ KEYED, NOT POSITIONAL. It was an array, and removing the separator
+         shifted every index after it - so "the glyphs drift rather than travel"
+         silently started measuring the CREDITS BAR, which legitimately moves
+         from 121 to 26 when it rotates into the rail, and failed. A name cannot
+         shift. */
+      centres: {
+        mark: glyph('.m-nav__brand svg'),
+        account: glyph('.m-nav__account-badge'),
+        row: glyph('.m-nav__scroll .m-nav-item__icon'),
+        credits: glyph('.m-nav__foot .m-credits .m-bar'),
+        tool: glyph('.m-nav__tools button'),
+      },
       /* the rail's own centre line, to compare against the glyphs' */
       navMid: (() => {
         const r = nav.getBoundingClientRect();
@@ -247,23 +277,31 @@ check('the open menu keeps its count column',
 check('the figure leaves the rail and its dot takes its place',
   shut.numShown === 'none' && shut.dotsShown === shut.dots && shut.dots > 0,
   `${shut.dotsShown}/${shut.dots} dots, figures ${shut.numShown}`);
+/* ⚠ THE TWO STATES NO LONGER HOLD THE SAME NUMBER OF DOTS, and that is the
+   structure rather than a defect: open, the Agents parent and each of its three
+   children carry one; narrow, the children are not rendered at all, so only the
+   parent's rollup is left. What has to hold is that every dot that exists is
+   shown, that the narrow rail keeps at least one, and that the open menu still
+   prints the figure the dot stands in for. */
 check('and the same dot rides the figure in the open menu',
-  open0.dotsShown === open0.dots && open0.dots === shut.dots && open0.numShown !== 'none',
+  open0.dotsShown === open0.dots && open0.dots >= shut.dots && shut.dots > 0
+    && open0.numShown !== 'none',
   `${open0.dotsShown}/${open0.dots} open, ${shut.dotsShown}/${shut.dots} narrow`);
 check('nothing hangs past the agents scroller, which clips both axes',
   shut.spill <= 0, `${shut.spill}px past the edge`);
+const shutCentres = Object.values(shut.centres);
 check('and the glyphs are centred in the rail, which is what that buys',
-  shut.centres.every((c) => c === shut.navMid),
-  `glyphs at ${shut.centres.join('/')}, rail centre ${shut.navMid}`);
+  shutCentres.every((c) => c === shut.navMid),
+  `glyphs at ${JSON.stringify(shut.centres)}, rail centre ${shut.navMid}`);
 check('every glyph in the narrow menu shares one column',
-  new Set(shut.centres).size === 1 && shut.centres[0] !== null, shut.centres.join(' / '));
+  new Set(shutCentres).size === 1 && shutCentres[0] !== null, JSON.stringify(shut.centres));
 /* 6px, and all of it is the left gutter closing from 16 to 12 plus the row
    losing its 8px padding to centre the glyph. The icons drift, they do not
    travel: a collapse where the glyphs stay put reads as the labels leaving
    rather than as two different navs. */
 check('the glyphs drift rather than travel between the two widths',
-  Math.abs(shut.centres[3] - open0.centres[3]) <= 8,
-  `${open0.centres[3]} -> ${shut.centres[3]}`);
+  Math.abs(shut.centres.row - open0.centres.row) <= 8,
+  `${open0.centres.row} -> ${shut.centres.row}`);
 check('the tool bar folds into one column rather than switching to one',
   open0.toolsBox.tracks > 1 && shut.toolsBox.tracks === 1 && shut.toolsBox.h > open0.toolsBox.h * 3,
   `${open0.toolsBox.tracks} tracks/${open0.toolsBox.h}px -> ${shut.toolsBox.tracks} track/${shut.toolsBox.h}px`);
@@ -276,15 +314,17 @@ check('the plane takes back every pixel the menu gave up',
 
 /* THE FLYOUT: the row the width took away, including what is inside it.
 
-   ⚠ THE SUBJECT CHANGED ON 09-03 and the rows are addressed BY NAME now. This
-   used to hover the second row and expect Synthetics to nest Tests / Runs /
-   Environments; the nav restructure took tabs out of the menu, so Synthetics
-   nests nothing and ANALYTICS is the only entry in the tree with subitems.
-   Positional selectors were what made that a 30-second timeout instead of a
-   failed assertion - `nth-of-type(2)` still matched a row, just not the one
-   the assertions were written about. */
+   ⚠ THE SUBJECT HAS CHANGED TWICE. It used to hover the second row and expect
+   Synthetics to nest Tests / Runs / Environments; 09-03 took tabs out of the
+   menu, so it became Analytics with two subitems; 09-04 made every one of the
+   six parents a nesting row and renamed that one Product Analytics.
+
+   Positional selectors are what made the first break a 30-second timeout
+   instead of a failed assertion - `nth-of-type(2)` still matched a row, just
+   not the one the assertions were written about. Hence by name, and hence a
+   name that is not a substring of another row's. */
 const rowNamed = (name) => p.locator('.m-nav__scroll .m-nav__row').filter({ hasText: name }).first();
-await rowNamed('Analytics').hover();
+await rowNamed('Product Analytics').hover();
 await p.waitForTimeout(600);
 const fly = await p.evaluate(() => {
   const el = document.querySelector('.m-flyout');
@@ -295,32 +335,35 @@ const fly = await p.evaluate(() => {
     sections: [...el.querySelectorAll('.m-flyout__sections .m-nav-item__label')].map((n) => n.textContent.trim()),
   };
 });
-check('a narrow row gives its label back on hover', fly?.name === 'Analytics', fly?.name);
+check('a narrow row gives its label back on hover', fly?.name === 'Product Analytics', fly?.name);
 check('and the subitems the width took with it',
-  fly?.sections.join('/') === 'Data Management/Dashboards', fly?.sections.join('/'));
+  fly?.sections.join('/') === 'Dashboards/Cards/Alerts', fly?.sections.join('/'));
 /* ⚠ A HOVER MENU YOU CANNOT REACH IS NOT A MENU. antd sets the card down clear
    of the rail, and that gap belonged to neither element: a cursor crossing it
    left the trigger and the card closed before it arrived. The popup's root
    carries the gap as padding now, so this must never go positive. */
 const bridge = await p.evaluate(() => {
   const row = [...document.querySelectorAll('.m-nav__scroll .m-nav__row')]
-    .find((r) => /Analytics/.test(r.textContent));
+    .find((r) => /Product Analytics/.test(r.textContent));
   const t = row.getBoundingClientRect();
   const r = document.querySelector('.m-flyout-root').getBoundingClientRect();
   return Math.round(r.left - t.right);
 });
 check('and the cursor can actually get to them', bridge <= 0, `${bridge}px of dead ground`);
 
-/* A LEAF ROW GETS THE NAME AND NOTHING ELSE: its count is still on the row, so
-   a card restating it would be reading the row back to someone looking at it.
-   Since 09-03 that is nearly every row - Synthetics is a leaf here now. */
+/* A LEAF ROW GETS THE NAME AND NOTHING ELSE: a card restating it would be
+   reading the row back to someone looking at it. ⚠ Since 09-04 there are only
+   TWO leaves left in the whole menu - CoBrowse and Spot - because every other
+   parent nests something. Synthetics was the leaf here yesterday and is a
+   subitem today, and a `.m-nav__row` filtered on its name now matches the
+   AGENTS row that contains it, which has a card. */
 await p.hover('.m-nav__foot');
 await p.waitForTimeout(300);
-await rowNamed('Synthetics').hover();
+await rowNamed('CoBrowse').hover();
 await p.waitForTimeout(700);
 const leafCard = await p.evaluate(() => document.querySelector('.m-flyout')?.textContent ?? null);
 check('and only a row with something inside it gets a card',
-  leafCard === null, leafCard ? 'a leaf agent opened a flyout card' : 'Synthetics shows a plain tooltip');
+  leafCard === null, leafCard ? 'a leaf row opened a flyout card' : 'CoBrowse shows a plain tooltip');
 
 /* THE HOVER BUG the collapse exposed: `--m-surface-hover` is the ground's own
    colour in light mode, so a row on the ground had no hover at all. */
@@ -497,12 +540,17 @@ const pager = await p.evaluate(() => {
   const a = document.querySelector('.ant-pagination-item-active');
   if (!a) return null;
   const cs = getComputedStyle(a);
-  const nav = document.querySelector('.m-nav-item.is-active');
   return {
     border: cs.borderTopColor,
     bg: cs.backgroundColor,
     weight: cs.fontWeight,
-    navWeight: nav ? getComputedStyle(nav).fontWeight : null,
+    /* ⚠ A TOP-LEVEL ROW, not the active one. Since 09-04 the active row is
+       normally a subitem at 400, and this is asking whether the pager's current
+       page is set the way the MENU sets a row - which is the parent weight. */
+    navWeight: (() => {
+      const row = document.querySelector('.m-nav__scroll .m-nav-item:not(.is-nested)');
+      return row ? getComputedStyle(row).fontWeight : null;
+    })(),
   };
 });
 check('the current page is a fill, not a ring',

@@ -270,7 +270,14 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
                         label={e.label}
                         count={e.count}
                         badge={e.badge}
-                        active={e.items ? inside && !open : inside}
+                        /* ⚠ A PARENT IS LIT WHEN ITS CHILDREN ARE NOT ON
+                           SCREEN, which is not the same as "not expanded".
+                           Collapsed, the subitems are never rendered whatever
+                           `open` says - so the old `inside && !open` left the
+                           narrow rail with NO current row at all once every
+                           destination became a subitem. Nothing marked where
+                           you were. */
+                        active={e.items ? inside && (!open || collapsed) : inside}
                         /* Narrow, there is nothing to expand INTO - the
                            subitems live in the flyout - so the caret is not
                            merely hidden, it is not a control. */
@@ -292,6 +299,18 @@ export function SideNav({ active, onNavigate, agentCount, collapsed = false, onT
                               key={sub.key}
                               nested
                               label={sub.label}
+                              /* ⚠ THE COUNT AND THE BADGE COME DOWN HERE TOO,
+                                 and they did not until 09-04. A subitem had
+                                 nothing to count while the only nesting in the
+                                 menu was Analytics; the moment the agents moved
+                                 under a parent, every counted row in the whole
+                                 column was a subitem and the count column
+                                 silently emptied - which is the menu's own
+                                 argument ("it keeps the COUNT column") gone.
+                                 The glyph stays off (tree.ts says why); a
+                                 number is not a texture. */
+                              count={sub.count}
+                              badge={sub.badge}
                               active={active === sub.key}
                               onClick={() => onNavigate(sub.key)}
                             />

@@ -1,0 +1,68 @@
+/* ── THE REPLAY OPENED FROM THE LIST ─────────────────────────────────────────
+   See SessionReplay.tsx. This file is a header and a body; the player inside it
+   brings its own everything.
+
+   ⚠ IT TAKES THE PLANE, so it is `100%` of what the shell gives a page and it
+   does not scroll. A replay that scrolls is a replay whose controls can leave
+   the screen while it is playing. */
+.m-sreplay {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--m-surface-default);
+  border-radius: var(--m-radius-surface);
+  overflow: hidden;
+}
+
+/* The same 44px the page header is, so arriving here does not move the line
+   everything below it starts from. */
+.m-sreplay__head {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  height: 44px;
+  flex: none;
+  padding: 0 var(--m-space-4) 0 var(--m-space-3);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+.m-sreplay__back { flex: none; }
+
+.m-sreplay__who {
+  min-width: 0;
+  font-size: var(--m-text-sm);
+  font-weight: var(--m-weight-medium);
+  color: var(--m-content-primary);
+}
+
+/* The facts, quieter than the name and separated by space rather than by rules:
+   a header of pipes reads as a form. */
+.m-sreplay__meta {
+  flex: none;
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+  white-space: nowrap;
+}
+
+.m-sreplay__spacer { flex: 1 1 auto; }
+
+.m-sreplay__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  padding: var(--m-space-4);
+}
+
+/* The player fills whatever is left. It letterboxes its own stage, so the room
+   it is given is the room the recording gets. */
+.m-sreplay__body > .m-player {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  /* The environment line is the first thing to go: it is the least urgent of
+     the four and the only one the player's own chrome repeats. */
+  .m-sreplay__meta:first-of-type { display: none; }
+}

@@ -2,6 +2,7 @@ import {
   Accessibility,
   Activity,
   Bell,
+  Bot,
   Bug,
   ChartColumn,
   CircleHelp,
@@ -12,11 +13,13 @@ import {
   Highlighter,
   History,
   House,
+  Video,
   LayoutDashboard,
   Languages,
   type LucideIcon,
   PlayCircle,
   Route,
+  ScreenShare,
   Search,
   Settings2,
   Shield,
@@ -46,16 +49,27 @@ export const AGENT_ICONS: Record<AgentIconName, LucideIcon> = {
 export const PAGE_ICONS: Record<string, LucideIcon> = {
   home: House,
   search: Search,
-  sessions: PlayCircle,
-  /* A highlight is a passage somebody marked, so the glyph is the marker
-     rather than a star: a star means favourite, and Bookmarked is already a
-     tab on Sessions. Two rows meaning "saved" in one column is the confusion
-     worth avoiding here. */
-  highlights: Highlighter,
+  /* ⚠ SIX GLYPHS FOR SIX ROWS, and after 09-04 that is the whole menu column -
+     every other destination is a subitem and subitems carry no icon (tree.ts
+     says why). So these six are doing more work than eleven were: they are the
+     only marks in the rail when it is narrow, and the only thing distinguishing
+     six closed parents when it is wide. */
+  recordings: PlayCircle,
+  agents: Bot,
+  /* Co-browsing is two people on one screen, which is what this glyph is. */
+  cobrowse: ScreenShare,
+  /* Spot records a clip and sends it; the recorder, not another play button -
+     Recordings already owns the triangle and two of those in one column would
+     read as the same thing twice. */
+  spot: Video,
   analytics: ChartColumn,
   dataManagement: Database,
+  /* Still mapped though no row uses them: Placeholder resolves a destination's
+     glyph through this map, and these are subitem keys that open real pages. */
   dashboards: LayoutDashboard,
   activity: Activity,
+  highlights: Highlighter,
+  sessions: PlayCircle,
   preferences: Settings2,
   support: CircleHelp,
   notifications: Bell,

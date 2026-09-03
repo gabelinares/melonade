@@ -50,33 +50,73 @@ export function AppShell() {
      and a page's own tab strip write to THIS - a page never keeps a second copy
      of where it is, which is the only reason two controls can show the same
      thing without drifting apart. */
-  const [active, setActive] = useState('issues');
+  /* ⚠ `agents/issues`, NOT `issues`. Every destination is two levels deep or
+     one row deep since 09-04, and starting inside Agents also starts it OPEN -
+     `SideNav` expands whatever you arrived inside, so the roster is visible on
+     load rather than behind a caret nobody has been told about. */
+  const [active, setActive] = useState('agents/issues');
+
+  /* ── THE ROUTE IS WHERE THE RECORDINGS SECTION LIVES ────────────────────
+     Sessions / Bookmarks / Segments stopped being a tab strip on 09-04 and
+     became three menu rows, so the thing that says which one you are on has to
+     be the route. It still writes `model.tab`, which stays the single source -
+     `SessionsPage` reads nothing else, and neither does the highlight below.
+
+     ⚠ THE HIGHLIGHT IS DERIVED FROM THE MODEL, not from what was last clicked.
+     Applying a segment moves you to the session list (`applySegment` sets the
+     tab to `all`), and a menu still lighting Segments after that would be the
+     two-copies-of-one-fact problem the tab strip was removed to avoid. */
+  const sectionRoute = sessions.tab === 'all' ? 'sessions' : sessions.tab;
+  const here = active.startsWith('recordings') ? `recordings/${sectionRoute}` : active;
+  const navigate = useCallback(
+    (key: string) => {
+      if (key === 'recordings' || key.startsWith('recordings/')) {
+        const leaf = key.slice('recordings/'.length);
+        /* The parent row is a destination too, and it lands on the first of its
+           children rather than on a page that does not exist. */
+        sessions.setTab(leaf === 'bookmarks' || leaf === 'segments' ? leaf : 'all');
+      }
+      setActive(key);
+    },
+    [sessions],
+  );
   const [agentCount, setAgentCount] = useState(SHIPPED_AGENT_COUNT);
   const { collapsed, toggle: toggleNav } = useNavCollapse();
 
   return (
     <div className="m-shell">
       <SideNav
-        active={active}
-        onNavigate={setActive}
+        active={here}
+        onNavigate={navigate}
         agentCount={agentCount}
         collapsed={collapsed}
         onToggleCollapsed={toggleNav}
       />
       <main className="m-shell__main">
-        {active === 'sessions' ? (
+        {active.startsWith('recordings') ? (
           <SessionsPage model={sessions} />
-        ) : active === 'issues' ? (
+        ) : active === 'agents/issues' ? (
           <IssuesPage model={model} />
-        ) : active.startsWith('tests') ? (
+        ) : active.startsWith('agents/tests') ? (
           <TestsPage
             model={tests}
             runs={runs}
-            section={active === 'tests/runs' ? 'runs' : active === 'tests/environments' ? 'environments' : 'list'}
-            onSection={(s) => setActive(s === 'list' ? 'tests' : `tests/${s}`)}
+            /* ⚠ THE SECTION IS STILL IN THE ROUTE even though the menu does not
+               draw these three. They are TABS, they live in `TestsPage`'s own
+               header, and the route is what the strip writes - which is what
+               lets a link land on Runs. The menu simply does not read that
+               third level. */
+            section={
+              active === 'agents/tests/runs'
+                ? 'runs'
+                : active === 'agents/tests/environments'
+                  ? 'environments'
+                  : 'list'
+            }
+            onSection={(s) => setActive(s === 'list' ? 'agents/tests' : `agents/tests/${s}`)}
             dataState={model.dataState}
           />
-        ) : active === 'audits' ? (
+        ) : active === 'agents/audits' ? (
           <AuditsPage model={audits} dataState={model.dataState} />
         ) : (
           <Placeholder page={active} />

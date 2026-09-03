@@ -4842,3 +4842,199 @@ grounds actually spread. ⚠ It also asserts that **the list holds people with m
 than one session** — "one person, one seed" is satisfied trivially by a fixture
 where every row is a different person, so without that the main assertion is
 worthless.
+
+---
+
+## §30 — Six rows and twenty-one destinations (2026-09-04)
+
+The third menu structure in three days, and the first that describes the whole
+product rather than the part that is built.
+
+| | 09-03 | 09-04 |
+| --- | --- | --- |
+| top-level rows | 9 | **6** |
+| groups / rules | 3 groups, 2 rules | none |
+| rows that open | 1 (Analytics) | **4 of 6** |
+| destinations reachable | 12 | **21** |
+
+**This is the version that answers Mehdi's 09-02 ask** — *"the name of the
+product… limit the number of stuff you have visible, and then have sub menus"* —
+because a group label is not a limit. A label sorts nine visible rows into three
+piles; a parent row *replaces* its children until you ask for them.
+
+It also resolves the label argument by dissolving it. "Agents" spent 09-02 as an
+uppercase group label, 09-03 as a bare rule, then went back to a label — and it
+is a **page** now, with Issues, Synthetics and Audits inside it. The heading that
+could not decide what it was turned out to be a destination.
+
+### Tabs and subitems are not interchangeable, and the spec is precise about it
+
+Gabriel's spec marks every row as one or the other. Synthetics' Tests / Runs /
+Environments are **(Tab)** and stay in `TestsPage`; Sessions / Bookmarks /
+Segments are **(Subitem)** and therefore had to *leave* the sessions page's tab
+strip. So `SessionsPage` draws no strip at all now and the route says which of
+the three you are on.
+
+That is the same rule as 09-03 — a thing drawn in the menu **and** in the page is
+two controls showing one fact — applied in the other direction. `model.tab` stays
+the single source: the shell writes it from the route and reads it back for the
+highlight, so applying a segment (which moves you to the session list) moves the
+menu with it.
+
+**Which is also why the title moves now and did not before.** A tab strip under
+one title says *these are three views of Sessions*; three menu rows say *these
+are three destinations*, and a destination whose header does not name it is a
+page you cannot tell you have arrived at.
+
+### What is gone, and one judgement call
+
+- **Highlights**, marked "(remove)" in the spec. It was a kill candidate in the
+  09-02 numbers (under 2% of customers).
+- **Alerts is back**, under Product Analytics. Also a 09-02 kill candidate; the
+  spec lists it, so it lives.
+- **Activity moved into Data Management**, which is the 09-02 call finally drawn.
+- ⚠ **Search is gone, and that one is a judgement.** It became a row on 09-02 on
+  Mehdi's own ask and is absent from both the 09-03 and 09-04 specs. On 09-03
+  that was read as an omission because the spec was about hierarchy; this one
+  enumerates twenty-one destinations across six areas and *invents four that did
+  not exist*, so it is describing the whole menu. A search field also already
+  sits at the top of the sessions list, which is what that row opened. **One
+  commented line in `tree.ts` puts it back.**
+
+### Three things the restructure broke, none of them visible
+
+- ⚠ **Every count in the product vanished.** Counts live on Issues, Synthetics
+  and Audits; the moment those became subitems, and `SideNav` was passing no
+  `count` to a nested `NavItem`, the count column emptied — *the menu's own
+  argument* ("it keeps the COUNT column, which is the menu's whole argument")
+  gone, silently. Subitems carry counts now, **and a parent's count is the sum of
+  what is inside it**, so a closed row still says how much is waiting. The glyph
+  stays off a subitem; a number is not a texture.
+- ⚠ **Nothing was marked current in the collapsed rail.** A parent was lit by
+  `inside && !open`, which means "lit when its children are hidden" — and
+  collapsed, children are never rendered whatever `open` says. Once every
+  destination became a subitem, the narrow menu had no current row at all. It is
+  `inside && (!open || collapsed)`.
+- ⚠ **`Placeholder`'s label map went stale in twelve places.** It was six
+  hand-typed entries; twelve new destinations would have printed their raw route
+  (`data/properties`) as a page title. It reads the tree now.
+
+**The glyphs are doing more work than eleven were.** Six marks are the only thing
+in the rail when it is narrow, and the only thing distinguishing six closed
+parents when it is wide: `PlayCircle` for Recordings, `Bot` for Agents,
+`ScreenShare` for CoBrowse (two people on one screen), `Video` for Spot (the
+recorder — Recordings already owns the triangle), `ChartColumn`, `Database`.
+
+**The cost of "no glyph on a subitem", stated plainly:** Issues, Synthetics and
+Audits were top-level rows with recognisable marks and are now subitems without
+them. The rule is kept because the alternative is glyphs on some nestings and not
+others — Recordings' three have no natural marks at all — and a menu whose indent
+sometimes carries an icon column and sometimes does not is harder to read than
+one that never does.
+
+---
+
+## §31 — The name on a row is a control (2026-09-04)
+
+*"Make the session email/user clickable with a mute hover with dotted underline,
+and when clicked the table will be filtered by that user."*
+
+**It looks like text at rest, on purpose.** Twenty rows of underlined links is a
+page of links, and the name is still first of all the row's *subject*: what this
+session is. The affordance arrives on hover, as a **dotted** underline — dotted
+rather than solid because a solid underline is a navigation, and this does not
+take you anywhere. It refines what you are already looking at.
+
+**The hover steps back rather than lighting up.** The row already has one accent
+(the play, on the right), and a name that brightened would be a second thing
+competing for the click on a row where hovering is how you read. Stepping back is
+the quietest way for a control to say it is one. The keyboard gets the same
+answer plus the focus ring — a dotted underline alone is not a focus indicator.
+
+**It replaces rather than appends.** `userId` and `userAnonymousId` are both
+single-valued per session, so a second identity clause is two conditions that
+cannot both be true and the list goes empty. Clicking a second name has to mean
+*show me this person instead*; there is no reading of it that means *and*.
+Everything else in the search survives — clicking a name inside a search for rage
+clicks on iOS asks "which of these are hers", not "start again".
+
+The clause is built through the **catalogue**, not by hand: a literal `'is'` in
+the click handler would be a second definition of what a `userId` filter is, and
+it would keep saying `is` after `defaultOperator` stopped agreeing.
+
+### What it exposed: the fixture printed one string and filtered on another
+
+The first build produced the clause **"User ID is u-7734"** under a row reading
+`mia.okonkwo@brightline.co`. Production derives the display name —
+`userDisplayName: session.userId || session.userAnonymousId` in `session.ts`, so
+**the row prints the id itself**. This fixture stored a `displayName` beside a
+`userId` that was a different string entirely. Nothing had ever shown both at
+once.
+
+`displayName` is gone as a stored field. `displayNameOf(s)` derives it exactly as
+production does, and the identified rows' ids **are** the emails. A field that
+restates two other fields is a field that can disagree with them — the same
+defect shape as the eleven-ids-per-person bug the avatar found the day before,
+in the same file.
+
+---
+
+## §32 — The row opens the replay (2026-09-04)
+
+*"Clicking on the sessions row (except the session name, and the metadata pills)
+will open a session replay, same session replay we have in issues."*
+
+**Same player, not a second one.** `ReplayPlayer`, `ReplayTimeline` and
+`ReplayFrame` are already built and already what the issue queue opens; a
+sessions player beside them would be two components drifting apart over one
+design, and the replay is explicitly a placeholder this week (BACKLOG §22.5.5:
+"drop in the existing issue-replay page"). All the new work is an adapter in
+`shared/session-replay.ts` plus a header.
+
+**One guard covers both exceptions.** The name and the metadata pills are both
+`<button>`s, so `el.closest('button')` handles them — and handles whatever gets
+added next. Writing the exceptions out by class would have been a list to
+maintain, and the first control somebody added without updating it would silently
+open the replay instead of doing its own job.
+
+**It replaces the plane rather than floating over it.** A drawer would have been
+less work and it would have been wrong: production opens `/session/:id` as a
+page, and a replay is where you *go* — it takes a viewport and holds attention
+for minutes. A drawer over a table promises you are still in the table. The way
+back is a **back arrow naming the list**, not a close X: an X dismisses something
+that interrupted you, an arrow returns you to where you were with the search and
+the page you had still in place, which is what actually happens.
+
+### The player reads a journey, and a session row has none
+
+The whole replay — markers, caption, panel — derives from **one string**,
+`session.journey`, a plain-words account of what the person did in order. The
+issues fixture has those because somebody wrote them. A `SessionRow` has no prose
+at all; what it has is `sessionEvents()`, a deterministic ordered list of event
+ids.
+
+So the journey is written *from* the events, one clause each. That keeps three
+things true at once:
+
+1. the markers are the session's own events, in its own order — scrub the track
+   and you are reading the event list
+2. the same session always produces the same journey, because `sessionEvents` is
+   pure
+3. an event that is **real** on the row (an error, a crash, rage) is real in the
+   replay, because `sessionEvents` already forces those in
+
+⚠ **The phrases are written to be classified.** `kindOf` matches keywords to
+decide whether a marker is an error, a rage, a slow moment, an input or a
+navigation — so "clicked the same thing again and again" has to contain a rage
+word or a rage click draws as an ordinary click. Changing a phrase means checking
+it against `KIND_RULES` again.
+
+`variation` and `tags` come back empty, and that is not laziness: a variation is
+an agent's reading of how *this* session experienced a *known issue*, and a
+session in the list is attached to no issue. An empty string is the honest value.
+
+**Watching a session marks it read.** The list has always drawn a read row more
+quietly; it was drawing the fixture's opinion of what you had seen, which stops
+being true the first time you open anything. And **leaving the section closes the
+replay** — the three sections are menu rows now, so a Bookmarks row that opened
+onto whatever was playing would be the menu lying about where it took you.

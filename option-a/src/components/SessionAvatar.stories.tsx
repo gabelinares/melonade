@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { SESSIONS } from '@shared/sessions-logic.ts';
 import { seedFor } from '@shared/avatar.ts';
+import { displayNameOf } from '@shared/sessions-data.ts';
 import { SessionAvatar } from './SessionAvatar.tsx';
 
 const meta = {
@@ -57,7 +58,7 @@ export const AsAColumn: Story = {
       {SESSIONS.slice(0, 12).map((s) => (
         <div key={s.sessionId} style={{ display: 'flex', gap: 'var(--m-space-3)', alignItems: 'center' }}>
           <SessionAvatar seed={seedFor(s)} />
-          <span style={{ fontSize: 'var(--m-text-sm)' }}>{s.displayName}</span>
+          <span style={{ fontSize: 'var(--m-text-sm)' }}>{displayNameOf(s)}</span>
         </div>
       ))}
     </div>

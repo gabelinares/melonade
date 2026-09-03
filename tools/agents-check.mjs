@@ -277,11 +277,20 @@ const sections = await p.evaluate(() => ({
    restructure removed the menu's copy - "the tabs dont show in the sidemenu,
    only subitems. tabs only appear in the container" - because the same three
    rows in two places is two things that have to be kept in agreement, and
-   Mehdi asked for two levels rather than three for the same reason. So the
-   page holds them and the menu holds none. */
-t('SECTIONS: the page holds them and the menu does not',
-  sections.pageTabs.join(',') === 'Tests,Runs,Environments' && sections.navSections.length === 0,
-  `menu ${sections.navSections.length} — page ${sections.pageTabs.join(' | ')}`);
+   Mehdi asked for two levels rather than three for the same reason.
+
+   ⚠ AND IT CANNOT BE "THE MENU HAS NO NESTED ROWS AT ALL" ANY MORE. It was,
+   for one day. Since 09-04 Synthetics is itself a nested row - the agents live
+   under an Agents parent - so counting nested rows counts the wrong thing and
+   the check went red on a structure that is correct. What it has to say is
+   which NAMES are down there: the agents, never their tabs. */
+t('SECTIONS: the page holds them and the menu holds no tab of theirs',
+  sections.pageTabs.join(',') === 'Tests,Runs,Environments'
+    && !sections.navSections.some((n) => ['Tests', 'Runs', 'Environments'].includes(n)),
+  `menu ${sections.navSections.join(' | ') || 'nothing'} — page ${sections.pageTabs.join(' | ')}`);
+t('SECTIONS: what IS nested under Agents is the roster',
+  ['Issues', 'Synthetics', 'Audits'].every((n) => sections.navSections.includes(n)),
+  sections.navSections.join(' | '));
 t('SECTIONS: the header is a title and a sentence, with no rule under it',
   sections.title === 'Synthetics' && !!sections.sub && sections.headBorder === '0px',
   `${sections.title} / ${sections.sub}`);

@@ -51,13 +51,19 @@ export interface SessionRow {
   sessionId: string;
   /** Present on identified sessions. Absent means anonymous, and the row shows
    *  the anonymous id instead — which is the one thing the production card
-   *  changes colour for, so it is a real distinction and not a nicety. */
+   *  changes colour for, so it is a real distinction and not a nicety.
+   *
+   *  ⚠ IT IS WHAT THE ROW PRINTS. `setUserID()` takes whatever the customer
+   *  passes and it is usually an email, so that is what these are. */
   userId?: string;
   userAnonymousId: string;
-  /** What the row prints. Derived in production; a field here so the fixture
-   *  can hold both identified and anonymous shapes without a helper. */
-  displayName: string;
-  /** Seeds the avatar. Deterministic in production too (`userNumericHash`). */
+  /** The fixture's event seed, and identity-derived because production's is:
+   *  `userNumericHash: hashString(userId || userAnonymousId)`. So a feature
+   *  flag is on for a third of PEOPLE rather than a third of sessions, which is
+   *  how flags actually work.
+   *
+   *  ⚠ NOT what the avatar is seeded on — see `seedFor` in shared/avatar.ts for
+   *  why a hash is the wrong key for an identity. */
   numericHash: number;
 
   /** Minutes since the session started. The clock is the app's. */
@@ -110,9 +116,8 @@ export interface SessionRow {
 const LEAD: SessionRow[] = [
   {
     sessionId: '7f3a91c2',
-    userId: 'u-4021',
+    userId: 'ana.ferreira@northwind.com',
     userAnonymousId: 'a-9f21',
-    displayName: 'ana.ferreira@northwind.com',
     numericHash: 4021,
     startedAgoMin: 7,
     durationSec: 363,
@@ -135,7 +140,6 @@ const LEAD: SessionRow[] = [
   {
     sessionId: '2c18de40',
     userAnonymousId: 'a-4f2a',
-    displayName: 'a-4f2a',
     numericHash: 1902,
     startedAgoMin: 13,
     durationSec: 80,
@@ -157,9 +161,8 @@ const LEAD: SessionRow[] = [
   },
   {
     sessionId: 'b9042a77',
-    userId: 'u-1187',
+    userId: 'luis.moreno@vantage.io',
     userAnonymousId: 'a-11c8',
-    displayName: 'luis.moreno@vantage.io',
     numericHash: 1187,
     startedAgoMin: 21,
     durationSec: 721,
@@ -181,9 +184,8 @@ const LEAD: SessionRow[] = [
   },
   {
     sessionId: '55e1b309',
-    userId: 'u-7734',
+    userId: 'mia.okonkwo@brightline.co',
     userAnonymousId: 'a-7734',
-    displayName: 'mia.okonkwo@brightline.co',
     numericHash: 7734,
     startedAgoMin: 2,
     durationSec: 250,
@@ -206,7 +208,6 @@ const LEAD: SessionRow[] = [
   {
     sessionId: 'e6720b14',
     userAnonymousId: 'a-8801',
-    displayName: 'a-8801',
     numericHash: 8801,
     startedAgoMin: 38,
     durationSec: 48,
@@ -228,9 +229,8 @@ const LEAD: SessionRow[] = [
   },
   {
     sessionId: '1a4c8f52',
-    userId: 'u-2290',
+    userId: 'jon.eriksen@meridian.se',
     userAnonymousId: 'a-2290',
-    displayName: 'jon.eriksen@meridian.se',
     numericHash: 2290,
     startedAgoMin: 54,
     durationSec: 1442,
@@ -252,9 +252,8 @@ const LEAD: SessionRow[] = [
   },
   {
     sessionId: '9d31e7ab',
-    userId: 'u-5512',
+    userId: 'priya.raman@lattice.in',
     userAnonymousId: 'a-5512',
-    displayName: 'priya.raman@lattice.in',
     numericHash: 5512,
     startedAgoMin: 71,
     durationSec: 196,
@@ -277,7 +276,6 @@ const LEAD: SessionRow[] = [
   {
     sessionId: '3b8005cd',
     userAnonymousId: 'a-6674',
-    displayName: 'a-6674',
     numericHash: 6674,
     startedAgoMin: 96,
     durationSec: 615,
@@ -299,9 +297,8 @@ const LEAD: SessionRow[] = [
   },
   {
     sessionId: 'c40f2e68',
-    userId: 'u-9903',
+    userId: 'tomas.novak@harbourpoint.cz',
     userAnonymousId: 'a-9903',
-    displayName: 'tomas.novak@harbourpoint.cz',
     numericHash: 9903,
     startedAgoMin: 128,
     durationSec: 92,
@@ -323,9 +320,8 @@ const LEAD: SessionRow[] = [
   },
   {
     sessionId: '82ba17f9',
-    userId: 'u-3348',
+    userId: 'sara.haddad@cedarworks.ae',
     userAnonymousId: 'a-3348',
-    displayName: 'sara.haddad@cedarworks.ae',
     numericHash: 3348,
     startedAgoMin: 163,
     durationSec: 431,
@@ -348,7 +344,6 @@ const LEAD: SessionRow[] = [
   {
     sessionId: 'd7c93041',
     userAnonymousId: 'a-1450',
-    displayName: 'a-1450',
     numericHash: 1450,
     startedAgoMin: 214,
     durationSec: 27,
@@ -370,9 +365,8 @@ const LEAD: SessionRow[] = [
   },
   {
     sessionId: '46e8a2b5',
-    userId: 'u-6120',
+    userId: 'chloe.dubois@atlasgrid.fr',
     userAnonymousId: 'a-6120',
-    displayName: 'chloe.dubois@atlasgrid.fr',
     numericHash: 6120,
     startedAgoMin: 287,
     durationSec: 968,
@@ -417,6 +411,20 @@ const PLACES: ReadonlyArray<[string, string, string]> = [
   ['Portugal', 'PT', 'Porto'],
   ['Kenya', 'KE', 'Nairobi'],
 ];
+
+/**
+ * What a row prints for its user.
+ *
+ * ⚠ DERIVED, EXACTLY AS PRODUCTION DERIVES IT. `session.ts` builds
+ * `userDisplayName: session.userId || session.userAnonymousId || ...`, and this
+ * fixture used to carry a stored `displayName` beside a `userId` that was a
+ * different string entirely — so a row printed `mia.okonkwo@brightline.co`
+ * while its user id was `u-7734`. Nothing had ever shown both at once, and then
+ * clicking the name produced the clause "User ID is u-7734" over a row saying
+ * something else. A field that restates two other fields is a field that can
+ * disagree with them.
+ */
+export const displayNameOf = (s: SessionRow): string => s.userId ?? s.userAnonymousId;
 
 const NAMES: readonly string[] = [
   'ada.stone@northwind.com',
@@ -501,11 +509,14 @@ function derive(i: number): SessionRow {
 
   return {
     sessionId: `s${(i * 2654435761 % 4294967296).toString(16).slice(0, 8).padStart(8, '0')}`,
-    userId: identified ? `u-${userHash}` : undefined,
+    /* ⚠ THE ID IS THE EMAIL, because production prints the id and this row has
+       to print something a person recognises. It used to be `u-${userHash}`
+       with the email stored separately as `displayName`, which meant the list
+       showed one string and filtered on another. */
+    userId: identified ? name : undefined,
     userAnonymousId: anon,
-    displayName: identified ? name : anon,
-    /* What the avatar is seeded on, so it follows whichever identity the row
-       actually has: the person if there is one, the anonymous visitor if not. */
+    /* The event seed, keyed to whichever identity the row has: the person if
+       there is one, the anonymous visitor if not. */
     numericHash: identified ? userHash : sessionHash,
     /* Ordered oldest-last, in a widening spread: the newest sessions are
        minutes apart and the oldest are weeks, which is what a list sorted by

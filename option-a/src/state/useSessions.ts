@@ -25,6 +25,8 @@ import {
   addManyToRules,
   addPropertyInRules,
   addToRules,
+  entryOf,
+  filterToIdentity,
   makeFilter,
   moveEventInRules,
   pageOf,
@@ -87,6 +89,27 @@ export function useSessions() {
     [onRules],
   );
   const removeFilter = useCallback((key: string) => onRules((r) => removeFromRules(r, key)), [onRules]);
+  /**
+   * Clicking the name on a row. It narrows to whoever that row belongs to -
+   * the user id when the session is identified, the anonymous id when it is
+   * not, which are two different catalogue properties and therefore two
+   * different clauses.
+   *
+   * ⚠ It builds the clause through the CATALOGUE rather than by hand. A filter
+   * typed out here would be a second definition of what a `userId` filter is,
+   * and the first thing to drift would be its operator: `defaultOperator` knows
+   * that a string property opens on `is`, and a literal `'is'` in this file
+   * would keep saying so after that stopped being true.
+   */
+  const filterToUser = useCallback(
+    (s: SessionRow) => {
+      const id = s.userId ?? s.userAnonymousId;
+      const entry = entryOf(s.userId ? 'userId' : 'userAnonymousId');
+      if (!entry) return;
+      onRules((r) => filterToIdentity(r, entry, id));
+    },
+    [onRules],
+  );
   const moveEvent = useCallback(
     (from: number, to: number) => onRules((r) => moveEventInRules(r, from, to)),
     [onRules],
@@ -113,7 +136,17 @@ export function useSessions() {
 
   const setEventsOrder = useCallback((o: EventsOrder) => patch({ eventsOrder: o }), [patch]);
   const setRange = useCallback((r: DateRangeValue) => patch({ range: r }), [patch]);
-  const setTab = useCallback((t: SessionTab) => patch({ tab: t }), [patch]);
+  const setTab = useCallback(
+    (t: SessionTab) => {
+      /* ⚠ LEAVING THE SECTION CLOSES THE REPLAY. The three sections are menu
+         rows since 09-04, so this fires from the nav - and a Bookmarks row that
+         opened onto whatever was playing would be the menu lying about where
+         it took you. */
+      setWatchingId(null);
+      patch({ tab: t });
+    },
+    [patch],
+  );
   /** The issue-type strip. Single-select, and clicking the one that is already
    *  on returns to All - production's `toggleTag`, and the same behaviour the
    *  Issues page's category strip has. */
@@ -245,11 +278,34 @@ export function useSessions() {
     [],
   );
 
+  /* ── WHICH SESSION IS PLAYING (2026-09-04) ──────────────────────────────
+     One id, and it lives HERE rather than in the page for two reasons. It has
+     to be cleared when the section changes - Bookmarks and Segments are menu
+     rows now, and arriving at a list while a replay is still open would show
+     the replay - and `viewed` below has to be able to see it.
+
+     ⚠ Watching a session MARKS IT VIEWED, which is the other overlay. The list
+     already draws a read row differently (`is-viewed`, a quieter name and no
+     dot), and it was drawing the fixture's opinion of what you had seen. Now
+     it draws what you have actually opened, which is the only version that is
+     true after the first click. */
+  const [watchingId, setWatchingId] = useState<string | null>(null);
+  const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set());
+  const openSession = useCallback((sessionId: string) => {
+    setWatchingId(sessionId);
+    setSeen((v) => (v.has(sessionId) ? v : new Set(v).add(sessionId)));
+  }, []);
+  const closeSession = useCallback(() => setWatchingId(null), []);
+
   const all: readonly SessionRow[] = useMemo(() => {
     if (state.dataState === 'empty') return [];
-    if (Object.keys(bookmarks).length === 0) return SESSIONS;
-    return SESSIONS.map((s) => (s.sessionId in bookmarks ? { ...s, favorite: bookmarks[s.sessionId]! } : s));
-  }, [state.dataState, bookmarks]);
+    if (Object.keys(bookmarks).length === 0 && seen.size === 0) return SESSIONS;
+    return SESSIONS.map((s) =>
+      s.sessionId in bookmarks || seen.has(s.sessionId)
+        ? { ...s, favorite: bookmarks[s.sessionId] ?? s.favorite, viewed: s.viewed || seen.has(s.sessionId) }
+        : s,
+    );
+  }, [state.dataState, bookmarks, seen]);
   const matched = useMemo(() => filterSessions(state, all), [state, all]);
 
   /* ⚠ WHAT THE STRIP COUNTS AGAINST: the search, the window and the tab
@@ -304,6 +360,11 @@ export function useSessions() {
     updateFilter,
     replaceFilter,
     removeFilter,
+    filterToUser,
+    /* the replay */
+    watching: watchingId ? (all.find((s) => s.sessionId === watchingId) ?? null) : null,
+    openSession,
+    closeSession,
     moveEvent,
     addProperty,
     updateProperty,

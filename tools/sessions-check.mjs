@@ -34,7 +34,27 @@ const pass = [];
 const fail = [];
 const check = (name, ok, detail) => (ok ? pass : fail).push(`${name}${detail ? ` — ${detail}` : ''}`);
 
-await p.locator('.m-nav-item__label', { hasText: /^Sessions$/ }).first().click();
+/* ⚠ SESSIONS IS TWO LEVELS DEEP SINCE 09-04, and the three sections that were
+   a tab strip on this page are its siblings in the MENU now. Gabriel's spec
+   marks them (Subitem) while Synthetics' three stay (Tab), so the page draws no
+   strip at all and the route is what says which of the three you are on.
+
+   Clicking the parent lands on the first child and opens the row, so the helper
+   only does that when the children are not already showing - clicking
+   Recordings again would reset the section to Sessions. */
+const recordings = () => p.locator('.m-nav__row').filter({ hasText: 'Recordings' });
+const section = async (name) => {
+  if ((await recordings().locator('.m-nav__sections').count()) === 0) {
+    await p.locator('.m-nav-item__label', { hasText: /^Recordings$/ }).first().click();
+    await p.waitForTimeout(350);
+  }
+  await recordings()
+    .locator('.m-nav__sections .m-nav-item__label', { hasText: new RegExp(`^${name}$`) })
+    .first()
+    .click();
+  await p.waitForTimeout(450);
+};
+await section('Sessions');
 await p.waitForTimeout(500);
 
 /* ── 1. the page ──────────────────────────────────────────────────────────── */
@@ -42,6 +62,9 @@ const shell = await p.evaluate(() => ({
   title: document.querySelector('.m-page__title')?.textContent,
   meta: document.querySelector('.m-page__meta')?.textContent,
   tabs: [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')].map((e) => e.textContent.trim()),
+  /* Where the three live now. */
+  menuSections: [...document.querySelectorAll('.m-nav__sections .m-nav-item__label')]
+    .map((e) => e.textContent.trim()),
   /* ⚠ TEXT TABS WITH AN INK BAR, not the pill strip. PageCard's `tabs` slot is
      "deliberately a different shape from the pill toolbar below, because a
      section replaces the body and a filter only narrows it" - and it held a
@@ -63,14 +86,23 @@ const shell = await p.evaluate(() => ({
   planeBg: getComputedStyle(document.querySelector('.m-page')).backgroundColor,
 }));
 check('the page renders with the shell every other page uses',
-  shell.title === 'Sessions' && shell.tabs.length === 3, `${shell.title}, tabs ${shell.tabs.join('/')}`);
+  shell.title === 'Sessions' && shell.tabs.length === 0,
+  `${shell.title}, ${shell.tabs.length} tabs in the header`);
 /* ⚠ THREE SECTIONS SINCE 2026-09-02: Segments became a tab rather than a
    dropdown at the top of the page. Same argument Bookmarked won on - a section
    replaces the body, a filter narrows it, and a list of segments is a list of a
    different thing. */
-check('and the three sections are text tabs, not the pill strip',
-  !shell.tabsArePills && shell.tabs.join('/') === 'All sessions/Bookmarked/Segments',
-  shell.tabs.join('/'));
+/* ⚠ INVERTED ON 09-04, and it is the third rewrite of this assertion. The
+   three were a dropdown (killed 09-02), then text tabs in the header, and they
+   are MENU ROWS now - so what has to be checked is that they are in exactly one
+   place. A thing drawn in the menu and in the page is two controls showing one
+   fact, which is what the "tabs don't show in the sidemenu" rule exists to
+   stop. */
+check('the three sections are menu rows and the page draws no strip of its own',
+  !shell.tabsArePills
+    && shell.tabs.length === 0
+    && ['Sessions', 'Bookmarks', 'Segments'].every((n) => shell.menuSections.includes(n)),
+  `page ${shell.tabs.length} tabs, menu ${shell.menuSections.join('/')}`);
 /* Mehdi, 2026-09-02: keep only the two tabs. The issue-type strip went and its
    toolbar row went with it - the date range and the display menu moved onto the
    search's own bar, which is the row that STICKS. */
@@ -345,30 +377,280 @@ const wrote = await p.evaluate(() => ({
 check('clicking a metadata value on a row searches for it',
   wrote.rows === 1 && !!wrote.subject, `${wrote.subject} = ${wrote.value}`)
 
-/* ── 7. bookmarks is a tab, and everything keeps working inside it ───────── */
-await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'Bookmarked' }).click();
-await p.waitForTimeout(450);
+/* ── 6b. THE NAME ON A ROW NARROWS TO THAT PERSON (2026-09-04) ─────────────
+   Gabriel: make the session user clickable, "with a mute hover with dotted
+   underline, and when clicked the table will be filtered by that user".
+
+   Three things have to be true and each one is easy to break:
+   1. it is a CONTROL and reads as text until you reach it - twenty rows of
+      underlined links is a page of links, so the dotted rule arrives on hover
+   2. clicking it does NOT open the replay. The row is clickable too, and the
+      two verbs are different questions about the same row
+   3. it narrows to the person rather than to the row, so a user with eight
+      sessions gives eight - and it REPLACES an identity clause rather than
+      stacking a second one that could never also be true */
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(400);
+const nameCtl = await p.evaluate(() => {
+  const el = document.querySelector('.m-ss__name');
+  const c = getComputedStyle(el);
+  return { tag: el.tagName, cursor: c.cursor, deco: c.textDecorationColor, color: c.color };
+});
+await p.locator('.m-ss__name').first().hover();
+await p.waitForTimeout(300);
+const nameHover = await p.evaluate(() => {
+  const c = getComputedStyle(document.querySelector('.m-ss__name'));
+  return {
+    line: `${c.textDecorationLine} ${c.textDecorationStyle}`,
+    deco: c.textDecorationColor,
+    color: c.color,
+  };
+});
+check('the name on a row is a control, not a label',
+  nameCtl.tag === 'BUTTON' && nameCtl.cursor === 'pointer', `${nameCtl.tag}, ${nameCtl.cursor}`);
+check('and it reads as text until the cursor reaches it',
+  /rgba\(.*0\)$/.test(nameCtl.deco) && nameHover.line === 'underline dotted'
+    && nameHover.deco === nameHover.color,
+  `rest ${nameCtl.deco} -> hover ${nameHover.line} ${nameHover.deco}`);
+check('and the hover steps BACK rather than lighting up',
+  nameHover.color !== nameCtl.color, `${nameCtl.color} -> ${nameHover.color}`);
+
+/* ⚠ THE ONE THAT MATTERS, AND IT NEEDS THE RIGHT PERSON. Filtering to somebody
+   with exactly one session is satisfied by any bug that leaves a single row on
+   screen, so this walks the pages until it finds a name that repeats. Page one
+   is all lead sessions, which are one-per-person by construction - taking the
+   first page's "most repeated" name gets you a count of one and an assertion
+   that proves nothing. */
+const onPage = () =>
+  p.evaluate(() => {
+    const counts = new Map();
+    for (const el of document.querySelectorAll('.m-ss__name')) {
+      const t = el.textContent.trim();
+      counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+    const top = [...counts].sort((a, b) => b[1] - a[1])[0];
+    return top ? { name: top[0], n: top[1] } : null;
+  });
+let many = null;
+const pageNums = await p.locator('.ant-pagination-item').evaluateAll((e) => e.map((x) => x.textContent.trim()));
+for (const n of pageNums) {
+  await p.locator('.ant-pagination-item', { hasText: new RegExp(`^${n}$`) }).click();
+  await p.waitForTimeout(350);
+  const top = await onPage();
+  if (top && top.n > 1) { many = top.name; break; }
+}
+check('the fixture holds somebody with more than one session to test this with',
+  !!many, many ?? 'every visible identity is unique');
+await p.locator('.m-ss__name', { hasText: many }).first().click();
+await p.waitForTimeout(600);
+const narrowed = await p.evaluate(() => ({
+  names: [...new Set([...document.querySelectorAll('.m-ss__name')].map((e) => e.textContent.trim()))],
+  seeds: [...new Set([...document.querySelectorAll('.m-savatar__img')].map((i) => new URL(i.src).searchParams.get('seed')))],
+  rows: document.querySelectorAll('.m-ss__table tbody tr.ant-table-row').length,
+  clauses: document.querySelectorAll('.m-srow').length,
+  subject: document.querySelector('.m-srow__name')?.textContent?.trim(),
+  value: document.querySelector('.m-srow .m-vp__trigger')?.textContent?.trim(),
+  drawer: document.querySelectorAll('.ant-drawer-open').length,
+}));
+check('clicking it leaves only that person, and more than one row of them',
+  narrowed.names.join('|') === many && narrowed.rows > 1,
+  `${narrowed.rows} rows, ${narrowed.names.length} identities`);
+check('and it does not open the replay on the way',
+  narrowed.drawer === 0, `${narrowed.drawer} drawers opened`);
+/* ⚠ THE CLAUSE SAYS THE NAME YOU CLICKED. It said `u-7734` under a row reading
+   `mia.okonkwo@brightline.co` until the fixture's `displayName` was made
+   derived - production builds `userDisplayName: userId || userAnonymousId`, so
+   the id IS what the row prints, and a stored copy beside it could disagree. */
+check('and the clause it wrote names what you clicked',
+  narrowed.clauses === 1 && narrowed.subject === 'User ID' && narrowed.value === many,
+  `${narrowed.clauses} clause: ${narrowed.subject} = ${narrowed.value}`);
+check('and every one of those rows wears the same robot',
+  narrowed.seeds.length === 1 && narrowed.seeds[0] === many, narrowed.seeds.join('|'));
+
+/* ⚠ CLICKING A NAME AGAIN LEAVES ONE CLAUSE, NOT TWO. `filterToIdentity`
+   replaces the identity clause rather than appending, because two of them can
+   never both be true and the list would go empty.
+
+   ⚠ AND THIS IS THE ONLY PART OF THAT REACHABLE FROM THE UI, which is worth
+   writing down rather than rediscovering: once you have filtered to one person,
+   the only names on screen are theirs, so "click a DIFFERENT name second" is
+   not a thing a user can do from here. Clicking the same one again is - and it
+   goes through the same replace path. The cross-person case is guarded by the
+   transform and exercised by nothing. */
+await p.locator('.m-ss__name').first().click();
+await p.waitForTimeout(500);
+const again = await p.evaluate(() => ({
+  clauses: document.querySelectorAll('.m-srow').length,
+  value: document.querySelector('.m-srow .m-vp__trigger')?.textContent?.trim(),
+  rows: document.querySelectorAll('.m-ss__table tbody tr.ant-table-row').length,
+}));
+check('and clicking the same name again replaces the clause rather than stacking it',
+  again.clauses === 1 && again.value === many && again.rows > 1,
+  `${again.clauses} clause: ${again.value}, ${again.rows} rows`);
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(400);
+await p.locator('.ant-pagination-item', { hasText: '1' }).click();
+await p.waitForTimeout(350);
+
+/* ── 6c. THE ROW OPENS THE REPLAY (2026-09-04) ─────────────────────────────
+   Gabriel: "clicking on the sessions row (except the session name, and the
+   metadata pills) will open a session replay, same session replay we have in
+   issues."
+
+   ⚠ THE EXCEPTIONS ARE ASSERTED FIRST, because they are the part that breaks.
+   Both are `<button>`s and one guard covers them, so what has to be checked is
+   that the guard is still there - a row handler that stopped honouring it would
+   still look right until you tried to click a name. */
+const replayOpen = () => p.locator('.m-sreplay').count();
+
+await p.locator('.m-ss__name').first().click();
+await p.waitForTimeout(500);
+check('clicking the name does not open the replay', (await replayOpen()) === 0);
+await p.locator('.m-sc__clear').click();
+await p.waitForTimeout(400);
+
+if (await p.locator('.m-ss__meta-chip').count()) {
+  await p.locator('.m-ss__meta-chip').first().click();
+  await p.waitForTimeout(500);
+  check('and neither does a metadata pill', (await replayOpen()) === 0);
+  await p.locator('.m-sc__clear').click();
+  await p.waitForTimeout(400);
+}
+
+/* An UNVIEWED row, so the "watching marks it read" assertion has something to
+   change. A row that was already read proves nothing. */
+const fresh = p.locator('.m-ss__table tbody tr.ant-table-row:not(.is-viewed)').first();
+const freshName = (await fresh.locator('.m-ss__name').textContent())?.trim();
+const freshBrowser = await fresh.evaluate((r) => r.textContent);
+await fresh.locator('td').nth(2).click();
+await p.waitForTimeout(800);
+const player = await p.evaluate(() => {
+  const marks = [...document.querySelectorAll('.m-tl__mark')];
+  return {
+    open: !!document.querySelector('.m-sreplay'),
+    list: !!document.querySelector('.m-ss__table'),
+    who: document.querySelector('.m-sreplay__who')?.textContent?.trim(),
+    env: document.querySelector('.m-player__env')?.textContent?.trim(),
+    total: document.querySelector('.m-tl__clock--total')?.textContent?.trim(),
+    caption: document.querySelector('.m-player__caption')?.textContent?.trim(),
+    marks: marks.length,
+    kinds: [...new Set(marks.map((m) => m.className.match(/m-tl__mark--(\w+)/)?.[1]))],
+    labels: marks.map((m) => m.getAttribute('aria-label')),
+    seed: (() => {
+      const i = document.querySelector('.m-sreplay .m-savatar__img');
+      return i ? new URL(i.src).searchParams.get('seed') : null;
+    })(),
+  };
+});
+check('clicking anywhere else on the row opens the replay, and it takes the plane',
+  player.open && !player.list, `open ${player.open}, list still there ${player.list}`);
+check('and it is the person whose row you clicked, wearing the same robot',
+  player.who === freshName && player.seed === freshName, `${player.who} / ${player.seed}`);
+/* ⚠ THE SAME PLAYER AS ISSUES, not a second one built for this list: the proof
+   is that its timeline, its frame and its chrome are the issue player's own
+   classes. If this ever fails because the classes changed, check that the
+   sessions list is still rendering `ReplayPlayer` rather than a copy. */
+check('and it is the issue queue\'s own player, not a second one',
+  player.env?.includes(' on ') && !!player.total && player.caption === 'Session start',
+  `${player.env} · ${player.total} · "${player.caption}"`);
+
+/* ⚠ THE MARKERS ARE THE SESSION'S OWN EVENTS. The player derives everything -
+   track, caption, panel - from one journey STRING, and a `SessionRow` has no
+   prose at all. `shared/session-replay.ts` writes that string from
+   `sessionEvents()`, one clause per event, so scrubbing the track is reading
+   the event list. The kinds matter as much as the count: the phrases are
+   worded to be classified by `kindOf`, and a rage or an error that came out as
+   an ordinary click would mean the wording drifted from KIND_RULES. */
+check('its track is the session\'s own events, classified',
+  player.marks >= 3 && player.kinds.length >= 3 && player.kinds.every(Boolean),
+  `${player.marks} markers over ${player.kinds.join('/')}`);
+check('and every marker says when and what',
+  player.labels.every((l) => /^Jump to \d+:\d\d: \S/.test(l ?? '')), player.labels[0] ?? 'none');
+
+/* Seeking has to move the caption, or the track is decoration. */
+await p.locator('.m-tl__mark').nth(2).click();
+await p.waitForTimeout(400);
+const sought = await p.evaluate(() => ({
+  caption: document.querySelector('.m-player__caption')?.textContent?.trim(),
+  clock: document.querySelector('.m-tl__clock')?.textContent?.trim(),
+}));
+check('and seeking a marker moves the playhead and the caption with it',
+  sought.caption !== 'Session start' && sought.clock !== '0:00',
+  `${sought.clock} "${sought.caption}"`);
+
+/* Back, not close: the list you left, with the search and the page you had. */
+await p.locator('.m-sreplay__back').click();
+await p.waitForTimeout(600);
+const returned = await p.evaluate(() => ({
+  list: !!document.querySelector('.m-ss__table'),
+  replay: !!document.querySelector('.m-sreplay'),
+  viewed: [...document.querySelectorAll('.m-ss__table tbody tr.ant-table-row')]
+    .filter((r) => r.className.includes('is-viewed'))
+    .some((r) => r.textContent?.includes('@') || true),
+}));
+check('going back returns the list rather than a fresh page',
+  returned.list && !returned.replay, `list ${returned.list}, replay ${returned.replay}`);
+/* ⚠ WATCHING MARKS IT READ, and the row you opened was chosen unviewed on
+   purpose. The list has always drawn a read row more quietly; it was drawing
+   the fixture's opinion of what you had seen, which stops being true the first
+   time you open anything. */
+const nowViewed = await p
+  .locator('.m-ss__table tbody tr.ant-table-row.is-viewed', { hasText: freshName })
+  .count();
+check('and the session you watched is marked read',
+  nowViewed > 0, `${freshName} — ${nowViewed} viewed rows carry it`);
+void freshBrowser;
+
+/* Leaving the section closes it: the three are menu rows now, and a Bookmarks
+   row that opened onto whatever was playing would be the menu lying. */
+await p.locator('.m-ss__table tbody tr.ant-table-row').first().locator('td').nth(2).click();
+await p.waitForTimeout(600);
+const wasOpen = (await replayOpen()) > 0;
+await section('Bookmarks');
+const afterSwitch = (await replayOpen()) > 0;
+check('and moving to another section closes the replay',
+  wasOpen && !afterSwitch, `open ${wasOpen} -> ${afterSwitch}`);
+await section('Sessions');
+
+/* ── 7. bookmarks is its own destination, and everything keeps working ───── */
+const allFoot = await p.locator('.m-listfoot__range').textContent();
+await section('Bookmarks');
 const vault = await p.evaluate(() => ({
   rows: document.querySelectorAll('.m-ss__table tbody tr').length,
   marks: document.querySelectorAll('.m-ss__mark').length,
   foot: document.querySelector('.m-listfoot__range')?.textContent?.trim(),
   empty: document.querySelector('.m-empty__title')?.textContent?.trim(),
   searchStillThere: !!document.querySelector('.m-sc'),
-  tabsStillThere: document.querySelectorAll('.m-page__tabs .ant-tabs-tab').length === 3,
+  /* The menu still holds all three, so leaving Sessions did not leave the
+     area - which is what a sibling destination has to prove now that it is not
+     a tab. */
+  tabsStillThere: [...document.querySelectorAll('.m-nav__sections .m-nav-item__label')]
+    .filter((e) => ['Sessions', 'Bookmarks', 'Segments'].includes(e.textContent.trim())).length === 3,
   columnsStillThere: document.querySelectorAll('.m-ss__table th').length > 4,
 }));
-/* A TAB, not a page: the search, the tabs and the columns all keep working
-   inside it. A section replaces the body; it does not replace the page. */
-check('bookmarked is a tab of the same list, not a different page',
+/* Its own page, but the SAME page: the search, the sibling rows and the columns
+   all keep working inside it. A section replaces the body; it does not replace
+   the shell around it. */
+check('bookmarks is the same list with a different body, not a different page',
   vault.searchStillThere && vault.tabsStillThere,
   `search ${vault.searchStillThere}, tabs ${vault.tabsStillThere}, columns ${vault.columnsStillThere}`);
-check('and it shows only bookmarked sessions',
-  vault.rows === 0 ? !!vault.empty : vault.marks === vault.rows,
-  vault.rows === 0 ? vault.empty : `${vault.marks}/${vault.rows} marked, ${vault.foot}`);
+/* ⚠ THIS BRANCH HAD BEEN DEAD SINCE 09-02 and went red the moment it ran. It
+   asserted `marks === rows` - one `.m-ss__mark` per row - and the row's
+   bookmark mark was REMOVED that day ("people don't use the bookmark there").
+   It only ever passed because a filter left over from the previous step made
+   the list empty, so the check took its other branch and tested the empty
+   state instead. Clearing the search first is what exposed it.
+
+   What is left to assert without a per-row mark is the shape of the list: it is
+   a real, strictly smaller slice of the same set. */
+check('and it shows a real, smaller slice of the same list',
+  vault.rows === 0
+    ? !!vault.empty
+    : vault.marks === 0 && !!vault.foot && vault.foot !== allFoot?.trim(),
+  vault.rows === 0 ? vault.empty : `${vault.foot} of ${allFoot?.trim()}`);
 
 /* ── 8. the empty search is not an empty state ───────────────────────────── */
-await p.locator('.m-page__tabs .ant-tabs-tab', { hasText: 'All sessions' }).click();
-await p.waitForTimeout(400);
+await section('Sessions');
 /* step 6 left a filter in, from the metadata chip. */
 if (await p.locator('.m-sc__clear').count()) {
   await p.locator('.m-sc__clear').click();
@@ -1031,19 +1313,11 @@ const rowBookmark = await p.evaluate(() => ({
 check('neither a bookmark control nor a bookmark mark is on a row',
   !rowBookmark.control && !rowBookmark.mark && !rowBookmark.acts,
   JSON.stringify(rowBookmark));
-const bookmarkedTab = await p.evaluate(async () => {
-  const tabs = [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')];
-  tabs.find((t) => /Bookmarked/.test(t.textContent))?.click();
-  await new Promise((r) => setTimeout(r, 450));
-  return document.querySelectorAll('.m-ss__table tbody tr').length;
-});
-check('and the bookmarked tab is still a real list of the state behind it',
+await section('Bookmarks');
+const bookmarkedTab = await p.locator('.m-ss__table tbody tr').count();
+check('and the bookmarks list is still a real list of the state behind it',
   bookmarkedTab > 0, `${bookmarkedTab} bookmarked`);
-await p.evaluate(async () => {
-  const tabs = [...document.querySelectorAll('.m-page__tabs .ant-tabs-tab')];
-  tabs.find((t) => /All sessions/.test(t.textContent))?.click();
-  await new Promise((r) => setTimeout(r, 300));
-});
+await section('Sessions');
 
 check('no console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 

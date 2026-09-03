@@ -1,4 +1,4 @@
-import { Button, Dropdown, Table, Tabs, Tooltip } from 'antd';
+import { Button, Dropdown, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
   Angry,
@@ -28,6 +28,7 @@ import {
 } from '@shared/sessions-logic.ts';
 import type { useSessions } from '../state/useSessions.ts';
 import { seedFor } from '@shared/avatar.ts';
+import { displayNameOf } from '@shared/sessions-data.ts';
 import { DateRange } from '../components/DateRange.tsx';
 import { PageCard } from '../components/PageCard.tsx';
 import { DisplayShell, MenuSelect } from '../components/DisplayMenu.tsx';
@@ -42,6 +43,7 @@ import { sortable } from '../components/SortIcon.tsx';
 import { SearchCard } from './SearchCard.tsx';
 import { SegmentDrawer } from './SegmentDrawer.tsx';
 import { SegmentsPanel } from './SegmentsPanel.tsx';
+import { SessionReplay } from './SessionReplay.tsx';
 import './sessions-page.css';
 
 /* ⚠ PRODUCTION'S OWN GLYPHS, from `SessionTags.tsx`'s `tagIcons` map. Reused
@@ -120,6 +122,25 @@ export interface SessionsPageProps {
  * separate page.
  * ════════════════════════════════════════════════════════════════════════════
  */
+/* ── WHAT EACH OF THE THREE IS, IN ITS OWN WORDS ─────────────────────────────
+   One table rather than three ternaries in the header, because the three
+   sentences only make sense read against each other: each says what its list
+   holds and how it got there, and the differences are the point. */
+const SECTION: Record<SessionTab, { title: string; sub: string }> = {
+  all: {
+    title: 'Sessions',
+    sub: 'Every session the tracker recorded on this project. Say what you are looking for, then watch the ones that matter.',
+  },
+  bookmarks: {
+    title: 'Bookmarks',
+    sub: 'The sessions you marked to come back to. The search, the columns and the window all still work in here.',
+  },
+  segments: {
+    title: 'Segments',
+    sub: 'Saved searches. Each one is the same set of rules the search above builds, kept under a name so a list of sessions can be asked for again.',
+  },
+};
+
 export function SessionsPage({ model }: SessionsPageProps) {
   const { display } = model;
   const has = (f: SessionField) => display.fields.includes(f);
@@ -138,7 +159,27 @@ export function SessionsPage({ model }: SessionsPageProps) {
               a robot that failed to load on page one would leave whoever lands
               in that position on page two with no avatar at all. */}
           <SessionAvatar key={seedFor(s)} seed={seedFor(s)} />
-          <span className={`m-ss__name m-truncate${s.userId ? '' : ' is-anon'}`}>{s.displayName}</span>
+          {/* ⚠ A BUTTON INSIDE A CLICKABLE ROW, which is a thing to do carefully
+              and not a thing to avoid. The row opens the replay; the name asks
+              a different question - *show me the rest of this person's* - and
+              that question has no other control on the page. Without it you
+              open the filter picker, find "User ID", and type an id you can
+              see on screen.
+
+              `stopPropagation` is what keeps the two apart, and it is on the
+              CLICK rather than on the row's handler: the row does not need to
+              know that one of its cells has its own verb. */}
+          <button
+            type="button"
+            className={`m-ss__name m-truncate${s.userId ? '' : ' is-anon'}`}
+            title={`Show only ${displayNameOf(s)}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              model.filterToUser(s);
+            }}
+          >
+            {displayNameOf(s)}
+          </button>
           {s.live && <span className="m-ss__live">live</span>}
           {/* ⚠ NO BOOKMARK MARK HERE. It moved to the actions cell on the right
               and became a CONTROL (Mehdi, 2026-09-02). A read-only copy of it
@@ -354,35 +395,42 @@ export function SessionsPage({ model }: SessionsPageProps) {
     />
   );
 
+  /* ⚠ THE REPLAY REPLACES THE PLANE, and it is returned before the PageCard
+     rather than rendered inside it. A replay is where you go, not something you
+     peek at over the list you left: it takes a viewport, it holds attention for
+     minutes, and production opens it as its own page. Wrapping it in the list's
+     header and toolbar would say the opposite. See SessionReplay.tsx.
+
+     Keyed on the session id so the clock restarts on a different row. */
+  if (model.watching) {
+    return (
+      <SessionReplay
+        key={model.watching.sessionId}
+        session={model.watching}
+        onClose={model.closeSession}
+        onToggleBookmark={model.toggleBookmark}
+      />
+    );
+  }
+
   return (
     <PageCard
-      title="Sessions"
-      subtitle="Every session the tracker recorded on this project. Say what you are looking for, then watch the ones that matter."
-      /* ⚠ antd `Tabs`, NOT `FilterStrip`. The `tabs` slot is text tabs with an
-         ink bar, and PageCard says so in as many words: "deliberately a
-         different shape from the pill toolbar below, because a section replaces
-         the body and a filter only narrows it". A pill strip in here made the
-         two sections read as two filters, which is the confusion those two
-         shapes exist to prevent - and text tabs are what the Tests page's three
-         sections already use. */
-      tabs={
-        <Tabs
-          activeKey={model.tab}
-          onChange={(k) => model.setTab(k as SessionTab)}
-          /* ⚠ SEGMENTS IS A SECTION, NOT A CONTROL (Mehdi, 2026-09-02). It was
-             a dropdown of names at the top of the page, which is where a thing
-             goes when nobody has decided what it is: it could show you what
-             segments are called and nothing about what they mean, hold, or
-             belong to. Same argument Bookmarked won on - a section replaces the
-             body, a filter narrows it, and a list of segments is a list of a
-             different thing. */
-          items={[
-            { key: 'all', label: 'All sessions' },
-            { key: 'bookmarks', label: 'Bookmarked' },
-            { key: 'segments', label: 'Segments' },
-          ]}
-        />
-      }
+      /* ⚠ NO `tabs` SLOT SINCE 2026-09-04, and the three that were in it are
+         menu rows now. Gabriel's spec marks Sessions / Bookmarks / Segments as
+         **(Subitem)** while Synthetics' three stay **(Tab)**, and the two are
+         not interchangeable: a thing drawn in the menu AND in the page is two
+         controls showing one fact, which is exactly what the "tabs don't show
+         in the sidemenu" rule exists to prevent. `model.tab` is still the one
+         source - the shell writes it from the route and reads it back for the
+         highlight, so applying a segment (which moves you to the session list)
+         moves the menu with it.
+
+         Which is also why the TITLE moves now and did not before. A tab strip
+         under one title says *these are three views of Sessions*; three menu
+         rows say *these are three destinations*, and a destination whose header
+         does not name it is a page you cannot tell you have arrived at. */
+      title={SECTION[model.tab].title}
+      subtitle={SECTION[model.tab].sub}
       actions={
         <>
           {/* ⚠ THE SEGMENTS DROPDOWN IS GONE. It listed four names and did one
@@ -583,13 +631,22 @@ export function SessionsPage({ model }: SessionsPageProps) {
             dataSource={[...model.rows]}
             pagination={false}
             rowClassName={(s) => `m-ss__row${s.viewed ? ' is-viewed' : ''}`}
-            onRow={() => ({
+            /* ⚠ THE ROW OPENS THE REPLAY, EXCEPT WHERE IT DOES NOT (Gabriel,
+               2026-09-04: "clicking on the sessions row - except the session
+               name and the metadata pills - will open a session replay, same
+               session replay we have in issues").
+
+               The two exceptions are both `<button>`s, so ONE guard covers them
+               and covers whatever gets added next: anything on a row that is
+               already a control keeps its own verb. Writing the exceptions out
+               by class would have been a list to maintain, and the first
+               control somebody adds without updating it would silently open the
+               replay instead of doing its own job. */
+            onRow={(s) => ({
               onClick: (e) => {
                 const el = e.target as HTMLElement;
                 if (el.closest('button') || el.closest('.ant-dropdown')) return;
-                /* The replay is the next piece and it is not wired here. A row
-                   that navigated nowhere would be worse than one that does not
-                   pretend to: the cursor says it opens, and it will. */
+                model.openSession(s.sessionId);
               },
             })}
           />

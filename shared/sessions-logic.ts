@@ -772,6 +772,33 @@ export function matchEvents(
 /** Events keep their sequence and properties follow them, so a new event lands
  *  after the last event rather than at the end of everything. The array stays
  *  ONE array; only the insertion point knows about kind. */
+/**
+ * Narrow a search to ONE PERSON, which is what clicking a name in the list
+ * does.
+ *
+ * ⚠ IT REPLACES RATHER THAN APPENDS, and that is the whole design of it. The
+ * two identity properties are `userId` and `userAnonymousId`, and both are
+ * single-valued per session - so a second one added beside the first is two
+ * conditions that cannot both be true, and the list goes empty. Clicking a
+ * second name has to mean *show me this person instead*, because there is no
+ * reading of it that means *and*.
+ *
+ * Everything else in the search survives. Clicking a name inside a search for
+ * rage clicks on iOS asks "which of these are hers", not "start again".
+ */
+export function filterToIdentity(
+  rules: readonly SearchFilter[],
+  entry: CatalogueEntry,
+  value: string,
+): SearchFilter[] {
+  const kept = rules.filter((f) => f.entryId !== 'userId' && f.entryId !== 'userAnonymousId');
+  const f: SearchFilter = { ...makeFilter(entry), operator: 'is', value: [value] };
+  /* Properties sit after the events, which is where `addToRules` puts them and
+     what the picker's two groups say they are: the events happened in an order,
+     the conditions apply to the whole search. */
+  return [...kept, f];
+}
+
 export function addToRules(rules: readonly SearchFilter[], entry: CatalogueEntry): SearchFilter[] {
   const f = makeFilter(entry);
   const at = f.isEvent ? rules.filter((x) => x.isEvent).length : rules.length;

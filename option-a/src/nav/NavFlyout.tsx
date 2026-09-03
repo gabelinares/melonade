@@ -110,6 +110,13 @@ export function NavFlyout({
                 key={s.key}
                 nested
                 label={s.label}
+                /* The card is the only place the narrow menu can print a
+                   subitem's own figure, and since 09-04 that is where every
+                   count in the product lives. Without it the rail says "19
+                   somewhere in here" and the card that opens it says nothing at
+                   all. */
+                count={s.count}
+                badge={s.badge}
                 active={active === s.key}
                 onClick={() => onNavigate?.(s.key)}
               />

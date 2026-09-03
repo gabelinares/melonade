@@ -1,13 +1,19 @@
 import { useMemo } from 'react';
 import type { Issue, IssueSession } from '@shared/issues-data.ts';
-import { failureMoment, replayMarkers, replayUrl } from '@shared/replay.ts';
+import { REPLAY_HOST, failureMoment, replayMarkers, replayUrl } from '@shared/replay.ts';
 import { ReplayFrame } from './ReplayFrame.tsx';
 import { ReplayTimeline } from './ReplayTimeline.tsx';
 import type { ReplayClock } from './useReplayClock.ts';
 import './replay-player.css';
 
 export interface ReplayPlayerProps {
-  issue: Issue;
+  /** ⚠ OPTIONAL SINCE 2026-09-04, and the only thing it was ever read for is
+   *  the URL in the chrome. The sessions list opens this same player on a row
+   *  that belongs to no issue, so the URL comes in directly there. Nothing else
+   *  in here touches the issue. */
+  issue?: Issue;
+  /** Overrides `replayUrl(issue)`. Exactly one of the two has to be given. */
+  url?: string;
   session: IssueSession;
   /* The playhead is owned by the work pane, not by the player, because the
      journey panel beside it drives the same head and reads the same position.
@@ -35,7 +41,7 @@ export interface ReplayPlayerProps {
  * pretty fake page would have said less.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function ReplayPlayer({ issue, session, clock }: ReplayPlayerProps) {
+export function ReplayPlayer({ issue, url, session, clock }: ReplayPlayerProps) {
   const markers = useMemo(() => replayMarkers(session), [session]);
   const failure = useMemo(() => failureMoment(session), [session]);
 
@@ -56,7 +62,7 @@ export function ReplayPlayer({ issue, session, clock }: ReplayPlayerProps) {
         <span className="m-player__lights" aria-hidden="true">
           <i /><i /><i />
         </span>
-        <span className="m-player__url m-mono m-truncate">{replayUrl(issue)}</span>
+        <span className="m-player__url m-mono m-truncate">{url ?? (issue ? replayUrl(issue) : REPLAY_HOST)}</span>
         <span className="m-player__env">
           {session.browser} on {session.os} · {session.loc}
         </span>

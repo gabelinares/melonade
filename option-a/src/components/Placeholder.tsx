@@ -1,12 +1,46 @@
+import type { LucideIcon } from 'lucide-react';
 import { Hammer } from 'lucide-react';
 import { AGENTS } from '../nav/agents.ts';
 import { AGENT_ICONS, PAGE_ICONS } from '../nav/icons.ts';
+import { navTree } from '../nav/tree.ts';
 import { PageCard } from './PageCard.tsx';
 import './placeholder.css';
 
-const LABEL: Record<string, string> = {
+/* ⚠ DERIVED FROM THE MENU, NOT HAND-KEPT. This was a six-entry `LABEL` map, and
+   the 09-04 restructure would have left every one of its keys stale while
+   twelve new destinations printed their raw route ("data/properties") as a page
+   title. The tree already knows every key and every name; asking it is the only
+   version that cannot drift.
+
+   Built at the roster's FULL length so an unshipped agent still names itself -
+   the prototype's growth control changes what the menu shows, not what a
+   destination is called. */
+const DESTINATIONS: ReadonlyMap<string, { label: string; Icon: LucideIcon }> = (() => {
+  const out = new Map<string, { label: string; Icon: LucideIcon }>();
+  const glyph = (key: string, parentIcon?: string): LucideIcon => {
+    /* An agent's own mark, which the tree deliberately stops carrying once the
+       roster is nested (subitems have no icons). A placeholder is not a menu
+       row, so it can have it back: at 22px in the middle of an empty plane the
+       glyph is the only thing saying which agent this is. */
+    const agent = AGENTS.find((a) => `agents/${a.key}` === key);
+    if (agent) return AGENT_ICONS[agent.icon];
+    /* Otherwise the row's own glyph, or its parent's - a Cards page wearing the
+       analytics chart is right, because that is what it is part of. */
+    return PAGE_ICONS[key.split('/').pop() ?? key] ?? (parentIcon ? PAGE_ICONS[parentIcon] : undefined) ?? Hammer;
+  };
+  for (const group of navTree(AGENTS.length)) {
+    for (const e of group.entries) {
+      out.set(e.key, { label: e.label, Icon: glyph(e.key, e.icon) });
+      for (const sub of e.items ?? []) out.set(sub.key, { label: sub.label, Icon: glyph(sub.key, e.icon) });
+    }
+  }
+  return out;
+})();
+
+/** The handful of destinations that are not menu rows: the foot's glyphs, and
+ *  the two keys older stories still pass. */
+const OFF_MENU: Record<string, string> = {
   home: 'Home',
-  sessions: 'Sessions',
   preferences: 'Preferences',
   support: 'Support',
   notifications: 'Notifications',
@@ -41,9 +75,10 @@ export interface PlaceholderProps {
  * in the middle, so an empty page is still a page.
  */
 export function Placeholder({ page, title, note, compact }: PlaceholderProps) {
-  const agent = page ? AGENTS.find((a) => a.key === page) : undefined;
-  const name = title ?? agent?.label ?? (page ? LABEL[page] ?? page : '');
-  const Icon = (agent ? AGENT_ICONS[agent.icon] : page ? PAGE_ICONS[page] : undefined) ?? Hammer;
+  const dest = page ? DESTINATIONS.get(page) : undefined;
+  const isAgent = !!page && AGENTS.some((a) => `agents/${a.key}` === page);
+  const name = title ?? dest?.label ?? (page ? OFF_MENU[page] ?? page : '');
+  const Icon = dest?.Icon ?? (page ? PAGE_ICONS[page] : undefined) ?? Hammer;
 
   const body = (
     <div className={`m-placeholder${compact ? ' is-compact' : ''}`}>
@@ -53,7 +88,7 @@ export function Placeholder({ page, title, note, compact }: PlaceholderProps) {
       <p className="m-placeholder__name">{title ?? 'Not built yet'}</p>
       <p className="m-placeholder__note">
         {note ??
-          (agent
+          (isAgent
             ? 'This agent is in the roster so the menu can be judged with more than three things in it. Its page is the next one to design.'
             : 'This round covers the agents and the shell around them, which is where the design decisions sit. The menu row you just clicked is real, so you can judge how it all holds together.')}
       </p>
