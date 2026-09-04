@@ -1,6 +1,7 @@
+import { useMemo, useState } from 'react';
 import { Button, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, UserRound } from 'lucide-react';
 import {
   describeSegment,
   segmentCount,
@@ -10,7 +11,55 @@ import {
 import { EmptyState } from '../components/EmptyState.tsx';
 import { ListFooter } from '../components/ListFooter.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
+import { PagePanel } from '../components/PageCard.tsx';
+import { FilterMenu } from '../components/FilterMenu.tsx';
+import { DisplayShell, MenuSelect } from '../components/DisplayMenu.tsx';
 import './segments-panel.css';
+
+/* ── ⚠ SEGMENTS IS A LIST, SO IT GETS WHAT EVERY LIST GETS (Gabriel,
+   2026-09-04: "segments also should have filters, display and be a shell, like
+   the others").
+
+   It had none of it - no card, no filter, no display menu - because it arrived
+   as a TAB rather than as a page and inherited the page's chrome by accident.
+   When the plane gave up its surface on 09-04 that accident became visible: the
+   table was sitting directly on the ground, the one list in the app without a
+   card under it.
+
+   ── THE STATE IS LOCAL, AND THAT IS DELIBERATE ────────────────────────────
+   Every other list keeps its filter and display state in its page's model. This
+   one keeps it here, because the sessions model is the SESSIONS model: threading
+   six fields through it for a sibling section that shares none of them would
+   make the page's state describe two lists and be honest about neither. If
+   segments ever becomes its own page the state moves with the component.
+
+   The vocabulary is its own too: you filter segments by WHOSE they are, which
+   is the only dimension a saved search has that a session does not. */
+type OwnerKey = 'owner';
+/** ⚠ EVERY OPTION CARRIES ITS COUNT, which the menu requires and is right to:
+ *  an option that would return nothing should say so before you pick it, not
+ *  after. Counted off the unfiltered list, so the figures do not move as you
+ *  narrow - a count that changes when you tick it is a count of the wrong
+ *  thing. */
+const ownerOptions = (segments: readonly SavedSegment[]) => [
+  { value: 'mine', label: 'Yours', count: segments.filter((s) => s.mine).length },
+  { value: 'shared', label: 'Shared with the team', count: segments.filter((s) => s.shared).length },
+];
+const SEG_FILTER_ICONS = { owner: UserRound };
+
+type SegSort = 'updated' | 'name' | 'count';
+const SEG_SORTS = [
+  { value: 'updated', label: 'Recently updated' },
+  { value: 'name', label: 'Name' },
+  { value: 'count', label: 'Most sessions' },
+];
+
+type SegField = 'count' | 'owner' | 'updated';
+const SEG_FIELDS: { value: SegField; label: string }[] = [
+  { value: 'count', label: 'Sessions' },
+  { value: 'owner', label: 'Owner' },
+  { value: 'updated', label: 'Updated' },
+];
 
 export interface SegmentsPanelProps {
   segments: readonly SavedSegment[];
@@ -60,6 +109,67 @@ export interface SegmentsPanelProps {
  * ════════════════════════════════════════════════════════════════════════════
  */
 export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: SegmentsPanelProps) {
+  const [owners, setOwners] = useState<readonly string[]>([]);
+  const [sort, setSort] = useState<SegSort>('updated');
+  const [fields, setFields] = useState<readonly SegField[]>(['count', 'owner', 'updated']);
+
+  const shown = useMemo(() => {
+    /* No owner picked is every owner, which is how every other filter in this
+       app reads an empty dimension. */
+    const kept = owners.length
+      ? segments.filter((seg) => owners.some((o) => (o === 'mine' ? seg.mine : seg.shared)))
+      : segments;
+    const by = [...kept];
+    if (sort === 'name') by.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === 'count') by.sort((a, b) => segmentCount(b, pool) - segmentCount(a, pool));
+    else by.sort((a, b) => b.updatedAt - a.updatedAt);
+    return by;
+  }, [segments, owners, sort, pool]);
+
+  const has = (f: SegField) => fields.includes(f);
+  const toggleField = (f: SegField) =>
+    setFields((v) => (v.includes(f) ? v.filter((x) => x !== f) : [...v, f]));
+
+  /* ⚠ FILTER THEN DISPLAY, which is the order every list in this app uses:
+     what period, then which rows, then how they are drawn. Tests had them the
+     other way round until 09-04 and it was the only page that did. */
+  const head = (
+    <div className="m-page__controls">
+      <FilterMenu<OwnerKey>
+        dimensions={[{ key: 'owner', label: 'Owner', options: ownerOptions(segments) }]}
+        isActive={(_k, v) => owners.includes(v)}
+        onToggle={(_k, v) => setOwners((s) => (s.includes(v) ? s.filter((x) => x !== v) : [...s, v]))}
+        activeCount={owners.length}
+        icons={SEG_FILTER_ICONS}
+        label="Filter segments"
+      />
+      <DisplayShell
+        label="Display segments"
+        changeCount={(sort === 'updated' ? 0 : 1) + (3 - fields.length)}
+        onReset={() => {
+          setSort('updated');
+          setFields(['count', 'owner', 'updated']);
+        }}
+        rows={[
+          {
+            id: 'sort',
+            label: 'Order',
+            control: (
+              <MenuSelect
+                id="seg-sort"
+                value={sort}
+                choices={SEG_SORTS}
+                onChange={(v) => setSort(v as SegSort)}
+              />
+            ),
+          },
+        ]}
+        fields={SEG_FIELDS.map((f) => ({ value: f.value, label: f.label, on: has(f.value) }))}
+        onToggleField={(v) => toggleField(v as SegField)}
+      />
+    </div>
+  );
+
   const columns: TableColumnsType<SavedSegment> = [
     {
       title: 'Segment',
@@ -77,6 +187,7 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
     {
       title: 'Sessions',
       key: 'count',
+      hidden: !has('count'),
       width: 108,
       align: 'right' as const,
       render: (_: unknown, seg) => {
@@ -94,6 +205,7 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
     {
       title: 'Owner',
       key: 'owner',
+      hidden: !has('owner'),
       width: 168,
       render: (_: unknown, seg) => (
         <span className="m-seg__owner m-truncate">
@@ -109,6 +221,7 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
     {
       title: 'Updated',
       key: 'updated',
+      hidden: !has('updated'),
       width: 104,
       render: (_: unknown, seg) => <RelativeTime minutesAgo={(Date.now() - seg.updatedAt) / 60000} />,
     },
@@ -135,26 +248,28 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
 
   if (segments.length === 0) {
     return (
-      <EmptyState
+      <PagePanel head={head}>
+        <EmptyState
         title="No saved segments"
         hint="Build a filter on the sessions list and save it. A segment is that search, kept — so you can come back to it, share it, or drop it into another search."
         action={
           <Button icon={<Plus size={14} />} onClick={onNew}>
-            New segment
-          </Button>
-        }
-      />
+              New segment
+            </Button>
+          }
+        />
+      </PagePanel>
     );
   }
 
   return (
-    <>
+    <PagePanel head={head}>
       <Table<SavedSegment>
         className="m-seg__table"
         tableLayout="fixed"
         rowKey="id"
         columns={columns}
-        dataSource={[...segments]}
+        dataSource={shown}
         pagination={false}
         rowClassName="m-seg__row"
         onRow={(seg) => ({
@@ -165,7 +280,7 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
           },
         })}
       />
-      <ListFooter page={1} pageSize={segments.length} total={segments.length} noun={['segment', 'segments']} />
-    </>
+      <ListFooter page={1} pageSize={shown.length} total={shown.length} noun={['segment', 'segments']} />
+    </PagePanel>
   );
 }

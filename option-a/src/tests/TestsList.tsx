@@ -532,6 +532,25 @@ export function TestsList({ model, dataState, onCreate, onViewRuns, creating, on
             </>
           ) : (
             <>
+            {/* ⚠ FILTER BEFORE DISPLAY, and this page was the only one with
+                them the other way round (Gabriel, 2026-09-04: "rearrange the
+                filter button and the display button so they will have a
+                consistent order across all agents and recordings pages").
+
+                The order is the same question the two components answer, left
+                to right: what period (the window), then WHICH ROWS (the
+                filter), then HOW THEY ARE DRAWN (the display). Issues, Runs and
+                Audits already read that way; a single page that reverses two
+                adjacent buttons is worse than either order, because the habit
+                you build on six pages fails on the seventh. */}
+            <FilterMenu
+              dimensions={model.dimensions}
+              isActive={model.isFilterActive}
+              onToggle={model.toggleFilter}
+              activeCount={model.filterCount}
+              icons={FILTER_ICONS}
+              label="Filter tests"
+            />
             <DisplayShell
               label="Display tests"
               changeCount={model.displayCount}
@@ -570,14 +589,6 @@ export function TestsList({ model, dataState, onCreate, onViewRuns, creating, on
                   ),
                 },
               ]}
-            />
-            <FilterMenu
-              dimensions={model.dimensions}
-              isActive={model.isFilterActive}
-              onToggle={model.toggleFilter}
-              activeCount={model.filterCount}
-              icons={FILTER_ICONS}
-              label="Filter tests"
             />
             </>
           )}

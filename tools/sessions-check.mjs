@@ -210,7 +210,7 @@ const trigger = await p.evaluate(() => {
   const b = document.querySelector('.m-sc__filter');
   if (!b) return null;
   const r = b.getBoundingClientRect();
-  const foot = document.querySelector('.m-sc__foot').getBoundingClientRect();
+  const cluster = document.querySelector('.m-sc__head-trailing').getBoundingClientRect();
   const card = document.querySelector('.m-sc').getBoundingClientRect();
   const cs = getComputedStyle(b);
   return {
@@ -218,12 +218,15 @@ const trigger = await p.evaluate(() => {
     word: b.querySelector('.m-sc__filter-word')?.textContent?.trim(),
     key: b.querySelector('.m-sc__key')?.textContent?.trim(),
     width: Math.round(r.width),
-    footWidth: Math.round(foot.width),
-    /* ⚠ AT THE FOOT (Gabriel, 09-04: "the add filter button should be on the
-       bottom"). It opened the card until then, which is where a search bar goes
-       and not where an Add goes: the rules are the content, and a control that
-       makes more of them belongs after the ones you have. */
-    belowHalf: r.top > card.top + card.height / 2,
+    clusterWidth: Math.round(cluster.width),
+    /* ⚠ AT THE TOP RIGHT (Gabriel, 09-04: "move the filter icon to the right,
+       aligned on the top right of the table"). Third position in one day - it
+       opened the card, then went to the foot, and landed here because every
+       other list in this app keeps its filter at the top right. Consistency
+       across seven pages beats a better argument on one. */
+    atTop: r.top < card.top + 60,
+    /* flush with the card's right edge, which is the table's right edge below */
+    fromRight: Math.round(card.right - r.right),
     /* the accent is spent here, on Mehdi's instruction: "in blue or in
        something obvious" - so the fill is NOT the card's own colour */
     bg: cs.backgroundColor,
@@ -234,10 +237,11 @@ const trigger = await p.evaluate(() => {
 });
 check('there is exactly ONE way into the filter, and by default it is a BUTTON',
   !!trigger && trigger.shape === 'button' && trigger.word === 'Filter'
-    && trigger.width < trigger.footWidth / 3,
-  `${trigger?.shape}: "${trigger?.word}" at ${trigger?.width}px in a ${trigger?.footWidth}px row`);
-check('it sits at the FOOT of the card, after the rules it adds to',
-  trigger.belowHalf, `top ${trigger.belowHalf ? 'below' : 'above'} the card's middle`);
+    && trigger.width < trigger.clusterWidth,
+  `${trigger?.shape}: "${trigger?.word}" at ${trigger?.width}px`);
+check('it sits at the card\u2019s top right, aligned with the table\u2019s own edge',
+  trigger.atTop && trigger.fromRight < 24,
+  `${trigger.atTop ? 'top' : 'not top'}, ${trigger.fromRight}px from the right edge`);
 check('and it wears the accent, which is the one place this page spends it',
   trigger.bg !== 'rgb(255, 255, 255)' && trigger.ink !== 'rgb(0, 0, 0)',
   `${trigger.bg} / ${trigger.ink}`);
@@ -1101,9 +1105,14 @@ const emptyFilter = await p.evaluate(() => ({
 check('an empty filter is one head row and a trigger, with no empty state under it',
   emptyFilter.rows === 0 && emptyFilter.pills === 0 && emptyFilter.strip,
   `${emptyFilter.rows} rows, ${emptyFilter.pills} leftover example elements, head ${emptyFilter.strip}`);
-check('and it says what it currently means, beside the window it runs over',
-  /Every session/.test(emptyFilter.summary ?? '') && emptyFilter.window,
-  `"${emptyFilter.summary}", window ${emptyFilter.window}`);
+/* ⚠ AND IT SAYS NOTHING ON THE LEFT. It printed "Every session" for one build -
+   true, and not worth a line: it restates the absence of a filter to somebody
+   who can see there is no filter, beside a button whose whole job is to make
+   one (Gabriel, 09-04). What has to survive is the WINDOW, which narrows the
+   list whether or not a filter does. */
+check('and the window is reachable before there is anything to summarise',
+  emptyFilter.window && !emptyFilter.summary,
+  `summary ${emptyFilter.summary ?? 'none'}, window ${emptyFilter.window}`);
 
 /* ⚠ REVERSED 2026-09-03, AND THE OLD ASSERTION IS WORTH LEAVING IN THE RECORD.
    It read "the field is the biggest control on the page and the only one at
@@ -1875,10 +1884,16 @@ const torchAt = async (x, y) => {
     };
   });
 };
-const fieldBox = await p.locator('.m-sc__filter').boundingBox();
-const far = await torchAt(fieldBox.x + 200, fieldBox.y + 620);
-const near = await torchAt(fieldBox.x + 200, fieldBox.y + 120);
-const on = await torchAt(fieldBox.x + 200, fieldBox.y + fieldBox.height / 2);
+/* ⚠ MEASURED FROM THE CONTROL'S OWN CENTRE, not from a corner plus an offset.
+   The first version walked out from the trigger's left edge by 200px, which was
+   inside a full-width bar and is well outside a 90px button - so the "on it"
+   sample was not on it and the torch read as dead. A test that assumes a
+   control's size stops testing the moment the control is resized. */
+const box = await p.locator('.m-sc__filter').boundingBox();
+const mid = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+const far = await torchAt(mid.x, mid.y + 620);
+const near = await torchAt(mid.x, mid.y + 120);
+const on = await torchAt(mid.x, mid.y);
 check('the ring is masked to a radius rather than drawn whole',
   on.masked, `mask ${on.masked}`);
 check('and it is DARK from across the page, so nothing animates at rest',
@@ -1887,15 +1902,36 @@ check('THE LEAD-IN: it opens on approach, before the pointer ever lands',
   near.r > 0 && near.r < on.r,
   `${far.r}px far → ${near.r.toFixed(1)}px near → ${on.r.toFixed(1)}px on it`);
 
-/* AND THE LIGHT IS WHERE THE POINTER IS, not at the middle of a 1400px bar.
-   The distance is measured to the RECTANGLE, so both ends of a very wide field
-   light up when you stand on them - a centre-based falloff would leave the ends
-   dark. */
-const leftLit = await torchAt(fieldBox.x + 60, fieldBox.y + fieldBox.height / 2);
-const rightLit = await torchAt(fieldBox.x + fieldBox.width - 60, fieldBox.y + fieldBox.height / 2);
+/* ⚠ AND IT WORKS ON THE OTHER SHAPE, which is the thing a switch makes easy to
+   get wrong. The torch is a mask around a pointer and knows nothing about the
+   box it is masking, so the BAR - a full-width rim rather than a 90px one - has
+   to light where the pointer IS. A centre-based falloff would leave both ends
+   of a wide control dark while you are standing on them. */
+await p.evaluate(() => document.documentElement.setAttribute('data-trigger', 'bar'));
+/* ⚠ WAIT FOR THE REFLOW, NOT A GUESS. The bar wraps onto a line of its own, so
+   the trigger's box moves by a thousand pixels - and a boundingBox read before
+   that lands measures the button and puts every later sample nowhere near the
+   control. */
+await p.locator('.m-sc__filter').evaluate((el) => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+await p.waitForFunction(() => document.querySelector('.m-sc__filter').getBoundingClientRect().width > 400);
+await p.waitForTimeout(300);
+const bar = await p.locator('.m-sc__filter').boundingBox();
+const leftLit = await torchAt(bar.x + 60, bar.y + bar.height / 2);
+const rightLit = await torchAt(bar.x + bar.width - 60, bar.y + bar.height / 2);
+check('the bar shape is far wider than the button, which is the whole switch',
+  bar.width > box.width * 4, `${Math.round(box.width)}px button, ${Math.round(bar.width)}px bar`);
 check('the light follows the pointer along the rim rather than sitting at its centre',
   leftLit.r > 60 && rightLit.r > 60 && leftLit.x !== rightLit.x,
   `left ${leftLit.x} at ${leftLit.r.toFixed(0)}px, right ${rightLit.x} at ${rightLit.r.toFixed(0)}px`);
+const spec = await p.evaluate(() => ({
+  eg: document.querySelector('.m-sc__eg')?.textContent?.trim(),
+  lead: document.querySelector('.m-sc__lead')?.textContent?.trim(),
+}));
+check('and only the bar carries the rotating specimen, after its lead',
+  /like$/.test(spec.lead ?? '') && (spec.eg ?? '').length > 6,
+  `"${spec.lead}" ${spec.eg}`);
+await p.evaluate(() => document.documentElement.setAttribute('data-trigger', 'button'));
+await p.waitForTimeout(300);
 
 /* ── THE OPERATOR READS (Mehdi: "the 'is not' colour doesn't have contrast
    enough"). The closed control drew the word one step quieter than the SAME
@@ -1943,6 +1979,45 @@ const bookmarkedTab = await p.locator('.m-ss__table tbody tr').count();
 check('and the bookmarks list is still a real list of the state behind it',
   bookmarkedTab > 0, `${bookmarkedTab} bookmarked`);
 await section('Sessions');
+
+/* ── SEGMENTS IS A LIST, SO IT LOOKS LIKE ONE ───────────────────────────────
+   (Gabriel, 2026-09-04: "segments also should have filters, display and be a
+   shell, like the others".) It had none of it, because it arrived as a TAB and
+   inherited the page's chrome by accident - and when the plane gave up its
+   surface that accident became visible: the one table in the app sitting
+   directly on the ground with no card under it.
+
+   ⚠ AND THE ORDER IS THE APP'S ORDER: filter, then display. Which rows, then
+   how they are drawn. Tests was the only page reading the other way and it is
+   fixed in the same batch; a habit that works on six pages and fails on the
+   seventh is worse than either order. */
+await section('Segments');
+await p.waitForTimeout(500);
+const seg = await p.evaluate(() => {
+  const panel = document.querySelector('.m-panel');
+  const head = document.querySelector('.m-panel__head');
+  const controls = [...(head?.querySelectorAll('button') ?? [])]
+    .map((b) => (b.getAttribute('aria-label') ?? b.textContent ?? '').trim())
+    .filter(Boolean);
+  return {
+    card: !!panel && getComputedStyle(panel).backgroundColor !== 'rgba(0, 0, 0, 0)',
+    radius: panel ? getComputedStyle(panel).borderRadius : null,
+    controls,
+    /* no question panel here: there is no filter over a list of saved filters */
+    panels: document.querySelectorAll('.m-page__body > .m-panel').length,
+    rows: document.querySelectorAll('.m-seg__row').length,
+  };
+});
+check('the segments tab is a card like every other list, not a table on the ground',
+  seg.card && seg.radius !== '0px' && seg.rows > 0,
+  `card ${seg.card}, radius ${seg.radius}, ${seg.rows} rows`);
+check('and it carries a filter and a display menu, in that order',
+  /Filter segments/.test(seg.controls[0] ?? '') && /Display segments/.test(seg.controls[1] ?? ''),
+  seg.controls.slice(0, 3).join(' | ') || 'no controls');
+check('and it is ONE component, because a list of saved searches has nothing to filter above it',
+  seg.panels === 1, `${seg.panels} panels`);
+await section('Sessions');
+await p.waitForTimeout(400);
 
 check('no console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 

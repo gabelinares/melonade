@@ -49,6 +49,12 @@ const HOTKEY =
 /** The full sentence, for the accessible name and the drawer's own heading. */
 const LEAD = 'Filter the recordings';
 
+/** ⚠ THE BAR'S OWN LEAD, and it is longer on purpose. A button is read as a
+ *  label and a bar is read as a sentence: at full width "Filter" would be one
+ *  word floating in 1400px, which is what makes a bar look like an empty input.
+ *  It ends on "like" so the rotating specimen finishes it. */
+const LEAD_BAR = 'Filter the recordings and save search segments, like';
+
 /** ⚠ THE SAME CONTROL IN THE SEGMENT DRAWER, in that drawer's own words. "The
  *  recordings" points at a list, and in a drawer there is no list to point at:
  *  you are saying which recordings the segment will hold. */
@@ -279,11 +285,16 @@ export function SearchCard({
               and it is not the point: a control that comes and goes on a count
               nobody is tracking reads as broken, and the moment you go looking
               for it is the moment it is not there. See useFilterCollapse. */}
-          {!any ? (
-            /* Nothing to collapse and nothing to count: the row says what the
-               filter currently means, which is everything. */
-            <span className="m-sc__summary is-static">{describeRules([], [], eventsOrder)}</span>
-          ) : canCollapse ? (
+          {/* ⚠ NOTHING ON THE LEFT WHEN THERE IS NOTHING TO SAY (Gabriel,
+              2026-09-04: "remove the 'Every session' copy of the filter
+              component, making the button the only thing in the container").
+
+              It printed "Every session" for one build, on the reasoning that a
+              row saying what the filter currently means is exactly true. It is
+              true and it is not worth a line: it restates the absence of a
+              filter to somebody who can see there is no filter, next to a
+              button whose whole job is to make one. */}
+          {!any ? null : canCollapse ? (
             <button
               type="button"
               className="m-sc__toggle"
@@ -362,19 +373,112 @@ export function SearchCard({
             </span>
           )}
 
-          {/* THE WINDOW. It changes WHICH ROWS EXIST, so it belongs to the
-              question - and on this row rather than a bar of its own. */}
-          <span className="m-sc__head-trailing">{trailing}</span>
-
-          {/* Neither verb exists on an empty search: Clear would clear nothing
-              and Save would save nothing, and a pair of dead controls is how a
-              row teaches you to stop reading it. */}
-          {any && saveAction}
+          {/* CLEAR BELONGS TO THE SUMMARY, not to the right-hand cluster: it
+              undoes the thing the summary describes, and the cluster is the
+              three controls you reach for to BUILD a question. It does not
+              exist on an empty search, because it would clear nothing. */}
           {any && (
             <Button type="text" size="small" className="m-sc__clear" onClick={onClear}>
               Clear
             </Button>
           )}
+
+          {/* ── THE RIGHT-HAND CLUSTER ────────────────────────────────────
+              The window, the save, and the way in - in that order, and it is
+              the SAME ORDER every other list uses: what period, then which
+              rows, then how they are drawn. See `.m-page__controls`. */}
+          <span className="m-sc__head-trailing">
+            {trailing}
+            {/* Saving is only possible once there is something to save. */}
+            {any && saveAction}
+      {/* ── THE TRIGGER, AT THE TOP RIGHT ────────────────────────────────
+          ⚠ IT HAS BEEN IN THREE PLACES IN ONE DAY, and the third is the one
+          that agrees with the rest of the app. It opened the card (a search
+          bar's position), then moved to the FOOT (an Add's position), and now
+          sits at the head's right end - "move the filter icon to the right,
+          aligned on the top right of the table" (Gabriel, 2026-09-04).
+
+          What the foot got right is that this makes rules and the rules are the
+          content. What it got wrong is that EVERY OTHER LIST IN THIS APP puts
+          its filter at the top right, beside the window and the display menu -
+          Issues, Synthetics, Runs, Audits - so a sessions page that hid it at
+          the bottom was the one page where the habit you build everywhere else
+          does not work. Consistency across seven pages beats a better argument
+          on one.
+
+          ⚠ THE BAR SHAPE STILL TAKES ITS OWN LINE. It is full width by
+          definition, so in a right-hand cluster it would either not be a bar or
+          would push the window off the row. It wraps under the cluster instead;
+          see `data-trigger='bar'` in the stylesheet.
+
+          ── TWO SHAPES, ONE CONTROL (prototype panel → "Filter entry") ──────
+          Mehdi killed the bar on 09-03 with a reason worth respecting - "we
+          tried the bar before, people type into the bar, they're expecting to
+          see results" - and Gabriel liked it. So both are built and switchable,
+          and the argument gets settled by looking rather than by remembering.
+
+          ⚠ AND THE BAR'S FAILURE MODE IS FIXED RATHER THAN ARGUED WITH. Typing
+          into it now DOES something: the first character you type opens the
+          catalogue with that character already in its search. So the bar is a
+          launcher rather than a field that ignores you, which is the honest
+          answer to "people type into it" - and the ⌘K badge says so before you
+          try. Both shapes take it; only the bar looks like it might. */}
+      <div className="m-sc__triggerwrap">
+        <button
+          type="button"
+          className="m-sc__filter"
+          onClick={() => openPanel()}
+          /* A printable character with no modifier opens the panel and goes
+             into its search. `key.length === 1` is the whole test: every
+             named key ("Enter", "Tab", "ArrowLeft") is longer. */
+          onKeyDown={(e) => {
+            if (e.key.length !== 1 || e.metaKey || e.ctrlKey || e.altKey) return;
+            e.preventDefault();
+            openPanel(e.key);
+          }}
+          aria-expanded={fork}
+          aria-haspopup="dialog"
+          aria-label={any ? ADD : inPanel ? LEAD_PANEL : LEAD}
+        >
+          {/* ⚠ AN SVG STROKE rather than a border: a stroke can be blurred
+              without blurring what it surrounds, and the glow is half the
+              effect. The torch is on BOTH shapes - it is a mask around a
+              pointer and knows nothing about the box it is masking. */}
+          <span className="m-sc__ring" ref={torch as React.RefObject<HTMLSpanElement>} aria-hidden="true">
+            <svg>
+              <rect className="m-sc__glow" x="0" y="0" width="100%" height="100%" rx="4" />
+              <rect className="m-sc__arc" x="0" y="0" width="100%" height="100%" rx="4" />
+            </svg>
+          </span>
+          <Filter size={14} className="m-sc__filter-glyph" aria-hidden="true" />
+          {/* BOTH COPIES ARE RENDERED AND CSS PICKS ONE, the same trick the
+              avatar uses for its two themes: the shape is a data attribute on
+              the root, so it cannot be read in JS without giving the switch a
+              second code path that can disagree with the first. */}
+          <span className="m-sc__filter-word" aria-hidden="true">{any ? ADD : LABEL}</span>
+          <span className="m-sc__barcopy" aria-hidden="true">
+            <span className="m-sc__lead">{any ? ADD : inPanel ? LEAD_PANEL : LEAD_BAR}</span>
+            {!any && <RotatingExample />}
+          </span>
+          <kbd className="m-sc__key" aria-hidden="true">{HOTKEY}</kbd>
+        </button>
+        {/* ⚠ NO `onTranslate` ANYWHERE. That one prop is the sentence path's
+            only switch, so the parked feature stays parked and intact. */}
+        <FilterPanel
+          open={fork}
+          seed={seed}
+          onClose={() => {
+            setFork(false);
+            setSeed('');
+          }}
+          onPick={(e) => {
+            onAdd(e);
+            setFork(false);
+          }}
+          taken={takenProperties}
+        />
+      </div>
+          </span>
         </div>
       )}
 
@@ -477,88 +581,6 @@ export function SearchCard({
           twice the surface for one idea is what made the field read as one
           control among several rather than as THE control. An empty filter is
           simply a field. */}
-
-      {/* ── THE TRIGGER, AT THE FOOT ─────────────────────────────────────
-          ⚠ IT MOVED TO THE BOTTOM (Gabriel, 2026-09-04: "the add filter button
-          should be on the bottom"). It had been the first thing in the card,
-          which is where a SEARCH BAR goes and not where an ADD goes: the rules
-          are the content, and a control that makes more of them belongs after
-          the ones you already have. Every list that grows works this way, and
-          production's own Add sits at the end of its section.
-
-          It also fixes the thing the top position kept costing: on an empty
-          search the card was a bar with nothing under it, and on a full one it
-          was a bar you had to scroll past to read what you had built.
-
-          ── TWO SHAPES, ONE CONTROL (prototype panel → "Filter entry") ──────
-          Mehdi killed the bar on 09-03 with a reason worth respecting - "we
-          tried the bar before, people type into the bar, they're expecting to
-          see results" - and Gabriel liked it. So both are built and switchable,
-          and the argument gets settled by looking rather than by remembering.
-
-          ⚠ AND THE BAR'S FAILURE MODE IS FIXED RATHER THAN ARGUED WITH. Typing
-          into it now DOES something: the first character you type opens the
-          catalogue with that character already in its search. So the bar is a
-          launcher rather than a field that ignores you, which is the honest
-          answer to "people type into it" - and the ⌘K badge says so before you
-          try. Both shapes take it; only the bar looks like it might. */}
-      <div className="m-sc__foot">
-        <div className="m-sc__triggerwrap">
-          <button
-            type="button"
-            className="m-sc__filter"
-            onClick={() => openPanel()}
-            /* A printable character with no modifier opens the panel and goes
-               into its search. `key.length === 1` is the whole test: every
-               named key ("Enter", "Tab", "ArrowLeft") is longer. */
-            onKeyDown={(e) => {
-              if (e.key.length !== 1 || e.metaKey || e.ctrlKey || e.altKey) return;
-              e.preventDefault();
-              openPanel(e.key);
-            }}
-            aria-expanded={fork}
-            aria-haspopup="dialog"
-            aria-label={any ? ADD : inPanel ? LEAD_PANEL : LEAD}
-          >
-            {/* ⚠ AN SVG STROKE rather than a border: a stroke can be blurred
-                without blurring what it surrounds, and the glow is half the
-                effect. The torch is on BOTH shapes - it is a mask around a
-                pointer and knows nothing about the box it is masking. */}
-            <span className="m-sc__ring" ref={torch as React.RefObject<HTMLSpanElement>} aria-hidden="true">
-              <svg>
-                <rect className="m-sc__glow" x="0" y="0" width="100%" height="100%" rx="4" />
-                <rect className="m-sc__arc" x="0" y="0" width="100%" height="100%" rx="4" />
-              </svg>
-            </span>
-            <Filter size={14} className="m-sc__filter-glyph" aria-hidden="true" />
-            {/* BOTH COPIES ARE RENDERED AND CSS PICKS ONE, the same trick the
-                avatar uses for its two themes: the shape is a data attribute on
-                the root, so it cannot be read in JS without giving the switch a
-                second code path that can disagree with the first. */}
-            <span className="m-sc__filter-word" aria-hidden="true">{any ? ADD : LABEL}</span>
-            <span className="m-sc__barcopy" aria-hidden="true">
-              <span className="m-sc__lead">{any ? ADD : inPanel ? LEAD_PANEL : LEAD}</span>
-              {!any && <RotatingExample />}
-            </span>
-            <kbd className="m-sc__key" aria-hidden="true">{HOTKEY}</kbd>
-          </button>
-          {/* ⚠ NO `onTranslate` ANYWHERE. That one prop is the sentence path's
-              only switch, so the parked feature stays parked and intact. */}
-          <FilterPanel
-            open={fork}
-            seed={seed}
-            onClose={() => {
-              setFork(false);
-              setSeed('');
-            }}
-            onPick={(e) => {
-              onAdd(e);
-              setFork(false);
-            }}
-            taken={takenProperties}
-          />
-        </div>
-      </div>
 
       {/* THE FILTER, IN WORDS. Off-screen, and live: the rows ARE the filter, so
           a change to them has to be announced as a change to the whole thing

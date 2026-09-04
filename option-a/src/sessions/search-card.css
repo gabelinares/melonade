@@ -77,10 +77,9 @@
    was that people TYPE into a bar and expect results. They can now: the first
    character opens the catalogue with that character in its search, and the ⌘K
    badge says so before you try. */
-.m-sc__foot {
-  display: flex;
-  padding: var(--m-space-3) var(--m-space-3) var(--m-space-4);
-}
+/* ⚠ `.m-sc__foot` LIVED HERE, for the half-day the trigger sat at the bottom of
+   the card. It is in the head's right-hand cluster now, where every other list
+   in this app keeps its filter. */
 
 /* THE COMMON SHAPE. Everything both share: the ring, the glyph, the badge, the
    accent, the press. */
@@ -637,17 +636,35 @@
    heading that right-hand slot is the order control. */
 .m-sc__head-hint { margin-inline-start: auto; }
 
-/* THE WINDOW, on the head row rather than a bar of its own. Pushed right, with
-   the two verbs after it. */
+/* ── THE RIGHT-HAND CLUSTER ──────────────────────────────────────────────────
+   The window, the save and the way in, at the top right - aligned with the
+   table's own right edge below it, and in the same order every other list uses.
+
+   ⚠ IT WRAPS, and that is what lets the BAR shape survive here. A full-width
+   bar in a right-hand cluster is either not full width or pushes the window off
+   the row; given a whole line of its own it is neither. */
 .m-sc__head-trailing {
   display: flex;
   align-items: center;
-  gap: var(--m-space-4);
+  gap: var(--m-space-3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
   margin-inline-start: auto;
 }
 
-/* An empty search still has a head - it says "Every session" beside the window -
-   and it has nothing under it, so it closes the card itself. */
+/* THE BAR TAKES THE WHOLE LINE, under the cluster rather than in it. `order`
+   rather than a different parent, so the two shapes stay one element in one
+   place - which is the only way the comparison between them is fair. */
+[data-trigger='bar'] .m-sc__head-trailing .m-sc__triggerwrap {
+  flex: 1 0 100%;
+  order: 9;
+  margin-block-start: var(--m-space-2);
+}
+
+/* An empty search IS the head: the cluster, and nothing under it. So the row
+   closes the card itself and carries the padding a body would have had. */
 .m-sc__strip.is-empty { padding-bottom: var(--m-space-3); }
 
 /* ⚠ `.m-sc__strip-trailing` LIVED HERE, for the morning the bar retired and

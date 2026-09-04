@@ -114,9 +114,16 @@ export function useTorch(enabled = true) {
     document.addEventListener('pointermove', onMove, { passive: true });
     document.addEventListener('pointerleave', onLeave, { passive: true });
     window.addEventListener('resize', measure, { passive: true });
-    /* The bar moves when the filter collapses under it, so the box is stale
-       after any layout change the pointer did not cause. */
+    /* ⚠ OBSERVE THE ELEMENT ITSELF, not only the document. The box is measured
+       on wake and then cached, which is right for a control that only moves
+       when the window does - and wrong the moment the control can CHANGE SHAPE
+       under you. Switching the trigger between bar and button resizes it by
+       more than a thousand pixels while the pointer is already inside it, so
+       the loop never wakes, never re-measures, and lights a rectangle that is
+       no longer there. Watching the document alone missed it because the
+       document did not resize. */
     const ro = new ResizeObserver(measure);
+    ro.observe(el);
     ro.observe(document.documentElement);
 
     return () => {
