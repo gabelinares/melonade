@@ -11,7 +11,6 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import type { Issue, IssueSession } from './issues-data.ts';
-import type { ConsoleLine, NetworkCall } from './runs-data.ts';
 
 export type MarkerKind = 'click' | 'rage' | 'error' | 'slow' | 'input' | 'nav';
 
@@ -247,29 +246,31 @@ export function journeySteps(issue: Issue, session: IssueSession): JourneyStep[]
   });
 }
 
-/* ── CONSOLE AND NETWORK, THE SAME SHAPE SYNTHETICS ALREADY DRAWS ────────────
-   Mehdi, 2026-09-01: design console and network once, on the replay page, then
-   put the same thing on a Synthetics run - "the one addition anywhere" to this
-   week's scope. It shipped in the other order: the run drawer's own
-   `NetworkTable`/`ConsoleView` (`tests/RunDrawer.tsx`) went out first, seeded
-   on `RunData`. This reads that design backwards onto a session - `ConsoleLine`
-   and `NetworkCall` are the run drawer's own types (`runs-data.ts`), not a
-   second version of the same idea, and the two lists share the drawer's own
-   `consoleErrorCount`/`netErrorCount` for their tab badges.
+/* ── THE DEV TOOLS: WHAT A SESSION ACTUALLY CARRIES ──────────────────────────
+   Mehdi asked three times (08-26, 08-27, 09-01) for the replay's dev tools -
+   "the one addition anywhere" to the scope - and on 09-04 Gabriel drew the
+   line under what that means: the BOTTOM block production already has (X-Ray,
+   Console, Network, Performance, State, Events, Traces), redrawn, "using
+   exactly the capabilities of OpenReplay, don't bring data we don't have".
 
-   ⚠ A RUN ONLY KEEPS THESE WHEN IT FAILED - there is nothing to look at on a
-   pass. A SESSION is not that: it is a real visit, and there is always
-   something in the console and on the wire whether or not anything broke. So
-   the baseline lines and calls below are unconditional, and a marker's own
-   kind - found by `replayMarkers`, the same list the track and the journey
-   panel already read - only ADDS to them, at the moment it happened. The
-   three panels (track, journey, console/network) can never disagree about
-   when something went wrong, because all three are reading the one marker
-   list.
+   So the shapes below are production's, read out of the player code
+   (Controls.tsx, shared/DevTools/*, Session_/Performance): a console line is
+   a level and a text at a time; a request is status / type / method / name /
+   size / duration and where it sits on the waterfall; performance is four
+   series the tracker samples - FPS, CPU, heap, DOM nodes - plus the device heap
+   and connection quality. Nothing here that the tracker does not send.
 
-   Seeded on the journey string rather than `Math.random`, for the reason
-   every other fixture in this file is: reload the page and the same session
-   shows the same lines at the same timestamps. */
+   ⚠ STATE, EVENTS AND TRACES ARE NOT GENERATED. In production State only
+   exists when a store (Redux / MobX / Vuex / NgRx / Zustand / Pinia) is
+   detected, Events only when `tracker.event()` or an integration has posted
+   something, Traces only when a backend-log integration is connected. This
+   fixture is a plain shop with none of those, so those three tabs show
+   production's own empty states - which is a true thing about this session
+   rather than an invented store.
+
+   Seeded on the journey string and read off `replayMarkers`, so a request
+   failing in Network is the same moment as the danger marker on the track and
+   the ring on the journey step. Three panels, one list of moments. */
 function hash32(str: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i += 1) {
@@ -279,15 +280,6 @@ function hash32(str: string): number {
   return h >>> 0;
 }
 
-const timingFor = (seed: number, wait: number) => ({
-  blocked: 1 + (seed % 3),
-  dns: seed % 7,
-  connect: 4 + (seed % 9),
-  send: 1,
-  wait,
-  receive: 2 + (seed % 5),
-});
-
 /** Where a marker's own label points, by the same rule `journeySteps` carries
  *  forward - applied with no `Issue` to start it from, because the sessions
  *  list opens this replay on no issue at all. */
@@ -296,52 +288,181 @@ function pathFor(label: string, fallback: string): string {
   return hit ? hit[1] : fallback;
 }
 
+export type LogLevel = 'info' | 'warn' | 'error';
+
+export interface SessionLog {
+  /** seconds into the session */
+  at: number;
+  level: LogLevel;
+  /** the line as logged, one line */
+  text: string;
+  /** an exception's own message - the part production underlines and opens */
+  message?: string;
+}
+
+export type RequestType = 'fetch' | 'xhr' | 'js' | 'css' | 'img' | 'other';
+
+export interface SessionRequest {
+  /** seconds into the session, when it was sent */
+  at: number;
+  status: number;
+  type: RequestType;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  url: string;
+  /** bytes transferred */
+  size: number;
+  /** ms, send to last byte */
+  duration: number;
+  /** ms, send to first byte - the first segment of the waterfall bar */
+  ttfb: number;
+  cached?: boolean;
+}
+
+export interface PerfSample {
+  at: number;
+  fps: number;
+  /** percent */
+  cpu: number;
+  /** bytes of JS heap in use */
+  heap: number;
+  nodes: number;
+}
+
+export type ConnectionQuality = 'Excellent' | 'Good' | 'Average' | 'Poor';
+
+export interface SessionPerformance {
+  samples: PerfSample[];
+  /** bytes the device reports as its heap limit */
+  deviceHeap: number;
+  connection: ConnectionQuality;
+}
+
 /** The console, as the session's own markers would have produced it. */
-export function sessionConsole(session: IssueSession): ConsoleLine[] {
+export function sessionLogs(session: IssueSession): SessionLog[] {
   const seed = hash32(session.journey);
+  const total = durationSeconds(session.dur);
   const markers = replayMarkers(session);
-  const lines: ConsoleLine[] = [
-    { level: 'log', at: 80, text: 'app: hydrated' },
-    {
-      level: 'log',
-      at: 240 + (seed % 300),
-      text: `router: navigated to ${pathFor(markers[0]?.label ?? '', '/')}`,
-    },
+  const firstPath = pathFor(markers[0]?.label ?? '', '/');
+  const lines: SessionLog[] = [
+    { at: 0.1, level: 'info', text: '[app] hydrated in ' + (180 + (seed % 90)) + 'ms' },
+    { at: 0.3 + (seed % 5) / 10, level: 'info', text: '[router] navigated to ' + firstPath },
+    { at: 1.2 + (seed % 7) / 10, level: 'info', text: '[analytics] page_view {path: "' + firstPath + '"}' },
   ];
+  let lastPath = firstPath;
   for (const m of markers) {
-    const at = m.at * 1000;
+    const path = pathFor(m.label, lastPath);
+    if (path !== lastPath) {
+      lines.push({ at: m.at, level: 'info', text: '[router] navigated to ' + path });
+      lastPath = path;
+    }
     if (m.kind === 'error') {
       lines.push(
-        { level: 'error', at: Math.max(0, at - 60), text: 'Failed to load resource: the server responded with a status of 500' },
-        { level: 'error', at, text: `Uncaught (in promise) Error: ${m.label.toLowerCase()}` },
+        { at: Math.max(0, m.at - 0.06), level: 'error', text: 'Failed to load resource: the server responded with a status of 500 (Internal Server Error)' },
+        {
+          at: m.at,
+          level: 'error',
+          text: 'Uncaught (in promise) TypeError',
+          message: "Cannot read properties of undefined (reading 'status')",
+        },
       );
     } else if (m.kind === 'slow') {
-      lines.push({ level: 'warn', at: Math.max(0, at - 400), text: 'Slow network is throttled: XHR finished loading in 4200ms' });
+      lines.push({ at: Math.max(0, m.at - 0.4), level: 'warn', text: '[perf] long task 412ms on ' + path });
+    } else if (m.kind === 'rage') {
+      lines.push({ at: m.at, level: 'warn', text: '[ui] handler for #place-order fired ' + (3 + (seed % 3)) + ' times in 1.1s' });
+    } else if (m.kind === 'input') {
+      lines.push({ at: m.at, level: 'info', text: '[form] field validated {ok: true}' });
     }
   }
+  if (total > 30) lines.push({ at: total - 2, level: 'info', text: '[analytics] session_end' });
   return lines.sort((a, b) => a.at - b.at);
 }
 
-/** The requests the session made. Same seed as `sessionConsole`, and read off
- *  the same marker list, so the two panels never disagree about when things
- *  went wrong. */
-export function sessionNetwork(session: IssueSession): NetworkCall[] {
+const KB = 1024;
+
+/** The requests the session made, in the order they were sent. */
+export function sessionRequests(session: IssueSession): SessionRequest[] {
   const seed = hash32(session.journey);
   const markers = replayMarkers(session);
-  const t = (wait: number) => timingFor(seed, wait);
-  const calls: NetworkCall[] = [
-    { method: 'GET', url: '/api/session', status: 200, time: 84 + (seed % 40), size: 1240, timing: t(70) },
-    { method: 'GET', url: '/api/user', status: 200, time: 96 + (seed % 50), size: 2180, timing: t(82) },
+  const firstPath = pathFor(markers[0]?.label ?? '', '/');
+  const jitter = (n: number, spread: number) => n + (seed % spread);
+  /* THE PAGE LOAD. A document, its scripts, its styles, a few images - the part
+     of every waterfall that looks the same on every site. */
+  const calls: SessionRequest[] = [
+    { at: 0.02, status: 200, type: 'other', method: 'GET', url: REPLAY_HOST + firstPath, size: 18 * KB, duration: jitter(210, 60), ttfb: jitter(140, 40) },
+    { at: 0.24, status: 200, type: 'css', method: 'GET', url: '/static/css/app.7f3c1.css', size: 61 * KB, duration: jitter(90, 40), ttfb: 22 },
+    { at: 0.25, status: 200, type: 'js', method: 'GET', url: '/static/js/vendor.a91c0.js', size: 412 * KB, duration: jitter(320, 120), ttfb: 30 },
+    { at: 0.26, status: 200, type: 'js', method: 'GET', url: '/static/js/app.5d2e8.js', size: 188 * KB, duration: jitter(240, 90), ttfb: 28 },
+    { at: 0.6, status: 200, type: 'img', method: 'GET', url: '/images/logo.svg', size: 4 * KB, duration: jitter(48, 20), ttfb: 18, cached: true },
+    { at: 0.9, status: 200, type: 'fetch', method: 'GET', url: '/api/session', size: 1240, duration: jitter(84, 40), ttfb: jitter(60, 30) },
+    { at: 0.95, status: 200, type: 'fetch', method: 'GET', url: '/api/user', size: 2180, duration: jitter(96, 50), ttfb: jitter(70, 30) },
+    { at: 1.4, status: 200, type: 'img', method: 'GET', url: '/images/hero@2x.webp', size: 214 * KB, duration: jitter(380, 200), ttfb: 35 },
   ];
+  let lastPath = firstPath;
   for (const m of markers) {
-    const path = pathFor(m.label, '/');
+    const path = pathFor(m.label, lastPath);
+    if (path !== lastPath) {
+      calls.push(
+        { at: m.at + 0.05, status: 200, type: 'fetch', method: 'GET', url: '/api' + path.split('?')[0], size: jitter(3, 6) * KB, duration: jitter(110, 70), ttfb: jitter(80, 40) },
+        { at: m.at + 0.3, status: 200, type: 'img', method: 'GET', url: '/images' + path.split('?')[0] + '/cover.webp', size: jitter(80, 90) * KB, duration: jitter(260, 160), ttfb: 30 },
+      );
+      lastPath = path;
+    }
     if (m.kind === 'error') {
-      calls.push({ method: 'POST', url: `/api${path}`, status: 500, time: 5010, size: 180, timing: t(4980) });
+      calls.push({ at: m.at - 0.5, status: 500, type: 'fetch', method: 'POST', url: '/api/payments/authorize', size: 180, duration: 5010, ttfb: 4980 });
     } else if (m.kind === 'slow') {
-      calls.push({ method: 'GET', url: `/api${path}`, status: 200, time: 4200 + (seed % 600), size: 8600, timing: t(4100) });
-    } else if (m.kind === 'nav') {
-      calls.push({ method: 'GET', url: `/api${path}`, status: 200, time: 110 + (seed % 70), size: 3400, timing: t(90) });
+      calls.push({ at: m.at - 4.2, status: 200, type: 'xhr', method: 'GET', url: '/api' + path.split('?')[0] + '/items?page=1', size: 118 * KB, duration: jitter(4200, 600), ttfb: jitter(3900, 400) });
+    } else if (m.kind === 'input') {
+      calls.push({ at: m.at + 0.2, status: 200, type: 'fetch', method: 'POST', url: '/api/checkout/validate', size: 320, duration: jitter(210, 90), ttfb: jitter(180, 60) });
+    } else if (m.kind === 'rage') {
+      for (let i = 0; i < 3; i += 1) {
+        calls.push({ at: m.at + i * 0.4, status: 200, type: 'fetch', method: 'POST', url: '/api/checkout/validate', size: 320, duration: jitter(190, 60), ttfb: jitter(160, 50) });
+      }
     }
   }
-  return calls;
+  return calls.sort((a, b) => a.at - b.at);
+}
+
+/** FPS, CPU, heap and DOM nodes, sampled across the session the way the
+ *  tracker does - one sample a few seconds apart, so a 12-minute session is
+ *  a few hundred points rather than a point per frame. */
+export function sessionPerformance(session: IssueSession): SessionPerformance {
+  const seed = hash32(session.journey);
+  const total = durationSeconds(session.dur);
+  const markers = replayMarkers(session);
+  const n = 48;
+  const step = total / (n - 1);
+  const samples: PerfSample[] = [];
+  let heap = (38 + (seed % 20)) * 1024 * 1024;
+  let nodes = 900 + (seed % 400);
+  for (let i = 0; i < n; i += 1) {
+    const at = i * step;
+    /* a deterministic wobble: the same session draws the same curve */
+    const w = ((seed >>> (i % 24)) & 7) / 7;
+    const near = markers.find((m) => Math.abs(m.at - at) < step);
+    heap += (0.4 + w) * 1024 * 1024;
+    /* a GC every so often; the sawtooth the heap chart is known for */
+    if (i % 11 === 10) heap *= 0.72;
+    if (near?.kind === 'nav') nodes += 380 + Math.round(w * 300);
+    if (near?.kind === 'error') nodes -= 120;
+    let fps = 60 - Math.round(w * 3);
+    let cpu = 6 + Math.round(w * 9);
+    if (near?.kind === 'rage' || near?.kind === 'slow') { fps = 18 + Math.round(w * 8); cpu = 62 + Math.round(w * 25); }
+    if (near?.kind === 'error') { fps = 41 - Math.round(w * 6); cpu = 38 + Math.round(w * 12); }
+    if (near?.kind === 'input') cpu += 8;
+    samples.push({ at, fps, cpu, heap: Math.round(heap), nodes });
+  }
+  const slow = markers.some((m) => m.kind === 'slow');
+  const connection: ConnectionQuality = slow
+    ? (seed % 2 ? 'Poor' : 'Average')
+    : (seed % 2 ? 'Good' : 'Excellent');
+  const gb = ([2, 4, 8] as const)[seed % 3] ?? 4;
+  return { samples, deviceHeap: gb * 1024 * 1024 * 1024 + (seed % 97) * 1024 * 1024, connection };
+}
+
+/** "1.2 MB", "64 B" - production's `formatBytes`, to two significant places. */
+export function formatBytes(n: number): string {
+  if (n < KB) return n + ' B';
+  if (n < KB * KB) return (n / KB).toFixed(n < 10 * KB ? 1 : 0) + ' KB';
+  if (n < KB * KB * KB) return (n / (KB * KB)).toFixed(2) + ' MB';
+  return (n / (KB * KB * KB)).toFixed(2) + ' GB';
 }

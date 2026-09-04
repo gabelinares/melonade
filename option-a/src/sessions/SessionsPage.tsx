@@ -9,7 +9,6 @@ import {
   MessageCircleWarning,
   Monitor,
   MoreHorizontal,
-  Plus,
   Settings2,
   Share2,
   Skull,
@@ -598,14 +597,11 @@ export function SessionsPage({ model }: SessionsPageProps) {
               It also puts the two verbs that dispose of a filter side by side:
               keep this, or throw it away.
 
-              The segments tab keeps its own New here, because there is no
-              filter on that tab to save and the header is the only place a
-              list-level action can live. */}
-          {model.tab === 'segments' && (
-            <Button size="small" icon={<Plus size={13} />} onClick={model.newSegment}>
-              New segment
-            </Button>
-          )}
+              ⚠ AND THE SEGMENTS TAB'S OWN NEW LEFT TOO (Gabriel, 2026-09-04:
+              "remove the new segment from the top of the segments page, leave
+              it only one"). The panel below already carries the button beside
+              its filter control; the same verb twice on one screen was the
+              exact thing this header had just shed with Save as segment. */}
           <Dropdown
             trigger={['click']}
             placement="bottomRight"
