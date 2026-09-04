@@ -2,7 +2,6 @@ import { useState, type ReactNode } from 'react';
 import { Button, Select, Tooltip } from 'antd';
 import { Filter } from 'lucide-react';
 import {
-  catalogueNow,
   describeRules,
   type CatalogueEntry,
   type EventsOrder,
@@ -10,8 +9,7 @@ import {
   type SessionRow,
 } from '@shared/sessions-logic.ts';
 import { noNativeTooltip } from '../components/selectOptions.ts';
-import { ChevronDown, Plus } from 'lucide-react';
-import { FilterPicker } from './FilterPicker.tsx';
+import { ChevronDown } from 'lucide-react';
 import { FilterPanel } from './FilterPanel.tsx';
 import { SearchRow } from './SearchRow.tsx';
 import { useFilterCollapse } from './useFilterCollapse.ts';
@@ -255,17 +253,26 @@ export function SearchCard({
           small target than it did on a 1400px one, because a light that finds
           a small thing is doing something a hover state cannot.
 
-          ── AND IT STILL RETIRES ONCE THERE IS A RULE ──────────────────────
-          (Gabriel, 2026-09-04, demoed on the call and unopposed: "the bar
-          disappears because the design is self-explanatory when I'm adding a
-          filter.") From the second clause on you add from the section you are
-          adding TO - nearer, more specific, and no kind chosen in advance.
+          ── ⚠ AND IT NEVER RETIRES. IT DID, FOR ONE MORNING. ───────────────
+          It used to vanish the moment there was a rule, and each section grew
+          its own Add - which made sense while the button opened a FORK, because
+          a second visit to a fork is a second click on a question you have
+          already answered. The fork is gone (see FilterPanel), and the reason
+          went with it.
 
-          ⚠ THE DATE RANGE AND THE DISPLAY MENU DO NOT RETIRE WITH IT. They are
-          the LIST's controls riding this row, and they move down to the strip,
-          which becomes the top row the moment the button goes - so they hold
-          the same corner of the same surface either way. */}
-      {!any && (
+          Gabriel, 2026-09-04: *"when the list appears, we should keep having a
+          single Add button - they won't be divided into two Add buttons."*
+
+          Two Adds is the thing Mehdi objected to in the first place. Putting one
+          at the foot of each section made them read as belonging to their
+          section rather than as a choice between kinds, which is a real
+          improvement on production - and it is still two controls doing one job,
+          in a component whose whole premise is that there is ONE door. A control
+          that moves house when the list fills is also a control you have to
+          find twice.
+
+          So: one button, one place, always. The date range and the display menu
+          keep it company on that row whatever the filter holds. */}
       <div className="m-sc__bar">
         <div className="m-sc__triggerwrap">
           <button
@@ -305,7 +312,6 @@ export function SearchCard({
         </div>
         {trailing}
       </div>
-      )}
 
       {/* ── THE STRIP: WHAT THE FILTER SAYS, AND HOW TO PUT IT AWAY ──────────
           It used to hold Clear and nothing else, which is a whole row of height
@@ -408,10 +414,6 @@ export function SearchCard({
             </span>
           )}
 
-          {/* The list's controls, on whichever row is the top one. See the
-              note above the bar. */}
-          <span className="m-sc__strip-trailing">{trailing}</span>
-
           {saveAction}
 
           <Button type="text" size="small" className="m-sc__clear" onClick={onClear}>
@@ -450,19 +452,18 @@ export function SearchCard({
           be false, since there would be no events for it to apply to. */}
       {any && !collapsed ? (
         <div className="m-sc__list" id="m-sc-rows">
-          {/* ⚠ BOTH HEADINGS, ALWAYS, once the search has anything in it -
-              and that changed on 09-04 for a reason that is structural rather
-              than aesthetic. Each heading now owns the ADD for its own kind,
-              and a heading that appears only when its section is already
-              occupied is an Add you cannot reach until you have already used
-              it. Production shows both for exactly this reason.
+          {/* ⚠ BOTH HEADINGS, ALWAYS, once the search has anything in it. The
+              structural reason went away with the section Adds - a heading no
+              longer has to exist for its Add to be reachable - and the design
+              reason it was built on is the one that mattered anyway: a reader
+              cannot otherwise tell WHICH SCOPE a row has, and an empty section
+              says "nothing here yet" rather than leaving you to wonder whether
+              the kind exists at all.
 
-              This is also where the fork's cost goes away: you never choose a
-              kind in the abstract again, you point at the section you want the
-              thing to land in. */}
+              Production draws both always too, which is the second-best
+              argument for anything in this component. */}
           <div className="m-sc__head">
             <span className="m-sc__head-name">{EVENTS_HEAD}</span>
-            <AddTo kind="events" taken={takenProperties} onPick={onAdd} />
           </div>
           {events.map((f, i) => (
             <SearchRow
@@ -494,7 +495,6 @@ export function SearchCard({
 
           <div className="m-sc__head">
             <span className="m-sc__head-name">{GROUP_HEAD}</span>
-            <AddTo kind="filters" taken={takenProperties} onPick={onAdd} />
             {/* ⚠ THE SCOPE, PRINTED, and only when it is true. With no events
                 above there is nothing for a group filter to apply TO, and a
                 line saying otherwise would be the caption teaching the wrong
@@ -535,43 +535,7 @@ export function SearchCard({
   );
 }
 
-/**
- * A SECTION'S OWN ADD. Production has exactly this - `FilterSelection` wrapping
- * a small "Add" beside each heading - and the 09-02 build deleted both when it
- * merged the two buttons on the bar.
- *
- * ⚠ THE TWO ARE NOT BACK SIDE BY SIDE, which is what Mehdi objected to: "we
- * have two buttons and people don't know right away what an event is, what a
- * filter is." Two buttons at the top of a card, before you have picked
- * anything, IS a question about vocabulary. The same two buttons at the foot of
- * the sections they fill are not a question at all - each one is attached to
- * the thing it makes, and the thing it makes is on screen above it.
- */
-function AddTo({
-  kind,
-  taken,
-  onPick,
-}: {
-  kind: 'events' | 'filters';
-  taken: readonly string[];
-  onPick: (entry: CatalogueEntry) => void;
-}) {
-  /* ⚠ THE CATALOGUE, RECUT to production's own two lists (`eventOptions` /
-     `propertyOptions` in `SessionFilters`). With one kind in it the picker
-     draws no kind heading, because there is nothing to disambiguate. */
-  const entries = catalogueNow().filter((e) => (kind === 'events' ? e.isEvent : !e.isEvent));
-  const what = kind === 'events' ? 'event' : 'group filter';
-  return (
-    <FilterPicker
-      entries={entries}
-      taken={taken}
-      onPick={onPick}
-      placeholder={kind === 'events' ? 'Search events' : 'Search group filters'}
-    >
-      <button type="button" className="m-sc__add" aria-label={`Add ${what}`}>
-        <Plus size={12} aria-hidden="true" />
-        <span>Add</span>
-      </button>
-    </FilterPicker>
-  );
-}
+/* ⚠ `AddTo` LIVED HERE - production's own small Add beside each heading, one
+   per kind - and came out on 2026-09-04 with the fork it was serving. It was
+   the right shape for a two-door design and the wrong one for a single-door
+   design, which is what this is. `git show fc3f12f` has it. */

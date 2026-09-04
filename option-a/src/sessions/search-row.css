@@ -147,8 +147,6 @@
   color: var(--m-content-primary);
   font-size: var(--m-text-sm);
   border-radius: var(--m-radius-control);
-  transition: background-color var(--m-duration-instant) var(--m-ease-out),
-    box-shadow var(--m-duration-instant) var(--m-ease-out);
 }
 
 .m-srow .m-srow__op .ant-select-suffix { opacity: 0; transition: opacity var(--m-duration-instant); }
@@ -156,11 +154,19 @@
 .m-srow .m-srow__op.ant-select-focused .ant-select-suffix,
 .m-srow .m-srow__op.ant-select-open .ant-select-suffix { opacity: 1; }
 
-.m-srow:hover .m-srow__op .ant-select-content,
-.m-srow .m-srow__op.ant-select-focused .ant-select-content {
-  background: var(--m-surface-default);
-  box-shadow: inset 0 0 0 var(--m-border-width) var(--m-border-default);
-}
+/* ⚠ ONE OUTLINE, NOT TWO (Gabriel, 2026-09-04: "there's no need to have two
+   outlines on these dropdowns, it's okay just to have the outer").
+
+   The inner one was this file's: a fill and an inset ring on
+   `.ant-select-content`, drawn on hover so a borderless control took its box
+   back when you reached for it. That was written when the control was assumed
+   to have no box of its own - and antd v6's borderless Select does draw one on
+   hover and focus, around content AND suffix. So the word ended up in a pill
+   inside a rounded rectangle: two shapes for one control, and the inner one
+   sized to the word rather than to the target.
+
+   The outer is the right one to keep. It is the actual hit area, it includes
+   the caret, and it is the same box every other select in the app shows. */
 
 /* ── the value ───────────────────────────────────────────────────────────────
    ⚠ `flex-wrap: nowrap` ON THE SELECTOR. antd v6's multiple/tags Select wraps

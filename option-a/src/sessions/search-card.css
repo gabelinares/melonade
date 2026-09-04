@@ -439,15 +439,21 @@
   font-size: var(--m-text-sm);
   font-weight: var(--m-weight-medium);
   border-radius: var(--m-radius-control);
-  transition: background-color var(--m-duration-instant) var(--m-ease-out),
-    box-shadow var(--m-duration-instant) var(--m-ease-out);
 }
 
-.m-sc__order-select:hover .ant-select-content,
-.m-sc__order-select.ant-select-focused .ant-select-content {
-  background: var(--m-surface-default);
-  box-shadow: inset 0 0 0 var(--m-border-width) var(--m-border-default);
-}
+/* ⚠ ONE OUTLINE, NOT TWO (Gabriel, 2026-09-04: "there's no need to have two
+   outlines on these dropdowns, it's okay just to have the outer").
+
+   The inner one was this file's: a fill and an inset ring on
+   `.ant-select-content`, drawn on hover so a borderless control took its box
+   back when you reached for it. That was written when the control was assumed
+   to have no box of its own - and antd v6's borderless Select does draw one on
+   hover and focus, around content AND suffix. So the word ended up in a pill
+   inside a rounded rectangle: two shapes for one control, and the inner one
+   sized to the word rather than to the target.
+
+   The outer is the right one to keep. It is the actual hit area, it includes
+   the caret, and it is the same box every other select in the app shows. */
 
 /* The option list carries the meaning; the closed control carries the word.
    Three words with no explanation is a quiz, and "then / and / or" is exactly
@@ -559,46 +565,16 @@
    elastic left on it, so the gap has to be explicit. */
 .m-sc__bar > :last-child { margin-inline-start: auto; }
 
-/* ── A SECTION'S ADD ─────────────────────────────────────────────────────────
-   Production's own small "Add" beside each heading, and drawn as quietly as
-   that: it sits inside a heading, so it must not outweigh the heading. Text
-   and a plus at 11px, no fill until you point at it.
-
-   It is a real button and not a link because it opens a menu, and it keeps the
-   app's focus ring for the same reason everything else does. */
-.m-sc__add {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px var(--m-space-2);
-  font-size: var(--m-text-2xs);
-  color: var(--m-content-muted);
-  background: transparent;
-  border: var(--m-border-width) solid transparent;
-  border-radius: var(--m-radius-control);
-  cursor: pointer;
-  transition:
-    color var(--m-duration-fast) var(--m-ease-out),
-    background var(--m-duration-fast) var(--m-ease-out),
-    border-color var(--m-duration-fast) var(--m-ease-out);
-}
-
-.m-sc__add:hover {
-  color: var(--m-content-primary);
-  background: var(--m-surface-canvas);
-  border-color: var(--m-border-default);
-}
+/* ⚠ `.m-sc__add` LIVED HERE - production's small Add beside each heading, one
+   per kind - and came out with the fork it served (2026-09-04). Two Adds is
+   what Mehdi objected to originally, and a single-door component should have
+   one door. `git show fc3f12f` has the rule. */
 
 /* THE HINT GOES TO THE FAR END, opposite the Add, so the two headings balance:
    name and its Add on the left, the qualifier on the right. On the events
    heading that right-hand slot is the order control. */
 .m-sc__head-hint { margin-inline-start: auto; }
 
-/* THE LIST'S CONTROLS, when the bar has retired and the strip is the top row.
-   Pushed to the right so they hold the same corner they held on the bar. */
-.m-sc__strip-trailing {
-  display: flex;
-  align-items: center;
-  gap: var(--m-space-4);
-  margin-inline-start: auto;
-}
+/* ⚠ `.m-sc__strip-trailing` LIVED HERE, for the morning the bar retired and
+   the strip had to adopt the date range. The bar does not retire any more, so
+   the list's controls never move and the strip never needs the slot. */

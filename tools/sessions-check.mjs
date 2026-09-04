@@ -389,19 +389,12 @@ check('one query reaches an autocapture event and a saved segment together',
 await p.keyboard.press('Escape');
 await p.waitForTimeout(200);
 
-/* ⚠ TWO DOORS, AND WHICH ONE IS OPEN DEPENDS ON WHETHER THE SEARCH IS EMPTY -
-   which is the behaviour, not an inconvenience. The button retires the moment
-   there is a rule; from the second clause on you add from the section you are
-   adding to. The helper does what a person does: use the button if it is
-   there, otherwise the Add in the right section. */
-const EVENTY = /^(Click|Input|Page|Rage click|Dead click|Error|Network request|GraphQL|State action|Crash|Tap rage|Swipe|search_performed|add_to_cart|checkout_start|checkout_complete|signup_submitted|plan_upgraded|invite_sent|support_opened)$/;
-const addEntry = async (name, kind = EVENTY.test(name) ? 'events' : 'filters') => {
-  const head = kind === 'events' ? 'Events' : 'Group filters';
-  if (await p.locator('.m-sc__filter').count()) {
-    await p.locator('.m-sc__filter').click();
-  } else {
-    await p.locator('.m-sc__head', { hasText: head }).locator('.m-sc__add').first().click();
-  }
+/* ⚠ ONE DOOR, ALWAYS. It was two for a morning - the button retired once there
+   was a rule and each section grew its own Add - and that was the fork's
+   arrangement, not this one's. Gabriel, 2026-09-04: "when the list appears we
+   should keep having a single Add button; they won't be divided into two." */
+const addEntry = async (name) => {
+  await p.locator('.m-sc__filter').click();
   await p.waitForTimeout(400);
   await p.fill('.m-pick__search input', name);
   await p.waitForTimeout(300);
@@ -580,76 +573,49 @@ const beforeN = Number((before ?? '0').split(' ')[0]);
 check('AND THE EVENT-LEVEL FILTER ACTUALLY FILTERS — the funnel was decoration until 09-04',
   scoped.n > 0 && scoped.n < beforeN, `${before} → ${scoped.count}`);
 
-/* ── 5c. THE BAR RETIRES, AND EACH SECTION GROWS ITS OWN ADD ────────────────
-   (Gabriel, 2026-09-04: "after the filter and event was added there should also
-   exist the two adds in their sections, so the user doesn't need to click at
-   the bar again - actually the bar vanishes and only appears after deleting or
-   clearing.")
+/* ── 5c. ONE DOOR, AND IT DOES NOT MOVE ─────────────────────────────────────
+   ⚠ THIRD ARRANGEMENT IN A DAY, and the reasoning is worth keeping because each
+   one was right for the design it belonged to.
 
-   This is what makes the FORK affordable. A fork step normally charges a click
-   on everything you ever add; here it is charged once, on the empty search, and
-   from the second clause on you add from the section you are adding TO.
+     the button opened a FORK, so a second visit was a second answer to a
+       question you had already answered - hence: the button retired once there
+       was a rule, and each section grew its own Add
+     the fork is gone, so that cost is gone with it - and two Adds is what Mehdi
+       objected to in the first place
 
-   ⚠ BOTH SECTIONS HAVE TO BE PRESENT, even an empty one. An Add that appears
-   only once its own section is occupied is an Add you cannot reach until after
-   you have used it - which is why production draws both headings always. */
-const retired = await p.evaluate(() => ({
-  bar: document.querySelectorAll('.m-sc__filter').length,
-  heads: [...document.querySelectorAll('.m-sc__head-name')].map((e) => e.textContent.trim()),
+   Gabriel, 2026-09-04: *"when the list appears, we should keep having a single
+   Add button - they won't be divided into two Add buttons."* One control, one
+   place, whatever the filter holds. A control that moves house when the list
+   fills is a control you have to find twice. */
+const doors = await p.evaluate(() => ({
+  button: document.querySelectorAll('.m-sc__filter').length,
   adds: document.querySelectorAll('.m-sc__add').length,
-  /* the list's own controls came down with it rather than vanishing */
-  trailing: !!document.querySelector('.m-sc__strip-trailing .m-daterange, .m-sc__strip-trailing button'),
+  heads: [...document.querySelectorAll('.m-sc__head-name')].map((e) => e.textContent.trim()),
+  /* the list's controls never move either, because the row they sit on never
+     goes away */
+  onBar: !!document.querySelector('.m-sc__bar .m-daterange, .m-sc__bar button'),
   save: document.querySelector('.m-sc__save')?.textContent?.trim(),
-  /* and Save sits beside Clear rather than up in the page header */
   savedBesideClear: (() => {
     const strip = document.querySelector('.m-sc__strip');
     return !!strip?.querySelector('.m-sc__save') && !!strip?.querySelector('.m-sc__clear');
   })(),
 }));
-check('the bar retires once there is a rule, and both sections carry an Add',
-  retired.bar === 0 && retired.adds === 2 && retired.heads.join('/') === 'Events/Group filters',
-  `${retired.bar} bars, ${retired.adds} adds, ${retired.heads.join('/')}`);
-check('and the list\u2019s own controls come down to the strip rather than going with it',
-  retired.trailing, `trailing on the strip: ${retired.trailing}`);
+check('there is one way in and it is still there once the list has filled',
+  doors.button === 1 && doors.adds === 0,
+  `${doors.button} button, ${doors.adds} section adds`);
+check('and both sections are still named, because the scope has to be readable',
+  doors.heads.join('/') === 'Events/Group filters', doors.heads.join('/'));
+check('the date range stays on the bar rather than moving when the filter fills',
+  doors.onBar);
 check('Save as segment sits beside Clear, where it can only be reached once it is true',
-  retired.savedBesideClear && /Save as segment/.test(retired.save ?? ''), retired.save ?? 'not on the strip');
+  doors.savedBesideClear && /Save as segment/.test(doors.save ?? ''), doors.save ?? 'not on the strip');
 
-/* AND THE SECTION ADD OPENS ITS OWN HALF OF THE CATALOGUE - production's split,
-   with no fork in the way, because the section already said which kind. */
-await p.locator('.m-sc__head', { hasText: 'Group filters' }).locator('.m-sc__add').first().click();
-await p.waitForTimeout(400);
-const fromSection = await p.evaluate(() => {
-  const el = document.querySelector('.m-pick');
-  const cats = [...el.querySelectorAll('.m-pick__cat')].map((e) => e.textContent.trim());
-  return {
-    fork: !!document.querySelector('.m-fork__card'),
-    leaked: ['Autocapture', 'Features', 'Segments'].filter((n) => cats.some((c) => c.includes(n))),
-    has: ['Session', 'Technology', 'Geography'].every((n) => cats.some((c) => c.includes(n))),
-  };
-});
-check('a section\u2019s Add opens that kind only, with no fork in the way',
-  !fromSection.fork && fromSection.has && fromSection.leaked.length === 0,
-  `fork ${fromSection.fork}, leaked ${fromSection.leaked.join(',') || 'none'}`);
-/* ⚠ CLOSE IT FROM INSIDE. This one is an antd Popover rather than the fork, and
-   two obvious ways of dismissing it are both wrong: Escape at the page level
-   never reaches it (it listens on its own input), and a click at an empty
-   coordinate is a click on whatever happens to be there. Focus its field and
-   press Escape, which is what `PickerBody` handles. Left open, the panel covers
-   the strip and the next step waits thirty seconds for a Clear that is in the
-   DOM the whole time - a locator timeout that looks nothing like the cause. */
-await p.locator('.m-pick__search input').focus();
-await p.keyboard.press('Escape');
-await p.waitForTimeout(400);
-
-/* AND CLEARING BRINGS THE BAR BACK, which is the other half of "vanishes and
-   only appears after deleting or clearing". */
-/* Park the pointer somewhere harmless first: the popover has just closed and
-   the strip is still settling under it. */
+/* AND CLEARING LEAVES THE DOOR WHERE IT WAS. */
 await p.mouse.move(200, 300);
 await p.waitForTimeout(400);
 await p.locator('.m-sc__clear').click();
 await p.waitForTimeout(400);
-check('and clearing brings the bar back',
+check('clearing empties the list and leaves the button in the same place',
   (await p.locator('.m-sc__filter').count()) === 1 && (await p.locator('.m-sc__head').count()) === 0);
 
 /* ── 6. the metadata chip writes to the search ─────────────────────────────
