@@ -291,8 +291,14 @@ export function useSessions() {
      true after the first click. */
   const [watchingId, setWatchingId] = useState<string | null>(null);
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set());
+  /* ⚠ NOT `watchingId`. That one clears to null the moment you close the
+     replay, which is right for "is a replay open" and wrong for "which one was
+     it" - the row you just came back from is the one thing worth marking once
+     you are back on the list, so this stays set until the NEXT session opens. */
+  const [lastViewedId, setLastViewedId] = useState<string | null>(null);
   const openSession = useCallback((sessionId: string) => {
     setWatchingId(sessionId);
+    setLastViewedId(sessionId);
     setSeen((v) => (v.has(sessionId) ? v : new Set(v).add(sessionId)));
   }, []);
   const closeSession = useCallback(() => setWatchingId(null), []);
@@ -370,6 +376,7 @@ export function useSessions() {
     newCount: all.filter((s) => !s.viewed).length,
     /* the replay */
     watching: watchingId ? (all.find((s) => s.sessionId === watchingId) ?? null) : null,
+    lastViewedId,
     openSession,
     closeSession,
     moveEvent,

@@ -500,9 +500,24 @@
   color: oklch(var(--m-play-l) var(--m-play-c) var(--m-row-hue));
 }
 
-/* A watched session is not dimmed, only its name gives up its weight. Dimming
-   the whole row makes half the table look disabled; the list is still the
-   list. */
+/* ⚠ REVERSED, SAME DAY (Gabriel, 2026-09-04): a watched session IS dimmed now,
+   on purpose - "everything should be muted, no accent color." An accent wash
+   on the unviewed rows was tried first and taken back out; muting the viewed
+   ones instead reads the same fact from the other direction without spending
+   the app's one accent on it.
+
+   `opacity`, not a chase through every child's own colour token - the row
+   holds a dot, a name, tabular figures, a device glyph and a meta chip, each
+   with its own explicit colour, and fading the row as one object covers all
+   of them (and whatever gets added next) rather than a list that has to be
+   kept in step by hand. It steps back OUT on hover, so the row you are
+   pointing at still reads at full strength - fading the one row a reader is
+   currently on would be the opposite of quieter. */
+.m-ss__row.is-viewed { opacity: 0.7; }
+.m-ss__row.is-viewed:hover { opacity: 1; }
+
+/* The name still gives up its weight too - two small differences read faster
+   together than one bigger one. */
 .m-ss__row.is-viewed .m-ss__name { font-weight: var(--m-weight-regular); }
 
 

@@ -33,6 +33,7 @@ import {
 import type { useSessions } from '../state/useSessions.ts';
 import { hueIndexFor, seedFor } from '@shared/avatar.ts';
 import { displayNameOf } from '@shared/sessions-data.ts';
+import { Chip } from '../components/Chip.tsx';
 import { DateRange } from '../components/DateRange.tsx';
 import { PageCard, PagePanel } from '../components/PageCard.tsx';
 import { DisplayShell, MenuSelect } from '../components/DisplayMenu.tsx';
@@ -229,6 +230,16 @@ export function SessionsPage({ model }: SessionsPageProps) {
             {displayNameOf(s)}
           </button>
           {s.live && <span className="m-ss__live">live</span>}
+          {/* ⚠ THE ONE CHIP IN THE SYSTEM, not a one-off pill (Gabriel,
+              2026-09-04: the first pass at this read as "a metadata pill" and
+              he asked for the same tag treatment Issues gives its tags).
+              `status`, not `tag`: "Last viewed" is a sentence you read, not a
+              label you scan, and `neutral` because muting the rest of the row
+              is the whole point - a coloured chip here would be the one thing
+              spent on a state that is meant to recede. */}
+          {s.sessionId === model.lastViewedId && (
+            <Chip kind="status" tone="neutral">Last viewed</Chip>
+          )}
           {/* ⚠ NO BOOKMARK MARK HERE. It moved to the actions cell on the right
               and became a CONTROL (Mehdi, 2026-09-02). A read-only copy of it
               beside the name would be the same fact drawn twice, and the copy
