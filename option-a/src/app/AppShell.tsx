@@ -11,6 +11,9 @@ import { TestsPage } from '../tests/TestsPage.tsx';
 import { DashboardsPage } from '../product-analytics/DashboardsPage.tsx';
 import { CardsPage } from '../product-analytics/CardsPage.tsx';
 import { AlertsPage } from '../product-analytics/AlertsPage.tsx';
+import { PeoplePage } from '../data-management/PeoplePage.tsx';
+import { EventsPage } from '../data-management/EventsPage.tsx';
+import { PropertiesPage } from '../data-management/PropertiesPage.tsx';
 import { PrototypePanel } from './PrototypePanel.tsx';
 import { Placeholder } from '../components/Placeholder.tsx';
 import { useAudits } from '../state/useAudits.ts';
@@ -21,6 +24,9 @@ import { useTests } from '../state/useTests.ts';
 import { useDashboards } from '../state/useDashboards.ts';
 import { useCards } from '../state/useCards.ts';
 import { useAlerts } from '../state/useAlerts.ts';
+import { usePeople } from '../state/usePeople.ts';
+import { useEvents } from '../state/useEvents.ts';
+import { useProperties } from '../state/useProperties.ts';
 import './app-shell.css';
 
 /* One ground, one plane: the window is painted in the menu's colour, the menu
@@ -58,6 +64,9 @@ export function AppShell() {
   const dashboards = useDashboards();
   const cards = useCards();
   const alerts = useAlerts();
+  const people = usePeople();
+  const events = useEvents();
+  const properties = useProperties();
   /* One string, and a section is `agent/section`. Both the menu's nested rows
      and a page's own tab strip write to THIS - a page never keeps a second copy
      of where it is, which is the only reason two controls can show the same
@@ -137,6 +146,12 @@ export function AppShell() {
           <CardsPage model={cards} dataState={model.dataState} />
         ) : active === 'analytics/alerts' ? (
           <AlertsPage model={alerts} dataState={model.dataState} />
+        ) : active === 'data/people' ? (
+          <PeoplePage model={people} dataState={model.dataState} />
+        ) : active === 'data/events' ? (
+          <EventsPage model={events} dataState={model.dataState} />
+        ) : active === 'data/properties' ? (
+          <PropertiesPage model={properties} dataState={model.dataState} />
         ) : (
           <Placeholder page={active} />
         )}
