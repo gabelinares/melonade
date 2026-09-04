@@ -16,9 +16,16 @@
   inset-block-start: 0;
   inset-inline-start: 0;
   z-index: 20;
+  display: flex;
   width: var(--m-fpanel-w0, 100%);
   height: var(--m-fpanel-h0, 40px);
   overflow: hidden;
+  /* ⚠ THE INSET THE POPOVER USED TO SUPPLY. `.m-pick-root .ant-popover-container`
+     carries `padding: var(--m-space-2)`, and that rule is what kept the search
+     row's focus ring off the card's own border. The panel is not a popover, so
+     it inherited none of it and the ring sat flush against the edge - four
+     pixels of nothing, in one place, and the whole panel read as unpadded. */
+  padding: var(--m-space-2);
   background: var(--m-surface-default);
   border: var(--m-border-width) solid var(--m-border-default);
   border-radius: var(--m-radius-surface);
@@ -35,11 +42,20 @@
    becoming a 528px panel, rather than a bar widening slightly. */
 .m-fpanel.is-grown { width: 33rem; height: 23.75rem; }
 
-/* The body is absolutely positioned so the growing box does not re-lay-out its
-   contents sixty times a second. */
+/* ⚠ AN ORDINARY FLEX CHILD, not an absolutely positioned one - and the reason
+   is the padding. `inset: 0` on an absolute child put it at the panel's BORDER
+   edge rather than its padding edge, so the four pixels this box was given had
+   no effect at all: the search row's focus ring sat flush against the card and
+   the panel read as unpadded.
+
+   The absolute version existed so a growing box would not re-lay-out its
+   contents per frame, which mattered while there were two stages cross-fading
+   in the same space. There is one stage now, its internals are a fixed-width
+   rail beside a scrolling list, and the whole thing is invisible for the first
+   third of the transition anyway. Cheap enough, and correct. */
 .m-fpanel > .m-pick {
-  position: absolute;
-  inset: 0;
+  flex: 1;
+  min-width: 0;
   animation: m-fpanel-in var(--m-duration-slow) var(--m-ease-out) both;
 }
 

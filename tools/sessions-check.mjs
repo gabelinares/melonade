@@ -313,6 +313,39 @@ const kinds = await p.evaluate(() =>
 check('the merged list still names its two kinds, in the words the sections use',
   kinds.join(' / ') === 'Events / Group filters', kinds.join(' / ') || 'no headings');
 
+/* ⚠ AND THE PANEL FITS WHAT IS IN IT. Three separate ways it did not, all from
+   the picker still carrying geometry it had while a Popover was its only host:
+
+     the WIDTH was 27rem on the body, so a 528px panel held 432px of picker and
+       the category chips stopped 96px short of the edge - which looked like a
+       chip-alignment bug and was a sizing one
+     the PADDING came from `.ant-popover-container`, which a panel is not, so
+       the search row's ring sat flush on the card's own border
+     the two SCROLLERS were capped at 21rem, a second and smaller ceiling
+       inside a fixed panel, so the last row was clipped by `overflow: hidden`
+       with no scrollbar to reach it
+
+   Measured rather than looked at, because each one reads as a different bug
+   than it is. */
+const fit = await p.evaluate(() => {
+  const panel = document.querySelector('.m-fpanel').getBoundingClientRect();
+  const pick = document.querySelector('.m-pick').getBoundingClientRect();
+  const list = document.querySelector('.m-pick__list');
+  const tag = document.querySelector('.m-pick__cat-tag')?.getBoundingClientRect();
+  return {
+    inset: Math.round(pick.left - panel.left),
+    slack: Math.round(panel.width - pick.width),
+    tagGap: tag ? Math.round(panel.right - tag.right) : 999,
+    scrolls: list.scrollHeight > list.clientHeight,
+    over: Math.round(list.getBoundingClientRect().bottom - panel.bottom),
+  };
+});
+check('the picker fills the panel, inset by the same hair every popover uses',
+  fit.inset >= 4 && fit.slack <= 12 && fit.tagGap < 24,
+  `inset ${fit.inset}px, ${fit.slack}px slack, chip ${fit.tagGap}px from the edge`);
+check('and the list scrolls inside it rather than being clipped by it',
+  fit.scrolls && fit.over <= 0, `scrolls ${fit.scrolls}, overhangs by ${fit.over}px`);
+
 /* SEARCH SPANS EVERY CATEGORY, which is what two scoped pickers cannot do and
    the single biggest thing the merge buys: you never have to know whether the
    thing you want is an event before you can look for it. */
@@ -492,9 +525,10 @@ for (const n of ['Click', 'checkout_start', 'Country']) await addEntry(n);
 const scopes = await p.evaluate(() => ({
   names: [...document.querySelectorAll('.m-sc__head-name')].map((e) => e.textContent.trim()),
   hint: document.querySelector('.m-sc__head-hint')?.textContent?.trim(),
-  /* production keeps the order control in the Events heading, right-aligned
-     (`FilterListHeader`); it used to ride the summary strip, which also speaks
-     for the group filters below */
+  /* ⚠ BACK ON THE STRIP (Gabriel, 09-04: "you also have removed the events
+     order - go back to what it was"). It spent one morning in the Events
+     heading, where production keeps it, and could not be found there: a
+     control at the end of a heading reads as part of the label. */
   orderInHead: !!document.querySelector('.m-sc__head .m-sc__order'),
   orderInStrip: !!document.querySelector('.m-sc__strip .m-sc__order'),
   /* and the heading sits above its own rows rather than floating */
@@ -506,9 +540,9 @@ check('the card names its two kinds, and the block kind is the word Mehdi asked 
   scopes.names.join(' / ') === 'Events / Group filters', scopes.names.join(' / '));
 check('and prints the scope under the name it belongs to',
   scopes.hint === 'Applied to every event above', scopes.hint);
-check('the order control rides the Events heading, as it does in production',
-  scopes.orderInHead && !scopes.orderInStrip && scopes.headBeforeRows,
-  `head ${scopes.orderInHead}, strip ${scopes.orderInStrip}`);
+check('the order control is on the strip, beside the count it changes',
+  scopes.orderInStrip && !scopes.orderInHead && scopes.headBeforeRows,
+  `strip ${scopes.orderInStrip}, head ${scopes.orderInHead}`);
 
 /* ⚠ AND THE FUNNEL SAYS THE OPPOSITE SENTENCE. Every entry in that picker is
    one kind, so no kind heading is drawn - which leaves the control looking

@@ -8,11 +8,34 @@
    against the v5 name matches nothing and fails silently. */
 .m-pick-root .ant-popover-container { padding: var(--m-space-2); }
 
-/* 27rem: wide enough that a URL-shaped event name and its category fit on one
-   line, narrow enough to sit under the button rather than over the table.
-   Production's is 490px with a 144px rail; this is 432 with a 118 rail, because
-   Graphite's type is a size smaller and the rail holds one word. */
-.m-pick { display: flex; flex-direction: column; width: 27rem; max-width: 88vw; }
+/* ── ⚠ THE BODY NO LONGER KNOWS HOW BIG IT IS ────────────────────────────────
+   It used to: `width: 27rem` lived here, which was right while a Popover was
+   the only host - a popover sizes itself to its content. `FilterPanel` is the
+   opposite kind of host: a fixed box that ANIMATES to its size, so the content
+   has to fill whatever it is given.
+
+   With the width still on the body the panel was 528px holding 432px of
+   picker, and the 96px difference showed up exactly where you would expect and
+   nowhere you would look for the cause: the category chips, which are pushed
+   right by `flex: none` after a `flex: 1` name, stopped 96px short of the
+   panel's edge. The rows looked correctly laid out and the panel looked
+   padded on one side.
+
+   So geometry belongs to the HOST now, and there are two of them. */
+.m-pick { display: flex; flex-direction: column; min-height: 0; }
+
+/* THE POPOVER HOST — the event row's funnel and its subject. 27rem is wide
+   enough that a URL-shaped event name and its category fit on one line, narrow
+   enough to sit under a row rather than over the table. Production's is 490px
+   with a 144px rail; this is 432 with a 118 rail, because Graphite's type is a
+   size smaller and the rail holds one word. */
+.m-pick-root .m-pick { width: 27rem; max-width: 88vw; }
+
+/* THE PANEL HOST — the filter button. It fills whatever the panel is, because
+   the panel's size is animated and the content cannot have an opinion about it
+   mid-transition. `width: auto` rather than 100%: it is a flex child now, so
+   the flex line sizes it and a percentage would fight the panel's padding. */
+.m-fpanel .m-pick { min-width: 0; }
 
 /* The field, and the whole reason the two buttons became one. Its ring belongs
    to the ROW rather than the input: the input is borderless and autofocuses, so
@@ -34,6 +57,7 @@
 }
 
 .m-pick__body { display: flex; min-height: 0; }
+.m-pick__search { flex: none; }
 
 /* ── the rail ──
    A hairline between the two panes and not a gap: they are two columns of one
@@ -45,7 +69,13 @@
   gap: 1px;
   flex: none;
   width: 7.375rem; /* 118 */
+  /* ⚠ A CAP IN THE POPOVER, THE FULL HEIGHT IN THE PANEL. `max-height` is what
+     stops a popover growing past the viewport; inside a fixed panel it is a
+     second, smaller ceiling that leaves the last row clipped by the panel's own
+     `overflow: hidden` with no scrollbar to reach it. `min-height: 0` is what
+     lets a flex child actually scroll rather than stretching its parent. */
   max-height: 21rem;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--m-space-2) var(--m-space-2) var(--m-space-2) 0;
   border-right: var(--m-border-width) solid var(--m-border-subtle);
@@ -94,9 +124,15 @@
   flex: 1;
   min-width: 0;
   max-height: 21rem;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--m-space-2);
 }
+
+/* In the panel the two panes are as tall as the panel, not 21rem. */
+.m-fpanel .m-pick__body { flex: 1; min-height: 0; }
+.m-fpanel .m-pick__rail,
+.m-fpanel .m-pick__list { max-height: none; }
 
 .m-pick__row {
   display: flex;

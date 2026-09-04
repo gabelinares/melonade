@@ -354,12 +354,60 @@ export function SearchCard({
           <span className="m-sc__count">
             {resultCount ?? rows.length} {(resultCount ?? rows.length) === 1 ? 'session' : 'sessions'}
           </span>
-          {/* ⚠ THE ORDER CONTROL LEFT THIS ROW on 2026-09-04 and went to the
-              Events heading, which is where production keeps it
-              (`FilterListHeader`, right-aligned above the event rows). It edits
-              a relationship BETWEEN THE EVENT ROWS, so it belongs over them
-              rather than in a summary bar that also speaks for the group
-              filters below. See `m-sc__head` in the list. */}
+          {/* ⚠ AND IT CAME BACK HERE, the same day (Gabriel, 2026-09-04: "you
+              also have removed the events order, then and and or - go back to
+              what it was").
+
+              It had moved to the Events heading on the argument that production
+              keeps it there (`FilterListHeader`, right-aligned above the event
+              rows) and that it edits a relationship between the EVENT rows, so
+              it belongs over them. Both true, and both beaten by what actually
+              happened: it could not be found. A heading is a label, and a
+              control parked at the end of one reads as part of the label -
+              two quiet words and a dropdown, beside a quiet Add.
+
+              On the strip it is on the row that speaks for the whole filter,
+              next to the count it changes. That row is where you look to find
+              out what the filter is doing, which is exactly when the
+              conjunction matters.
+
+              TWO events, not one: with a single event there is no gap for an
+              operator to sit in, and a control that cannot change the result
+              teaches you to ignore controls. Hidden while collapsed, because it
+              edits a relationship between rows you cannot see and the summary
+              already prints the word. */}
+          {events.length > 1 && !collapsed && (
+            <span className="m-sc__order">
+              <Tooltip title="How the events relate to each other, across the whole search.">
+                <span className="m-sc__order-label">matching</span>
+              </Tooltip>
+              <Select
+                className="m-sc__order-select"
+                size="small"
+                variant="borderless"
+                popupMatchSelectWidth={false}
+                value={eventsOrder}
+                onChange={onEventsOrder}
+                options={noNativeTooltip(
+                  ORDER_OPTIONS.map((o) => ({
+                    value: o.value,
+                    label: (
+                      <span className="m-sc__order-option">
+                        <span>{o.label}</span>
+                        <span className="m-sc__order-hint">{o.hint}</span>
+                      </span>
+                    ),
+                  })),
+                )}
+                /* The closed control shows the word alone; the open list shows
+                   the word and what it means. A dropdown whose closed state
+                   repeats its own explanation is twice as wide as it needs. */
+                labelRender={({ value }) => <span>{String(value)}</span>}
+                aria-label="How the events relate"
+              />
+            </span>
+          )}
+
           {/* The list's controls, on whichever row is the top one. See the
               note above the bar. */}
           <span className="m-sc__strip-trailing">{trailing}</span>
@@ -415,41 +463,6 @@ export function SearchCard({
           <div className="m-sc__head">
             <span className="m-sc__head-name">{EVENTS_HEAD}</span>
             <AddTo kind="events" taken={takenProperties} onPick={onAdd} />
-            {/* TWO events, not one: with a single event there is no gap for an
-                operator to sit in, and a control that cannot change the result
-                is a control that teaches you to ignore controls. */}
-            {events.length > 1 && (
-              <span className="m-sc__order">
-                <Tooltip title="How the events relate to each other, across the whole search.">
-                  <span className="m-sc__order-label">matching</span>
-                </Tooltip>
-                <Select
-                  className="m-sc__order-select"
-                  size="small"
-                  variant="borderless"
-                  popupMatchSelectWidth={false}
-                  value={eventsOrder}
-                  onChange={onEventsOrder}
-                  options={noNativeTooltip(
-                    ORDER_OPTIONS.map((o) => ({
-                      value: o.value,
-                      label: (
-                        <span className="m-sc__order-option">
-                          <span>{o.label}</span>
-                          <span className="m-sc__order-hint">{o.hint}</span>
-                        </span>
-                      ),
-                    })),
-                  )}
-                  /* The closed control shows the word alone; the open list
-                     shows the word and what it means. A dropdown whose closed
-                     state repeats its own explanation is a dropdown twice as
-                     wide as it needs to be. */
-                  labelRender={({ value }) => <span>{String(value)}</span>}
-                  aria-label="How the events relate"
-                />
-              </span>
-            )}
           </div>
           {events.map((f, i) => (
             <SearchRow

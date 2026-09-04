@@ -511,11 +511,10 @@
   color: var(--m-content-muted);
 }
 
-/* THE ORDER CONTROL RIDES THE EVENTS HEADING, right-aligned, which is where
-   production keeps it (`FilterListHeader`). It moved off the summary strip on
-   2026-09-04: it edits a relationship between the EVENT rows, and a strip that
-   also speaks for the group filters below is the wrong place to say so. */
-.m-sc__head .m-sc__order { margin-inline-start: auto; }
+/* ⚠ THE ORDER CONTROL WENT BACK TO THE STRIP the same day it moved here - it
+   could not be found at the end of a heading. See the note beside it in
+   SearchCard. The heading's right-hand slot is the group scope's now, and on
+   the Events heading it is empty, which is correct: the heading is a label. */
 
 /* THE ONE RULE, and only with something on both sides of it: it separates the
    sequence from the constraints. Full-bleed to the well's edges rather than
