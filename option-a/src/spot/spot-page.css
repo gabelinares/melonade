@@ -1,0 +1,109 @@
+.m-spot-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--m-radius-surface);
+  overflow: clip;
+  background: var(--m-surface-raised);
+  border: 1px solid var(--m-border-subtle);
+}
+
+.m-spot-card.is-selected { border-color: var(--m-border-accent); }
+
+.m-spot-card__thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 10;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  /* A seeded tint, same idiom as the session avatar's twelve hues, tuned for
+     a full-size surface rather than a 24px chip - see hueIndexFor. Light by
+     default, same order every token here uses. */
+  background: oklch(0.88 0.05 calc(var(--m-avatar-i, 0) * 30deg));
+}
+
+:root[data-theme='dark'] .m-spot-card__thumb {
+  background: oklch(0.32 0.07 calc(var(--m-avatar-i, 0) * 30deg));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .m-spot-card__thumb {
+    background: oklch(0.32 0.07 calc(var(--m-avatar-i, 0) * 30deg));
+  }
+}
+
+/* Light chip, dark ink; dark chip, light ink - the app's own convention (see
+   session-avatar.css). A fixed near-white glyph reads fine on the dark thumb
+   and disappears on the light pastel one, so the colour flips with the
+   thumb rather than staying constant. */
+.m-spot-card__play {
+  color: color-mix(in oklch, var(--m-content-primary) 70%, transparent);
+}
+
+:root[data-theme='dark'] .m-spot-card__play {
+  color: color-mix(in oklch, white 88%, transparent);
+  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.35));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .m-spot-card__play {
+    color: color-mix(in oklch, white 88%, transparent);
+    filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.35));
+  }
+}
+
+.m-spot-card__duration {
+  position: absolute;
+  right: var(--m-space-2);
+  bottom: var(--m-space-2);
+  padding: 1px var(--m-space-2);
+  border-radius: var(--m-radius-chip);
+  background: rgb(0 0 0 / 0.55);
+  color: white;
+  font-size: var(--m-text-2xs);
+  font-family: var(--m-font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.m-spot-card__foot {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--m-space-2);
+  padding: var(--m-space-3);
+}
+
+.m-spot-card__check { margin-top: 2px; }
+
+.m-spot-card__meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.m-spot-card__title {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: var(--m-text-sm);
+  font-weight: var(--m-weight-medium);
+  color: var(--m-content-primary);
+}
+
+.m-spot-card__title:hover { text-decoration: underline; }
+
+.m-spot-card__by {
+  font-size: var(--m-text-xs);
+  color: var(--m-content-muted);
+}
+
+.m-spot-card--skeleton {
+  aspect-ratio: unset;
+  height: 220px;
+  background: var(--m-surface-sunken);
+  border: 1px solid var(--m-border-subtle);
+}
