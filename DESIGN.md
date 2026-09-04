@@ -5738,3 +5738,109 @@ cuts its own overflow and cannot scroll it. On a 560px window the pagination was
 inside the card, below its bottom edge, and unreachable by any means. **A card
 ends where its content ends;** ground under a short list is what a card layout
 looks like, and the page body is the thing that scrolls.
+
+## §40 — Ten Placeholders, and what production actually has (2026-09-04)
+
+Mehdi's 09-03 review, the instruction that outlived the layout work it came
+attached to: *"bring in as many other pages as possible; Product Analytics and
+Data Management are tables and stuff."* The 09-04 menu already gave CoBrowse,
+Spot, Product Analytics (Dashboards / Cards / Alerts) and Data Management
+(Activity / People / Events / Properties / Features) their rows — every one of
+them rendered `<Placeholder>`. This round replaces all ten with the real page,
+built the way Tests and Audits were in §12: read what production has, adapt it
+into this library, subtract what a fixture-backed prototype does not need.
+
+| Destination | Production source | Shape |
+|---|---|---|
+| CoBrowse | `Assist/AssistView` + `shared/LiveSessionList` + `Assist/RecordingsList` | one page, two in-page tabs |
+| Spot | `Spots/SpotsList` | a card grid, not a table |
+| Dashboards | `Dashboard/components/DashboardList` | `Table`: Title, Owner, Last Modified, Visibility |
+| Cards | `Dashboard/components/MetricsList/ListView` | `Table`: Title + type icon, Owner, Last Modified |
+| Alerts | `Dashboard/components/Alerts/AlertsList` | a hand-rolled grid in production, ported as a `Table` |
+| Activity | `DataManagement/Activity/ActivityPage` | the heaviest page: two filter dimensions, a date window |
+| People | `DataManagement/UsersEvents/UsersList` | `Table`: Name, User ID, Location, Last Seen, Created |
+| Events | `DataManagement/Events/EventsList` | `Table`: Event Name, Display Name, Description, volume |
+| Properties | `DataManagement/Properties/ListPage` | two in-page tabs: User / Event |
+| Features | `DataManagement/Tags` | `Table`: Name, Location, Selector, Users, Interactions |
+
+### Two judgment calls, made once and not re-argued
+
+**Spot stays a card grid.** Every other page here is a `Table` because Mehdi's
+own words were "tables and stuff" — but a Spot's thumbnail *is* the scannable
+fact, the way a session's journey strip would be if the payload carried one.
+Forcing it into a text row would answer "what is this clip called" and lose
+"is this the one I am looking for," which is the only question a library of
+clips actually gets asked. The card's seeded tint reuses `hueIndexFor` from
+`shared/avatar.ts` — the session avatar's own twelve-hues idiom — rather than
+inventing a second colour system, tuned with its own light/dark pair for a
+full-size surface instead of a 24px chip's near-invisible wash.
+
+**Alerts becomes a real `Table`.** Production draws it as a hand-rolled
+`grid-cols-12` row; ported here as a `Table` to match its two Product
+Analytics siblings, on the same reasoning the 09-02 Audits reversal used —
+consistency is not a reason on its own, but Title, Type and Modified already
+map onto columns cleanly, and nothing was invented to force it. The rule
+itself — *"when the error rate is above 5% over the past hour, notify via
+Slack"* — survives as a second line under the name, the same way an audit's
+scope line is what its name means.
+
+### A label that means something else in production
+
+⚠ **"Features" is not a feature-flag catalogue.** Grepped `routes`/`layout`
+for one and found none — production's own sidebar item labelled "Features"
+points at `DataManagement/Tags`, which watches one DOM element, tagged from a
+session recording, for adoption: does anyone use this button. Gabriel's
+`tree.ts` already committed to the label "Features" on 09-04, so this page
+ports Tags under that name rather than renaming the nav or inventing a flag
+list that does not exist upstream. Written down once, at the top of
+`shared/features-data.ts`, so the mismatch is not re-derived as confusion the
+next time someone opens that file expecting LaunchDarkly.
+
+### What every page kept from the Tests/Audits port, and what changed
+
+**Kept:** the three-file shape (`shared/<x>-data.ts` for fixtures and pure
+helpers, `state/use<X>.ts` for the controller, `<x>/<X>Page.tsx` for the
+composition), `PageCard` + `FilterStrip`/`SearchField`/`ListFooter`, a
+`StubDrawer` on every row rather than a click that does nothing, and reusing
+`DataState`/`FilterDimension`/`ActiveFilterChip` from `shared/issues-logic.ts`
+instead of re-deriving them per page.
+
+**Changed:** most of these ten pages have exactly ONE real filterable
+dimension (Dashboards' owner, Cards' type, Events' autocaptured/custom), so
+they get a `FilterStrip` and nothing else — no `DateRange`, no `FilterMenu`,
+no `DisplayShell` invented to look consistent with pages that have five real
+dimensions. Only Activity earns the full cluster, because it is the one page
+whose fixture genuinely has an event name, an environment and a date to ask
+about. The §22 lesson holds: *consistency is not a reason on its own.*
+
+**The Subitem rule stays intact (§30).** Dashboards/Cards/Alerts and
+Activity/People/Events/Properties/Features are menu Subitems, so none of them
+draw an in-page tab strip — each is its own page. The one place an in-page
+`Tabs` legitimately appears is **one level below** a Subitem or a single-row
+destination: Properties' User/Event split, and CoBrowse's Live/Recordings
+split (CoBrowse has no Subitems at all — it is one row). Same shape
+`TestsPage`'s own section tabs already use.
+
+### Deliberately not built, same tier as the Tests/Audits detail panels
+
+`AssistStats` (the enterprise "Co-Browsing Reports" drawer nested inside
+CoBrowse), every creation flow (a dashboard canvas, a card builder, an alert
+builder, Spot's recorder), Activity's draggable/hideable columns and its live
+new-events poll, and `DataManagement/Segments` (not one of Gabriel's five).
+A stub column picker over five fixed columns is a control that changes
+nothing anyone would notice, which is the same reasoning that kept it out of
+Tests and Audits.
+
+### One class-prefix collision, caught before it shipped
+
+`.m-dm__*` already belongs to `DisplayMenu` (`.m-dm__row`, among others) —
+the exact shape of bug §12 shipped once with `.m-strip`/`.m-seg`. Grepped
+before naming the Data Management pages' shared stylesheet and renamed to
+`m-dmg__`. **Grep the prefix before naming one** stays the habit.
+
+Verification: `tools/other-pages-check.mjs`, modeled on `agents-check.mjs` —
+navigates to all ten destinations by clicking (never `goto`, since state is
+in-memory), asserts each table or grid renders its fixture rows, that
+search/filter/sort narrow the visible set, that a `StubDrawer` opens and
+closes on a row, and reads computed dark-mode styles rather than trusting
+class presence.

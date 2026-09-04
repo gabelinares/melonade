@@ -1,0 +1,30 @@
+/* Shared across People, Events and Properties: one row rhythm and one set of
+   cell shapes, the way Dashboards/Cards/Alerts share theirs. Prefixed `dmg`
+   rather than `dm` - `.m-dm__*` already belongs to DisplayMenu. */
+
+.m-dmg__row { cursor: pointer; }
+
+.m-dmg__identity-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  min-width: 0;
+}
+
+.m-dmg__location-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-2);
+  min-width: 0;
+  color: var(--m-content-secondary);
+}
+
+.m-dmg__mono {
+  font-family: var(--m-font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.m-dmg__hidden-icon {
+  flex: none;
+  color: var(--m-content-disabled);
+}
