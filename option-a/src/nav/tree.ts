@@ -20,6 +20,13 @@
    and it is a PAGE now, with Issues, Synthetics and Audits inside it. The
    heading that could not decide what it was turned out to be a destination.
 
+   ⚠ AND THE DESTINATION IS CALLED ARMADA (Mehdi, 2026-09-04: *"instead of
+   agents, I would call it Armada... OpenReplay Armada, a fleet of agents that
+   are going to do stuff"*). The KEY stays `agents` - it is a route and a
+   lookup, and renaming a route to change a word nobody reads is churn - and
+   the things inside it are still agents, so the count's noun still says so.
+   The robot glyph stays too: "makes a ton of sense".
+
    ── ONE RULE STILL DECIDES WHAT IS IN HERE ────────────────────────────────
    ⚠ **TABS DO NOT APPEAR IN THE MENU. ONLY SUBITEMS DO.** A tab belongs to the
    page it is on, and the page already draws it. Gabriel's spec marks each row
@@ -156,7 +163,7 @@ export function navTree(agentCount: number, newSessions = 0): readonly NavGroup[
         },
         {
           key: 'agents',
-          label: 'Agents',
+          label: 'Armada',
           icon: 'agents',
           /* ⚠ A PARENT'S COUNT IS THE SUM OF WHAT IS INSIDE IT. Every counted
              row in the product is a subitem now, so without this the count
