@@ -132,12 +132,19 @@ export interface SessionsPageProps {
  * payload carries neither. Both were considered and both would need a new
  * endpoint, which is the one thing this exercise is not allowed to ask for.
  *
- * ── THE DOT IS THE UNVIEWED MARK ───────────────────────────────────────────
- * Same 5px accent the menu wears one level up and the issue list wears at the
- * same altitude: there it says an agent found something, here it says nobody
- * has watched this yet. THE SLOT IS ON EVERY ROW - rendered only where it
- * applies it would push the identified names five pixels right of the
- * anonymous ones.
+ * ── NO DOT ON A SESSION ROW (Mehdi, 2026-09-04) ────────────────────────────
+ * ⚠ THE ONE EXCEPTION to the app's dot-means-new convention, and it is an
+ * exception of scale rather than of taste. Issues and Synthetics carry the 5px
+ * mark because a new row there is an event - dozens of rows, and the ones you
+ * have not seen are the ones to look at. A sessions list at production volume
+ * is hundreds of thousands of rows an hour, and every one of them is new when
+ * you open the page: "it's all going to look like this all the time, so that
+ * dot doesn't bring anything." A mark that is on every row marks nothing.
+ *
+ * What says "viewed" instead is the row itself: an unviewed row is drawn at
+ * full strength, a viewed one at 70% (`.m-ss__row.is-viewed`), and the one you
+ * came back from wears the "Last viewed" chip. The slot the dot occupied went
+ * with it, so the avatar is the row's first thing.
  *
  * ── BOOKMARKS IS A TAB, NOT A FILTER ───────────────────────────────────────
  * It is a different list of the same thing, reached by its own route in
@@ -200,8 +207,7 @@ export function SessionsPage({ model }: SessionsPageProps) {
       key: 'user',
       render: (_: unknown, s: SessionRow) => (
         <div className="m-ss__who">
-          {/* THE SLOT IS ON EVERY ROW. See the note above. */}
-          <span className={`m-dot is-slot${s.viewed ? ' is-off' : ''}`} aria-hidden={s.viewed} />
+          {/* ⚠ NO DOT SLOT HERE. See "NO DOT ON A SESSION ROW" above. */}
           {/* ⚠ KEYED ON THE SEED. The avatar holds a failed-request flag, and
               antd reuses a row's React node across pages - so without the key
               a robot that failed to load on page one would leave whoever lands
