@@ -1,5 +1,6 @@
 import { Button, Switch, Table, Tabs, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
+import type { SortOrder } from 'antd/es/table/interface';
 import { EyeOff } from 'lucide-react';
 import { type Property, type PropertyScope } from '@shared/properties-data.ts';
 import type { DataState } from '@shared/issues-logic.ts';
@@ -9,6 +10,7 @@ import { ListFooter } from '../components/ListFooter.tsx';
 import { PageCard } from '../components/PageCard.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { SortIcon } from '../components/SortIcon.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import './data-management.css';
 
@@ -41,6 +43,7 @@ export function PropertiesPage({ model, dataState }: PropertiesPageProps) {
       key: 'name',
       width: '24%',
       sorter: (a, b) => a.name.localeCompare(b.name),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, p) => (
         <span className="m-dmg__identity-cell">
           <span className="m-truncate m-dmg__mono">{p.name}</span>
@@ -57,6 +60,7 @@ export function PropertiesPage({ model, dataState }: PropertiesPageProps) {
       key: 'displayName',
       width: '20%',
       sorter: (a, b) => a.displayName.localeCompare(b.displayName),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, p) => <span className="m-truncate">{p.displayName}</span>,
     },
     {
@@ -75,6 +79,7 @@ export function PropertiesPage({ model, dataState }: PropertiesPageProps) {
       width: '16%',
       align: 'right',
       sorter: (a, b) => b.count - a.count,
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       defaultSortOrder: 'ascend',
       render: (_: unknown, p) => <span className="m-dmg__mono">{p.count.toLocaleString()}</span>,
     },

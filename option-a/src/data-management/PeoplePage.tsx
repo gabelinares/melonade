@@ -1,5 +1,6 @@
 import { Button, Table } from 'antd';
 import type { TableColumnsType } from 'antd';
+import type { SortOrder } from 'antd/es/table/interface';
 import { MapPin } from 'lucide-react';
 import { personLabel, type Person } from '@shared/people-data.ts';
 import { minutesSince } from '@shared/tests-data.ts';
@@ -12,6 +13,7 @@ import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SessionAvatar } from '../components/SessionAvatar.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { SortIcon } from '../components/SortIcon.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import './data-management.css';
 
@@ -37,6 +39,7 @@ export function PeoplePage({ model, dataState }: PeoplePageProps) {
       key: 'name',
       width: '28%',
       sorter: (a, b) => personLabel(a).localeCompare(personLabel(b)),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, p) => (
         <div className="m-dmg__identity-cell">
           <SessionAvatar seed={p.userId} size={24} />
@@ -66,6 +69,7 @@ export function PeoplePage({ model, dataState }: PeoplePageProps) {
       key: 'lastSeenAt',
       width: '13%',
       sorter: (a, b) => b.lastSeenAt - a.lastSeenAt,
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       defaultSortOrder: 'ascend',
       render: (_: unknown, p) => <RelativeTime minutesAgo={minutesSince(p.lastSeenAt)} />,
     },
@@ -74,6 +78,7 @@ export function PeoplePage({ model, dataState }: PeoplePageProps) {
       key: 'createdAt',
       width: '13%',
       sorter: (a, b) => b.createdAt - a.createdAt,
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, p) => <RelativeTime minutesAgo={minutesSince(p.createdAt)} />,
     },
   ];

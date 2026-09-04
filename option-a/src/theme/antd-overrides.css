@@ -191,6 +191,19 @@
   flex: 0 0 auto;
 }
 
+/* ⚠ NO COLUMN GETS A TINT FOR BEING THE STANDARD SORT (2026-09-04). Several
+   list pages set `defaultSortOrder` so newest-first is the order you land on
+   without a click - a fact about the DATA, not a choice the reader made. antd
+   reads that the same as a click and paints the whole column, header and
+   every cell under it, in `bodySortBg`/`headerSortActiveBg` - which is the
+   "selected" look this app spends on an actual selection (a checked row, an
+   applied filter), spent here on a column nobody chose. Selection is a state
+   only a click can put a column into; the order it started in is not one. */
+.ant-table-thead th.ant-table-column-sort,
+.ant-table-tbody td.ant-table-column-sort {
+  background: transparent;
+}
+
 /* The disclosure caret is the primary gesture on a row, so it must not be
    fainter than the sort arrows, which are secondary. */
 

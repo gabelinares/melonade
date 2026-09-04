@@ -1,5 +1,6 @@
 import { App, Button, Dropdown, Table } from 'antd';
 import type { TableColumnsType } from 'antd';
+import type { SortOrder } from 'antd/es/table/interface';
 import { Bell, BookOpen, MoreHorizontal, Pencil, Plus, Settings2, Trash2 } from 'lucide-react';
 import { ruleSentence, type Alert } from '@shared/alerts-data.ts';
 import { minutesSince } from '@shared/tests-data.ts';
@@ -13,6 +14,7 @@ import { PageCard } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { SortIcon } from '../components/SortIcon.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import './product-analytics.css';
 
@@ -44,6 +46,7 @@ export function AlertsPage({ model, dataState }: AlertsPageProps) {
       key: 'name',
       width: '52%',
       sorter: (a, b) => a.name.localeCompare(b.name),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, a) => (
         <div className="m-pa__name-cell">
           <span className="m-truncate">{a.name}</span>
@@ -66,6 +69,7 @@ export function AlertsPage({ model, dataState }: AlertsPageProps) {
       key: 'updatedAt',
       width: '20%',
       sorter: (a, b) => b.updatedAt - a.updatedAt,
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       defaultSortOrder: 'ascend',
       render: (_: unknown, a) => <RelativeTime minutesAgo={minutesSince(a.updatedAt)} />,
     },

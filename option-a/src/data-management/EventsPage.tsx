@@ -1,5 +1,6 @@
 import { Button, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
+import type { SortOrder } from 'antd/es/table/interface';
 import { formatVolume, type DistinctEvent, type EventFilter } from '@shared/events-data.ts';
 import type { DataState } from '@shared/issues-logic.ts';
 import type { EventsController } from '../state/useEvents.ts';
@@ -9,6 +10,7 @@ import { ListFooter } from '../components/ListFooter.tsx';
 import { PageCard } from '../components/PageCard.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { SortIcon } from '../components/SortIcon.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import './data-management.css';
 
@@ -34,6 +36,7 @@ export function EventsPage({ model, dataState }: EventsPageProps) {
       key: 'name',
       width: '22%',
       sorter: (a, b) => a.name.localeCompare(b.name),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, e) => <span className="m-truncate m-dmg__mono">{e.name}</span>,
     },
     {
@@ -41,6 +44,7 @@ export function EventsPage({ model, dataState }: EventsPageProps) {
       key: 'displayName',
       width: '20%',
       sorter: (a, b) => a.displayName.localeCompare(b.displayName),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, e) => <span className="m-truncate">{e.displayName}</span>,
     },
     {
@@ -59,6 +63,7 @@ export function EventsPage({ model, dataState }: EventsPageProps) {
       width: '18%',
       align: 'right',
       sorter: (a, b) => b.volume30d - a.volume30d,
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       defaultSortOrder: 'ascend',
       render: (_: unknown, e) => <span className="m-dmg__mono">{formatVolume(e.volume30d)}</span>,
     },

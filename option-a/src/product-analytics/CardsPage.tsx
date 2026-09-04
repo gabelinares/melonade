@@ -1,5 +1,6 @@
 import { App, Avatar, Button, Dropdown, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
+import type { SortOrder } from 'antd/es/table/interface';
 import {
   Activity,
   BookOpen,
@@ -25,6 +26,7 @@ import { PageCard } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { SortIcon } from '../components/SortIcon.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import './product-analytics.css';
 
@@ -63,6 +65,7 @@ export function CardsPage({ model, dataState }: CardsPageProps) {
       key: 'name',
       width: '36%',
       sorter: (a, b) => a.name.localeCompare(b.name),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, c) => {
         const Icon = TYPE_ICONS[c.type];
         return (
@@ -80,6 +83,7 @@ export function CardsPage({ model, dataState }: CardsPageProps) {
       key: 'owner',
       width: '27%',
       sorter: (a, b) => a.owner.localeCompare(b.owner),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, c) => <span className="m-truncate">{c.owner}</span>,
     },
     {
@@ -87,6 +91,7 @@ export function CardsPage({ model, dataState }: CardsPageProps) {
       key: 'updatedAt',
       width: '22%',
       sorter: (a, b) => b.updatedAt - a.updatedAt,
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       defaultSortOrder: 'ascend',
       render: (_: unknown, c) => <RelativeTime minutesAgo={minutesSince(c.updatedAt)} />,
     },

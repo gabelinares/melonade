@@ -1,5 +1,6 @@
 import { Table } from 'antd';
 import type { TableColumnsType } from 'antd';
+import type { SortOrder } from 'antd/es/table/interface';
 import type { Feature } from '@shared/features-data.ts';
 import type { DataState } from '@shared/issues-logic.ts';
 import type { FeaturesController } from '../state/useFeatures.ts';
@@ -8,6 +9,7 @@ import { ListFooter } from '../components/ListFooter.tsx';
 import { PageCard } from '../components/PageCard.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { SortIcon } from '../components/SortIcon.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import './data-management.css';
 
@@ -32,6 +34,7 @@ export function FeaturesPage({ model, dataState }: FeaturesPageProps) {
       key: 'name',
       width: '26%',
       sorter: (a, b) => a.name.localeCompare(b.name),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, f) => <span className="m-truncate">{f.name}</span>,
     },
     {
@@ -53,6 +56,7 @@ export function FeaturesPage({ model, dataState }: FeaturesPageProps) {
       width: '11%',
       align: 'right',
       sorter: (a, b) => b.users - a.users,
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, f) => <span className="m-dmg__mono">{f.users.toLocaleString()}</span>,
     },
     {
@@ -61,6 +65,7 @@ export function FeaturesPage({ model, dataState }: FeaturesPageProps) {
       width: '11%',
       align: 'right',
       sorter: (a, b) => b.interactions - a.interactions,
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       defaultSortOrder: 'ascend',
       render: (_: unknown, f) => <span className="m-dmg__mono">{f.interactions.toLocaleString()}</span>,
     },

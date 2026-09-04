@@ -1,5 +1,6 @@
 import { App, Button, Dropdown, Table } from 'antd';
 import type { TableColumnsType } from 'antd';
+import type { SortOrder } from 'antd/es/table/interface';
 import { BookOpen, Lock, MoreHorizontal, Pencil, Plus, Settings2, Trash2, Users } from 'lucide-react';
 import { type Dashboard, type DashboardScope } from '@shared/dashboards-data.ts';
 import { minutesSince } from '@shared/tests-data.ts';
@@ -14,6 +15,7 @@ import { PageCard } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { SortIcon } from '../components/SortIcon.tsx';
 import { StubDrawer } from '../components/StubDrawer.tsx';
 import './product-analytics.css';
 
@@ -44,6 +46,7 @@ export function DashboardsPage({ model, dataState }: DashboardsPageProps) {
       key: 'name',
       width: '31%',
       sorter: (a, b) => a.name.localeCompare(b.name),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, d) => <span className="m-truncate">{d.name}</span>,
     },
     {
@@ -51,6 +54,7 @@ export function DashboardsPage({ model, dataState }: DashboardsPageProps) {
       key: 'owner',
       width: '20%',
       sorter: (a, b) => a.owner.localeCompare(b.owner),
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       render: (_: unknown, d) => <span className="m-truncate">{d.owner}</span>,
     },
     {
@@ -58,6 +62,7 @@ export function DashboardsPage({ model, dataState }: DashboardsPageProps) {
       key: 'updatedAt',
       width: '20%',
       sorter: (a, b) => b.updatedAt - a.updatedAt,
+      sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
       defaultSortOrder: 'ascend',
       render: (_: unknown, d) => <RelativeTime minutesAgo={minutesSince(d.updatedAt)} />,
     },
