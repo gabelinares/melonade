@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import { catalogueNow, type CatalogueEntry } from '@shared/sessions-logic.ts';
 import { PickerBody } from './FilterPicker.tsx';
 import './filter-panel.css';
@@ -13,6 +13,12 @@ export interface FilterPanelProps {
    *  opens the panel and lands here, so the keystroke is not swallowed - which
    *  is the whole answer to "people type into the bar". */
   seed?: string;
+  /** The bar's own query, when the bar is a field. See PickerBody: controlled
+   *  query, no search row, and Enter committed from outside. */
+  query?: string;
+  onQueryChange?: (q: string) => void;
+  hideSearch?: boolean;
+  commitRef?: MutableRefObject<(() => void) | null>;
 }
 
 /**
@@ -60,7 +66,17 @@ export interface FilterPanelProps {
  * `prefers-reduced-motion` gets the same panel with no interpolation.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function FilterPanel({ open, onClose, onPick, taken = [], seed }: FilterPanelProps) {
+export function FilterPanel({
+  open,
+  onClose,
+  onPick,
+  taken = [],
+  seed,
+  query,
+  onQueryChange,
+  hideSearch,
+  commitRef,
+}: FilterPanelProps) {
   const [grown, setGrown] = useState(false);
   const box = useRef<HTMLDivElement>(null);
 
@@ -131,6 +147,10 @@ export function FilterPanel({ open, onClose, onPick, taken = [], seed }: FilterP
         onPick={onPick}
         onDone={onClose}
         seed={seed}
+        query={query}
+        onQueryChange={onQueryChange}
+        hideSearch={hideSearch}
+        commitRef={commitRef}
         placeholder="An event or a group filter"
       />
     </div>

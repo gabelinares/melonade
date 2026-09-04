@@ -5889,3 +5889,64 @@ Not done, on purpose: the Synthetics run drawer keeps its own
 console/network (Gabriel: "run flows network and console its still
 pending"); player fullscreen; autoscroll. Mehdi still owes the list of which
 of the seven to keep.
+
+## §42 — Six things before the push (2026-09-04, the last review before the break)
+
+Mehdi's review of the shells, the merged filter, the table and the menu
+(Fathom, 30 min) accepted all four and asked for six changes **before the
+branch is deployed**, because Nikita starts from that deploy. All six are in,
+each with the reason he gave.
+
+**1. The date window came down.** *"The past 30 days, I would probably push it
+down... save as segment doesn't have the same height as past seven days, so it
+looks a little bit weird."* The window left the filter's row - where it had
+been since 09-02 on the argument that the filter is what sticks - for the
+answer's own head, beside the display menu, which is where Issues, Runs and
+Audits already keep theirs. That head sticks too, so the original argument is
+still honoured. `SearchCard` lost its `trailing` slot with it: the filter no
+longer knows a list has a period.
+
+**2. The bar is back, and it is a field.** He killed the full-width bar on
+09-03 (*"people type into the bar, they're expecting to see results"*) and
+described a different one on 09-04: *"if we can reduce its height, and remove
+that turning stuff... if I can search in it, instead of having a second line
+below it, then it might have a purpose. Thinner, smaller... probably a little
+bit wider... maybe that's much better than having a button there."* So the
+bar is now the **button's height (26px) and type size, wider than the button
+(up to 32rem), with an `<input>` where the button has a word**. Typing opens
+the catalogue under it and narrows it; the catalogue has **no search row of
+its own** while the bar is open (`PickerBody.hideSearch`, controlled `query`),
+so there is one place to type. Enter takes the first match through
+`commitRef`; Escape closes. The rotating examples are gone in both shapes,
+this time on his word (*"remove that turning stuff"*). The bar is the default
+(`DEFAULTS.trigger = 'bar'`); the button is the one you have to ask for. His
+09-03 objection is answered rather than argued with: people type into a bar
+expecting something to happen, and now something does.
+
+**3. Agents is Armada.** *"Instead of agents, I would call it Armada. OpenReplay
+Armada - a fleet of agents that are going to do stuff."* The label only; the
+`agents` key is a route and stays. The robot glyph stays - *"makes a ton of
+sense"* - and he may colour it later.
+
+**4. No dot on a session row.** The one exception to the app's dot-means-new
+convention, and it is an exception of scale: *"the real case scenario, it's
+always going to be active most of the time... it's hundreds of thousands, and
+it's all going to look like this whenever you open your front end, so that dot
+doesn't bring anything."* Issues and Synthetics keep theirs (dozens of rows).
+Viewed rows are still the 70% row and the "Last viewed" chip (§38).
+
+**5. The collapse is in the foot again.** *"That button to close the menu, can
+we put it down on top of this 50K?"* First of the six foot tools, directly over
+the credits meter, so narrow it is the top of the stack. The brand row stopped
+being a toggle when narrow; the mark alone sits on it.
+
+**6. The logo is the title's size.** *"Make the OpenReplay logo bigger, like
+Sessions, almost the same ratios as the title."* The wordmark uses
+`.m-page__title`'s own size arithmetic (22px at the default scale), the mark
+went 16 → 22 to keep up. Medium weight rather than the display weight: a
+wordmark is a name, not a heading.
+
+**Deferred by him, explicitly:** the popover's content and spacing, the
+replay's network tab order and a floating right-side detail panel, tabs for
+multiple open sessions, Preferences, Onboarding, and click-through on the
+shell pages. Next review Monday 14 September.

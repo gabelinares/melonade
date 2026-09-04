@@ -943,7 +943,7 @@ export const CORNERS: Record<string, ProtoCorners> = {
     }
   };
 
-export const DEFAULTS = { grey: 'cool', accent: 'teal', font: 'plex', density: 'compact', corners: 'soft', filters: 'outline', trigger: 'button' } as const;
+export const DEFAULTS = { grey: 'cool', accent: 'teal', font: 'plex', density: 'compact', corners: 'soft', filters: 'outline', trigger: 'bar' } as const;
 
 export type GreyKey = keyof typeof GREYS;
 export type AccentKey = keyof typeof ACCENTS;

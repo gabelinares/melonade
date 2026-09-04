@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Select, Tooltip } from 'antd';
 import { Filter } from 'lucide-react';
 import {
@@ -15,21 +15,21 @@ import { FilterPanel } from './FilterPanel.tsx';
 import { SearchRow } from './SearchRow.tsx';
 import { useFilterCollapse } from './useFilterCollapse.ts';
 import { useTorch } from './useTorch.ts';
+import { useProtoTokens } from '../theme/ProtoTokens.tsx';
 import { EVENTS_HEAD, EVENTS_EMPTY, GROUP_HEAD, GROUP_EMPTY, GROUP_SCOPE } from './vocabulary.ts';
 import './search-card.css';
 
-/* ── WHAT THE BUTTON SAYS ─────────────────────────────────────────────────────
-   ONE WORD ON THE BUTTON, and a full sentence only where a screen reader will
-   hear it. The button is 14px of chrome beside a date range; a sentence on it
-   would make it a bar again by another route.
+/* ── WHAT THE CONTROL SAYS ───────────────────────────────────────────────────
+   ONE WORD ON THE BUTTON, a short sentence in the bar, and the full sentence
+   only where a screen reader will hear it.
 
-   ⚠ THE ROTATING EXAMPLES ARE GONE, for the second time and now for a better
-   reason. The first pair (09-02) rotated prose you were invited to TYPE, and
-   came out because the control cannot read a sentence. The second (09-04) sat
-   after the word "like" as specimens of what a filter can express, which was
-   honest - but Mehdi's objection to the bar is that a field-shaped control
-   invites typing AT ALL, and an example after "like" is an invitation with a
-   worked demonstration attached. A button with one word invites a click.
+   ⚠ THE ROTATING EXAMPLES ARE GONE, for the third time and now on the client's
+   word rather than on an argument (Mehdi, 2026-09-04: *"remove that turning
+   stuff"* - and on 09-03, *"we used to have it, and it was confusing for
+   people"*). They came back on 09-04 as specimens after the word "like", on the
+   reasoning that the control had started to answer typing. That reasoning was
+   right and it is now moot: the bar IS a field, and a field says what it is for
+   in a placeholder and then gets out of the way.
 
    ⚠ AND THE NATURAL-LANGUAGE PATH IS STILL PARKED, NOT CUT (Mehdi, 09-02: it
    is a feature OpenReplay shipped and removed, so putting it back is out of
@@ -50,11 +50,10 @@ const HOTKEY =
 /** The full sentence, for the accessible name and the drawer's own heading. */
 const LEAD = 'Filter the recordings';
 
-/** ⚠ THE BAR'S OWN LEAD, and it is longer on purpose. A button is read as a
- *  label and a bar is read as a sentence: at full width "Filter" would be one
- *  word floating in 1400px, which is what makes a bar look like an empty input.
- *  It ends on "like" so the rotating specimen finishes it. */
-const LEAD_BAR = 'Filter the recordings and save search segments, like';
+/** ⚠ THE BAR'S PLACEHOLDER. It is the same sentence as the accessible name
+ *  because the bar is a field now and a field's placeholder is its label. It
+ *  no longer ends on "like": there is no specimen to finish it. */
+const LEAD_BAR = LEAD;
 
 /** ⚠ THE SAME CONTROL IN THE SEGMENT DRAWER, in that drawer's own words. "The
  *  recordings" points at a list, and in a drawer there is no list to point at:
@@ -103,12 +102,10 @@ export interface SearchCardProps {
    *  segment drawer may want it back. The filter's row carried a session count
    *  until 2026-09-04; the result is stated by the component that holds it. */
   resultCount?: number;
-  /** The controls that belong to the LIST rather than to the search - the date
-   *  range and the display menu. They ride the search's own bar because the
-   *  bar is what sticks: a window you cannot change without scrolling back up
-   *  is the same complaint the sticky came out of. A slot rather than props,
-   *  because the search has no business knowing what a date range is. */
-  trailing?: ReactNode;
+  /* ⚠ `trailing` LIVED HERE - the slot the date range rode in from 09-02 to
+     09-04. The window is on the answer's own head now (Mehdi, 2026-09-04: "push
+     it down"), where Issues, Runs and Audits already keep theirs, so the filter
+     no longer has to know that a list has a period. See SessionsPage. */
   /** Saving the current rules as a segment. It rides the STRIP, beside Clear
    *  (Gabriel, 2026-09-04) - and the strip is the right home for it because the
    *  strip exists only when there are rules to save. In the page header it was
@@ -196,14 +193,25 @@ export function SearchCard({
   onEventsOrder,
   onClear,
   rows,
-  trailing,
   saveAction,
   variant = 'page',
 }: SearchCardProps) {
   const [fork, setFork] = useState(false);
-  /* What the catalogue's search starts with. Set when a keystroke opened the
-     panel, cleared when it closes, so the next open is a clean list. */
-  const [seed, setSeed] = useState('');
+  /* ⚠ THE QUERY IS THE CARD'S, NOT THE PICKER'S (2026-09-04). In the bar shape
+     what you type into the bar is what the catalogue searches - one field, one
+     list under it, no second line. In the button shape the same string is the
+     SEED: a character typed at the button opens the panel with that character
+     already in the panel's own search. Cleared when the panel closes, so the
+     next open is a clean list either way. */
+  const [query, setQuery] = useState('');
+  /* Enter in the bar commits what the panel would commit. The panel owns the
+     list, so it owns the answer; it hands the function back through this ref. */
+  const commitRef = useRef<(() => void) | null>(null);
+  /* Which of the two shapes is on. Read here as well as by the stylesheet
+     because the shapes are DIFFERENT ELEMENTS now - a `<button>` that opens a
+     list, or a `<label>` around an `<input>` that filters one - and CSS cannot
+     swap an element. Same saved token behind both, so they cannot disagree. */
+  const isBar = useProtoTokens().trigger === 'bar';
   const [drag, setDrag] = useState<{ from: number; over: number | null; at: 'top' | 'bottom' | null }>({
     from: -1,
     over: null,
@@ -213,8 +221,12 @@ export function SearchCard({
   const any = events.length > 0 || properties.length > 0;
 
   const openPanel = (typed = '') => {
-    setSeed(typed);
+    setQuery(typed);
     setFork(true);
+  };
+  const closePanel = () => {
+    setFork(false);
+    setQuery('');
   };
   /* The ring answers to the pointer rather than to a clock, and only while the
      bar exists - once there is a rule the bar retires and the listener with
@@ -412,103 +424,150 @@ export function SearchCard({
           button, on the button version, is on the left, not right - it's just
           this case"). The other lists put their filter at the top right because
           there it is one control among four on a toolbar. Here it is THE
-          control, and the thing on the right is the WINDOW it runs over - so the
-          row reads in the order you build in: what you are asking for, then over
-          what period, then what to do with the answer.
+          control, so the row reads in the order you build in: what you are
+          asking for, then what to do with the answer.
 
           ⚠ FIRST IN THE DOM TOO, not shuffled into place with `order`: it is the
           first thing you reach by keyboard on this card, and a row whose tab
           order disagrees with its reading order is a row that works for nobody
           looking at it.
 
-          ⚠ AND THE BAR SHARES THE ROW rather than wrapping under it. It took a
-          line of its own while the trigger was on the right, because a
-          full-width control and a right-hand cluster cannot both have the row.
-          With the trigger on the left, "full width" simply means "the width the
-          window leaves it". One row in both shapes.
-
           ── TWO SHAPES, ONE CONTROL (prototype panel → "Filter entry") ──────
-          Mehdi killed the bar on 09-03 with a reason worth respecting - "we
-          tried the bar before, people type into the bar, they're expecting to
-          see results" - and Gabriel liked it. So both are built and switchable,
-          and the argument gets settled by looking rather than by remembering.
+          Mehdi killed the full-width bar on 09-03 - "we tried the bar before,
+          people type into the bar, they're expecting to see results" - and
+          brought a different bar back on 09-04: *"if we can reduce its height,
+          and remove that turning stuff... if I can search in it, instead of
+          having a second line below it, then it might have a purpose. So if we
+          make it thinner, smaller, maybe that's much better than having a
+          button there."* Both are built and switchable; the bar is the default.
 
-          ⚠ AND THE BAR'S FAILURE MODE IS FIXED RATHER THAN ARGUED WITH. Typing
-          into it now DOES something: the first character you type opens the
-          catalogue with that character already in its search. So the bar is a
-          launcher rather than a field that ignores you, which is the honest
-          answer to "people type into it" - and the ⌘K badge says so before you
-          try. Both shapes take it; only the bar looks like it might. */}
+          ⚠ THE BAR IS A REAL FIELD, which is what answers his 09-03 objection
+          rather than arguing with it. People type into a bar expecting
+          something to happen: now the first character opens the catalogue
+          under the bar, and every character after it narrows that list. The
+          list has NO search row of its own while the bar is open - the bar is
+          the search row - so there is one place to type, not two stacked.
+          Same height as the button ("thinner"), wider than the button ("a
+          little bit wider"), the sentence inside it as a placeholder ("with
+          the text inside"). Enter takes the first match; Escape closes. The
+          button shape keeps the older behaviour, where a keystroke opens the
+          panel with that keystroke seeded into the panel's own search. */}
       <div className="m-sc__triggerwrap">
-        <button
-          type="button"
-          className="m-sc__filter"
-          onClick={() => openPanel()}
-          /* A printable character with no modifier opens the panel and goes
-             into its search. `key.length === 1` is the whole test: every
-             named key ("Enter", "Tab", "ArrowLeft") is longer. */
-          onKeyDown={(e) => {
-            if (e.key.length !== 1 || e.metaKey || e.ctrlKey || e.altKey) return;
-            e.preventDefault();
-            openPanel(e.key);
-          }}
-          aria-expanded={fork}
-          aria-haspopup="dialog"
-          aria-label={any ? ADD : inPanel ? LEAD_PANEL : LEAD}
-        >
-          {/* ⚠ AN SVG STROKE rather than a border: a stroke can be blurred
-              without blurring what it surrounds, and the glow is half the
-              effect. The torch is on BOTH shapes - it is a mask around a
-              pointer and knows nothing about the box it is masking. */}
-          <span className="m-sc__ring" ref={torch as React.RefObject<HTMLSpanElement>} aria-hidden="true">
-            <svg>
-              <rect className="m-sc__glow" x="0" y="0" width="100%" height="100%" rx="4" />
-              <rect className="m-sc__arc" x="0" y="0" width="100%" height="100%" rx="4" />
-            </svg>
-          </span>
-          <Filter size={14} className="m-sc__filter-glyph" aria-hidden="true" />
-          {/* BOTH COPIES ARE RENDERED AND CSS PICKS ONE, the same trick the
-              avatar uses for its two themes: the shape is a data attribute on
-              the root, so it cannot be read in JS without giving the switch a
-              second code path that can disagree with the first. */}
-          <span className="m-sc__filter-word" aria-hidden="true">{any ? ADD : LABEL}</span>
-          <span className="m-sc__barcopy" aria-hidden="true">
-            <span className="m-sc__lead">{any ? ADD : inPanel ? LEAD_PANEL : LEAD_BAR}</span>
-            {!any && <RotatingExample />}
-          </span>
-          <kbd className="m-sc__key" aria-hidden="true">{HOTKEY}</kbd>
-        </button>
+        {isBar ? (
+          <label
+            className="m-sc__filter m-sc__filter--bar"
+            /* The torch and the ring belong to the whole box, so they are on
+               the label; the input inside is unstyled and borrows the label's
+               ink. Clicking anywhere on the label focuses the input, which is
+               what a label is for. */
+          >
+            <span className="m-sc__ring" ref={torch as React.RefObject<HTMLSpanElement>} aria-hidden="true">
+              <svg>
+                <rect className="m-sc__glow" x="0" y="0" width="100%" height="100%" rx="4" />
+                <rect className="m-sc__arc" x="0" y="0" width="100%" height="100%" rx="4" />
+              </svg>
+            </span>
+            <Filter size={14} className="m-sc__filter-glyph" aria-hidden="true" />
+            <input
+              type="text"
+              className="m-sc__input"
+              value={query}
+              placeholder={any ? ADD : inPanel ? LEAD_PANEL : LEAD_BAR}
+              /* Focus opens the list and typing narrows it - a combobox, in the
+                 shape people already know. Click is here as well as focus so
+                 that Escape (which closes the list but leaves the caret in the
+                 field) can be undone by clicking the field again. */
+              onFocus={() => setFork(true)}
+              onClick={() => setFork(true)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setFork(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  closePanel();
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (!fork) setFork(true);
+                  else commitRef.current?.();
+                } else if (e.key === 'ArrowDown' && !fork) {
+                  e.preventDefault();
+                  setFork(true);
+                }
+              }}
+              role="combobox"
+              aria-expanded={fork}
+              aria-haspopup="dialog"
+              aria-autocomplete="list"
+              aria-label={any ? ADD : inPanel ? LEAD_PANEL : LEAD}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <kbd className="m-sc__key" aria-hidden="true">{HOTKEY}</kbd>
+          </label>
+        ) : (
+          <button
+            type="button"
+            className="m-sc__filter"
+            onClick={() => openPanel()}
+            /* A printable character with no modifier opens the panel and goes
+               into its search. `key.length === 1` is the whole test: every
+               named key ("Enter", "Tab", "ArrowLeft") is longer. */
+            onKeyDown={(e) => {
+              if (e.key.length !== 1 || e.metaKey || e.ctrlKey || e.altKey) return;
+              e.preventDefault();
+              openPanel(e.key);
+            }}
+            aria-expanded={fork}
+            aria-haspopup="dialog"
+            aria-label={any ? ADD : inPanel ? LEAD_PANEL : LEAD}
+          >
+            {/* ⚠ AN SVG STROKE rather than a border: a stroke can be blurred
+                without blurring what it surrounds, and the glow is half the
+                effect. The torch is on BOTH shapes - it is a mask around a
+                pointer and knows nothing about the box it is masking. */}
+            <span className="m-sc__ring" ref={torch as React.RefObject<HTMLSpanElement>} aria-hidden="true">
+              <svg>
+                <rect className="m-sc__glow" x="0" y="0" width="100%" height="100%" rx="4" />
+                <rect className="m-sc__arc" x="0" y="0" width="100%" height="100%" rx="4" />
+              </svg>
+            </span>
+            <Filter size={14} className="m-sc__filter-glyph" aria-hidden="true" />
+            <span className="m-sc__filter-word" aria-hidden="true">{any ? ADD : LABEL}</span>
+            <kbd className="m-sc__key" aria-hidden="true">{HOTKEY}</kbd>
+          </button>
+        )}
         {/* ⚠ NO `onTranslate` ANYWHERE. That one prop is the sentence path's
             only switch, so the parked feature stays parked and intact. */}
         <FilterPanel
           open={fork}
-          seed={seed}
-          onClose={() => {
-            setFork(false);
-            setSeed('');
-          }}
+          /* The bar owns the query; the button hands one over as a seed. */
+          seed={isBar ? undefined : query}
+          query={isBar ? query : undefined}
+          onQueryChange={isBar ? setQuery : undefined}
+          hideSearch={isBar}
+          commitRef={commitRef}
+          onClose={closePanel}
           onPick={(e) => {
             onAdd(e);
-            setFork(false);
+            closePanel();
           }}
           taken={takenProperties}
         />
       </div>
 
           {/* ── THE RIGHT-HAND CLUSTER ────────────────────────────────────
-              ⚠ SAVE COMES FIRST, AND THE WINDOW LAST (Gabriel, 2026-09-04:
-              "change the Save as segment and the Past 30 days order, because
-              the segment isn't saved with the date - it might be confusing").
+              THE TWO VERBS THAT DISPOSE OF A FILTER, and nothing else.
 
-              He is right, and the reason is stronger than the ordering: A
-              SEGMENT DOES NOT STORE ITS WINDOW. It holds rules, and the window
-              belongs to whichever list you later open it in - so Save sitting
-              immediately after "Past 30 days" read as a caption on it, as if
-              the thirty days were part of what you were about to keep.
-
-              Putting the window at the far end breaks that adjacency and leaves
-              the row reading in the order you actually work: build it, keep it,
-              and separately choose the period you are looking at. */}
+              ⚠ THE WINDOW LEFT THIS ROW (Mehdi, 2026-09-04: "the past 30 days,
+              I would probably push it down... save as segment doesn't have the
+              same height as past seven days, so it looks a little bit weird").
+              It had already been pushed to the far end on 09-04 because A
+              SEGMENT DOES NOT STORE ITS WINDOW - Save beside "Past 30 days"
+              read as a caption on it. Moving it off the row closes that
+              question for good, and leaves a row of controls that are all the
+              same height. It is on the answer's head now; see SessionsPage. */}
           <span className="m-sc__head-trailing">
             {/* ⚠ CLEAR IS RIGHT-ALIGNED WITH THE REST (Gabriel, 2026-09-04:
                 "the Clear button should always be aligned in the right part,
@@ -533,7 +592,6 @@ export function SearchCard({
             )}
             {/* Saving is only possible once there is something to save. */}
             {any && saveAction}
-            {trailing}
           </span>
         </div>
       )}
@@ -661,40 +719,3 @@ export function SearchCard({
    per kind - and came out on 2026-09-04 with the fork it was serving. It was
    the right shape for a two-door design and the wrong one for a single-door
    design, which is what this is. `git show fc3f12f` has it. */
-
-/* ── THE EXAMPLES ─────────────────────────────────────────────────────────────
-   ⚠ THIRD LIFE, AND ONLY IN THE BAR. The 09-02 pair rotated prose you were
-   invited to TYPE and came out because the control could not read a sentence.
-   The 09-04 pair sat after the word "like" as SPECIMENS of what a filter can
-   express, and came out with the bar itself.
-
-   They are back because the bar is back as an option - and because the thing
-   that made them dishonest is fixed: typing at this control now opens the
-   catalogue with your keystroke in its search. An example after "like" is no
-   longer a promise the control breaks.
-
-   Still specimens rather than input hints: you read one, learn that this
-   control expresses that sort of thing, and click. A little more muted than the
-   lead, because the lead is the instruction and this illustrates it. */
-const EXAMPLES: readonly string[] = [
-  'rage clicks on /checkout',
-  'paid accounts in France',
-  'sessions over three minutes',
-  'an error after checkout_start',
-  'mobile users who saw the new pricing',
-];
-const EXAMPLE_EVERY = 4200;
-
-function RotatingExample() {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((n) => (n + 1) % EXAMPLES.length), EXAMPLE_EVERY);
-    return () => clearInterval(t);
-  }, []);
-  /* Keyed so the fade restarts on each change. */
-  return (
-    <span className="m-sc__eg" key={i}>
-      {EXAMPLES[i]}
-    </span>
-  );
-}

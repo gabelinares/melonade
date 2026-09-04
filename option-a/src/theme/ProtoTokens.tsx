@@ -109,7 +109,10 @@ function read(): Saved {
       density: v.density === 'spaced' ? 'spaced' : fallback.density,
       corners: v.corners && CORNERS[v.corners] ? v.corners : fallback.corners,
       filters: v.filters && FILTERS[v.filters] ? v.filters : fallback.filters,
-      trigger: v.trigger === 'bar' ? 'bar' : fallback.trigger,
+      /* ⚠ THE BAR IS THE DEFAULT SINCE 09-04 (Mehdi: a thinner bar you can
+         type into is "much better than having a button there"), so it is the
+         button that has to be asked for. */
+      trigger: v.trigger === 'button' ? 'button' : fallback.trigger,
     };
   } catch {
     return fallback;

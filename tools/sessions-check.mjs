@@ -272,11 +272,13 @@ check('and it wears the accent, which is the one place this page spends it',
 check('it says how to reach it from the keyboard',
   /K$/.test(trigger.key ?? ''), trigger.key ?? 'no badge');
 
-/* ⚠ NOTHING IN THE CARD INVITES TYPING - no text input, and in the button shape
-   no rotating specimen either. */
-check('and nothing in the card is a text field',
-  trigger.inputs === 0 && (await p.locator('.m-sc__eg:visible').count()) === 0,
-  `${trigger.inputs} inputs, ${await p.locator('.m-sc__eg:visible').count()} specimens`);
+/* ⚠ REVERSED ON 09-04: the default shape is the BAR and the bar is a FIELD
+   (Mehdi: "if I can search in it, instead of having a second line below it").
+   So exactly one text input, and still no rotating specimen - those are gone
+   in both shapes. The button shape (data-trigger="button") has zero inputs. */
+check('the bar is one text field, and nothing rotates in it',
+  (trigger.shape === 'bar' ? trigger.inputs === 1 : trigger.inputs === 0) && (await p.locator('.m-sc__eg:visible').count()) === 0,
+  `${trigger.shape}: ${trigger.inputs} inputs, ${await p.locator('.m-sc__eg:visible').count()} specimens`);
 
 /* ── THE KEYBOARD PATH, BOTH HALVES ─────────────────────────────────────────
    ⌘K opens it from anywhere, and a printable character typed AT it opens the

@@ -572,4 +572,12 @@
    `margin-inline-start: auto` rather than a spacer element: the head is a flex
    row and the strip is allowed to take whatever it needs, so the menu is
    whatever is left over at the end. */
-.m-ss__display { margin-inline-start: auto; }
+/* The window and the display menu, at the far end of the answer's head. Two
+   controls since 09-04 (the window came down from the filter's row), on the
+   same gap the head uses between everything else. */
+.m-ss__display {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  margin-inline-start: auto;
+}

@@ -172,58 +172,59 @@
   padding-inline: var(--m-space-3) var(--m-space-2);
   font-size: var(--m-text-xs);
 }
-[data-trigger='button'] .m-sc__barcopy { display: none; }
 
-/* ══ SHAPE 2 · THE BAR ═══════════════════════════════════════════════════════
-   Full width, tall, and the badge parked at the far end - which is the shape
-   Gabriel liked and the shape Mehdi has seen fail. It gets the same behaviour
-   as the button and one extra: the rotating specimen after "like".
+/* ══ SHAPE 2 · THE BAR, WHICH IS A FIELD ════════════════════════════════════
+   ⚠ REBUILT ON 2026-09-04 to Mehdi's own spec: *"reduce its height... remove
+   that turning stuff... if I can search in it, instead of having a second line
+   below it... thinner, smaller... probably a little bit wider"* than the
+   button, *"with the text inside"*. So: the BUTTON'S height and type size, a
+   width the button does not have, and an `<input>` where the button has a word.
 
-   The lead never shrinks and the specimen truncates, because the instruction is
-   the half that has to survive a narrow plane. */
+   The wrapper takes the width - it grows with the row up to a cap, because a
+   field that is 1400px wide reads as a search box for a corpus and this is a
+   filter over one list - and the label fills the wrapper. `cursor: text`,
+   because it is honest: this one you type into. */
+[data-trigger='bar'] .m-sc__triggerwrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 32rem;
+}
 [data-trigger='bar'] .m-sc__filter {
   width: 100%;
-  height: calc(var(--m-control-height-lg) + var(--m-space-2));
-  padding-inline: var(--m-space-5);
-  font-size: var(--m-text-md);
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-3) var(--m-space-2);
+  font-size: var(--m-text-xs);
+  cursor: text;
 }
 [data-trigger='bar'] .m-sc__filter-word { display: none; }
 [data-trigger='bar'] .m-sc__key { margin-inline-start: auto; }
 
-.m-sc__barcopy {
-  display: flex;
-  align-items: baseline;
-  /* The space between the lead and its specimen. A literal one in the JSX would
-     be collapsed by the flex box. */
-  gap: 0.32em;
+/* THE FIELD ITSELF IS INVISIBLE: no border, no background, no outline. The box
+   around it - the label - is the control, and it carries the hairline, the tint,
+   the hover and the ring, exactly as the button does. The input only carries
+   the caret and the text. `font: inherit` so the typed text and the placeholder
+   are the button's own size and face. */
+.m-sc__input {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--m-content-primary);
+  font: inherit;
+  line-height: 1;
 }
+.m-sc__input::placeholder { color: var(--m-content-placeholder); opacity: 1; }
+.m-sc__filter:hover .m-sc__input::placeholder { color: var(--m-content-muted); }
 
-.m-sc__lead {
-  flex: none;
-  color: var(--m-content-placeholder);
-}
-
-/* A little more muted than the lead it follows: the lead is the instruction and
-   this only illustrates it. Same size, same face - the difference is entirely
-   in the ink, which is the quietest way to say "and this part is an aside". */
-.m-sc__eg {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0.62;
-  animation: m-sc-eg-in var(--m-duration-slow) var(--m-ease-out) both;
-}
-
-@keyframes m-sc-eg-in {
-  from { opacity: 0; transform: translateY(2px); }
-  to { opacity: 0.62; transform: none; }
-}
+/* ⚠ `.m-sc__barcopy`, `.m-sc__lead` and `.m-sc__eg` LIVED HERE - the bar's
+   printed sentence and the rotating specimen after it. Gone with the bar that
+   was a button in a field's clothes; the sentence is the field's placeholder
+   now, and there is no specimen. `git show 1a351c3:option-a/src/sessions/search-card.css`
+   has the fade if the examples are ever argued back. */
 
 @media (prefers-reduced-motion: reduce) {
-  .m-sc__eg { animation: none; }
   .m-sc__filter:active { transform: none; }
 }
 
@@ -397,18 +398,21 @@
 
    No blur and no glow: a focus ring is an indicator, not an effect, and the one
    thing it has to be is exactly locatable. */
-.m-sc__filter:focus-visible { outline: none; }
-.m-sc__filter:focus-visible .m-sc__ring {
+/* `:focus-within` as well as `:focus-visible`: the bar shape is a label around
+   an input, and it is the input that holds focus. One ring, drawn by the box in
+   both shapes. */
+.m-sc__filter:is(:focus-visible, :focus-within) { outline: none; }
+.m-sc__filter:is(:focus-visible, :focus-within) .m-sc__ring {
   -webkit-mask: none;
   mask: none;
 }
-.m-sc__filter:focus-visible .m-sc__ring .m-sc__arc {
+.m-sc__filter:is(:focus-visible, :focus-within) .m-sc__ring .m-sc__arc {
   stroke: var(--m-focus-ring);
   stroke-width: 2;
   opacity: 1;
   filter: none;
 }
-.m-sc__filter:focus-visible .m-sc__ring .m-sc__glow { display: none; }
+.m-sc__filter:is(:focus-visible, :focus-within) .m-sc__ring .m-sc__glow { display: none; }
 
 /* ⚠ REDUCED MOTION KEEPS THE TORCH, and that is not an oversight. The setting
    is about motion that happens TO you; this moves only because your own hand
@@ -693,9 +697,9 @@
 .m-sc__head-hint { margin-inline-start: auto; }
 
 /* ── THE RIGHT-HAND CLUSTER ──────────────────────────────────────────────────
-   The window and the save, at the far end of the row. The TRIGGER is not in
-   here any more - it is the row's first child, on the left, where the thing you
-   act on belongs and the thing it runs over does not. */
+   Clear and Save, at the far end of the row. The TRIGGER is not in here - it is
+   the row's first child, on the left - and since 09-04 neither is the WINDOW,
+   which is on the answer's head (see sessions-page.css `.m-ss__display`). */
 .m-sc__head-trailing {
   display: flex;
   align-items: center;
@@ -704,15 +708,7 @@
   margin-inline-start: auto;
 }
 
-/* ⚠ THE BAR TAKES WHAT THE WINDOW LEAVES, on the same row rather than a line of
-   its own. It needed its own line while it sat inside a right-hand cluster -
-   a full-width control and a right-aligned group cannot both have the row - and
-   the moment the trigger moved left that stopped being true. `min-width: 0` is
-   what lets it actually shrink rather than pushing the window off the end. */
-[data-trigger='bar'] .m-sc__triggerwrap {
-  flex: 1;
-  min-width: 0;
-}
+/* The bar's width rule is with the bar's shape, above ("SHAPE 2"). */
 
 /* An empty search IS the head: the row, and nothing under it. It closes the
    card itself, on the same inset as every other side. */

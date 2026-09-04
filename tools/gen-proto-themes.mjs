@@ -513,7 +513,7 @@ export interface ProtoCorners {
 
 export const CORNERS: Record<string, ProtoCorners> = ${j(Object.fromEntries(CORNERS.map((c) => [c.key, { label: c.label, note: c.note, chip: c.chip, control: c.control, surface: c.surface, check: c.check }])))};
 
-export const DEFAULTS = { grey: '${GREYS[0].key}', accent: '${ACCENTS[0].key}', font: '${FONTS[0].key}', density: 'compact', corners: 'soft', filters: 'outline', trigger: 'button' } as const;
+export const DEFAULTS = { grey: '${GREYS[0].key}', accent: '${ACCENTS[0].key}', font: '${FONTS[0].key}', density: 'compact', corners: 'soft', filters: 'outline', trigger: 'bar' } as const;
 
 export type GreyKey = keyof typeof GREYS;
 export type AccentKey = keyof typeof ACCENTS;

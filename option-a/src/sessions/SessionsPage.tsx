@@ -704,16 +704,6 @@ export function SessionsPage({ model }: SessionsPageProps) {
               </span>
             </Tooltip>
           }
-          trailing={
-            <>
-              {/* ⚠ THE SAME CONTROL AS EVERY OTHER LIST since 2026-09-02, and
-                  the same one Issues, Runs and Audits carry. It names the field
-                  it measures - a session's window is when it STARTED - and its
-                  custom range is a real pair of dates rather than the preset
-                  that quietly applied ninety days. */}
-              <DateRange field="Started" value={model.range} onChange={model.setRange} />
-            </>
-          }
         />
       </PagePanel>
 
@@ -747,10 +737,32 @@ export function SessionsPage({ model }: SessionsPageProps) {
               selected={[model.tag]}
               onSelect={(key) => model.setTag(key as SessionTag)}
             />
-            {/* The display menu changes nothing about which rows exist, only
+            {/* ⚠ THE WINDOW IS DOWN HERE NOW (Mehdi, 2026-09-04: *"the past
+                30 days, I would probably push it down... the button, save as
+                segment, doesn't have the same height as past seven days, so it
+                looks a little bit weird"*). It rode the filter's own row from
+                09-02 to 09-04 on the argument that the filter is what sticks.
+                What that cost: the row held a filter trigger, two verbs and a
+                dropdown of three different heights, and the window sat beside a
+                Save that does not keep it - the adjacency the tooltip below
+                has to talk you out of.
+
+                Here it sits where Issues, Runs and Audits already keep theirs:
+                on the row that draws the answer, beside the control that draws
+                it, in the order every other list reads - the window, then the
+                display. And this row sticks too, so the complaint the bar
+                placement answered - a window you cannot change without
+                scrolling back up - is still answered.
+
+                The display menu changes nothing about which rows exist, only
                 which columns you see - so it belongs to the answer, at the far
                 end of the row the breakdown starts. */}
             <span className="m-ss__display">
+              {/* THE SAME CONTROL AS EVERY OTHER LIST since 2026-09-02. It names
+                  the field it measures - a session's window is when it STARTED -
+                  and its custom range is a real pair of dates rather than the
+                  preset that quietly applied ninety days. */}
+              <DateRange field="Started" value={model.range} onChange={model.setRange} />
         <DisplayShell
           changeCount={model.displayChangeCount}
           onReset={model.resetDisplay}

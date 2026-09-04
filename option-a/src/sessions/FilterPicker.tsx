@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactElement, type ReactNode } from 'react';
 import { Button, Input, Popover } from 'antd';
 import {
   ALargeSmall,
@@ -89,6 +89,20 @@ export interface PickerBodyProps extends Omit<FilterPickerProps, 'children'> {
   onBack?: () => void;
   /** What the back arrow returns to, named. */
   backLabel?: string;
+  /** ⚠ THE QUERY CAN LIVE OUTSIDE THIS COMPONENT (2026-09-04). When the filter
+   *  bar is a real field, what you type into it IS the catalogue's query, and
+   *  this list has no search row of its own - Mehdi: *"if I can search in it,
+   *  instead of having a second line below it, then it might have a purpose."*
+   *  Both props together make the query controlled; `hideSearch` drops the row.
+   *  Uncontrolled, the picker keeps its own row and its own state, which is
+   *  what the button shape and the segment drawer still use. */
+  query?: string;
+  onQueryChange?: (q: string) => void;
+  hideSearch?: boolean;
+  /** Enter, pressed in a field that is not ours. The owner of the field cannot
+   *  know what the first match is, so it asks this to commit whatever the list
+   *  would commit - the sentence if one is on offer, else the first row. */
+  commitRef?: MutableRefObject<(() => void) | null>;
 }
 
 /**
@@ -143,8 +157,14 @@ export function PickerBody({
   onDone,
   onBack,
   backLabel,
+  query: controlledQuery,
+  onQueryChange,
+  hideSearch = false,
+  commitRef,
 }: PickerBodyProps) {
-  const [query, setQuery] = useState(seed ?? '');
+  const [ownQuery, setOwnQuery] = useState(seed ?? '');
+  const query = controlledQuery ?? ownQuery;
+  const setQuery = onQueryChange ?? setOwnQuery;
   const [cat, setCat] = useState<string>(initialCategory ?? ALL);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -202,9 +222,26 @@ export function PickerBody({
     close();
   };
 
+  /* What Enter does, whichever field it was pressed in: the sentence if one is
+     on offer, otherwise the first match. Handed out through `commitRef` on
+     every render so it always closes over the current list. */
+  const commit = () => {
+    if (offerNL && nl!.filters.length) return accept();
+    if (shown.length) pick(shown[0]!);
+  };
+  useEffect(() => {
+    if (!commitRef) return undefined;
+    commitRef.current = commit;
+    return () => {
+      commitRef.current = null;
+    };
+  });
+
   const content = (
     <div className="m-pick" role="menu">
-      <div className="m-pick__search">
+      {/* ⚠ NO SEARCH ROW WHEN THE FIELD IS THE BAR: one place to type, not two
+          stacked. See `hideSearch`. */}
+      {!hideSearch && <div className="m-pick__search">
         {onBack && (
           <button
             type="button"
@@ -228,12 +265,11 @@ export function PickerBody({
                otherwise the first match. A picker where Enter does nothing is a
                picker you have to reach for the mouse to finish. */
             if (e.key !== 'Enter') return;
-            if (offerNL && nl!.filters.length) return accept();
-            if (shown.length) pick(shown[0]!);
+            commit();
           }}
           aria-label="Events, properties and sentences"
         />
-      </div>
+      </div>}
 
       {note && <p className="m-pick__note">{note}</p>}
 
