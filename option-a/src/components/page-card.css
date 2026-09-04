@@ -182,6 +182,24 @@
    while every click on it lands on whatever is painted behind. */
 .m-panel.is-spilling { overflow: visible; }
 
+/* ⚠ AND A PANEL THAT CANNOT CLIP HAS TO HAND ITS CORNERS DOWN. Without this the
+   filter card - a square-cornered box filling a rounded one, in the SAME colour
+   - paints its own corner outside the curve, against the ground. It reads as
+   the card overflowing its own radius, and it is invisible in light mode and
+   obvious in dark, because the ground is what the escaped pixel sits on.
+
+   First and last child rather than every child, so a panel with a head and a
+   body rounds the outside of the stack and leaves the seam between them
+   square - which is what a seam should be. */
+.m-panel.is-spilling > :first-child {
+  border-start-start-radius: inherit;
+  border-start-end-radius: inherit;
+}
+.m-panel.is-spilling > :last-child {
+  border-end-start-radius: inherit;
+  border-end-end-radius: inherit;
+}
+
 /* THE HEAD, and it STICKS. What was above the scroll before - the narrowing
    tabs, the display menu - is inside the scrolling area now, so it has to hold
    its place itself. Opaque, because rows pass under it. */

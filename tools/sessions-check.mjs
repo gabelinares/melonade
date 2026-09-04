@@ -1199,6 +1199,28 @@ check('and they are cards on the ground rather than a third surface level',
 check('with real air between them, and nothing else separating them',
   shape.air >= 8, `${shape.air}px`);
 
+/* ⚠ A PANEL THAT CANNOT CLIP HAS TO HAND ITS CORNERS DOWN, and the failure is
+   invisible in light mode. The question panel is `overflow: visible` so its
+   catalogue can escape (see `spills`), which means the filter card inside it -
+   a square-cornered box filling a rounded one, IN THE SAME COLOUR - paints its
+   own corner outside the curve, against the ground. In dark mode that escaped
+   pixel is a light square sitting on black, and it reads as the card
+   overflowing its own radius. */
+const corners = await p.evaluate(() => {
+  const out = [];
+  for (const panel of document.querySelectorAll('.m-panel.is-spilling')) {
+    const want = getComputedStyle(panel).borderTopLeftRadius;
+    const first = panel.firstElementChild;
+    const last = panel.lastElementChild;
+    if (first) out.push([getComputedStyle(first).borderTopLeftRadius, want]);
+    if (last) out.push([getComputedStyle(last).borderBottomLeftRadius, want]);
+  }
+  return out;
+});
+check('a panel that cannot clip hands its corners to the box inside it',
+  corners.length > 0 && corners.every(([got, want]) => got === want),
+  corners.map(([g, w]) => `${g} vs ${w}`).join(', ') || 'no spilling panel');
+
 /* ⚠ THE QUESTION SCROLLS AWAY AND THE ANSWER'S HEAD DOES NOT. */
 const read = () => p.evaluate(() => {
   const body = document.querySelector('.m-page__body');
