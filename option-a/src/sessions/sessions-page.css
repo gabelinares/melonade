@@ -380,6 +380,36 @@
 .m-ss__table .m-ss__row { --m-ss-play-ground: var(--m-surface-default); }
 .m-ss__table .m-ss__row:hover { --m-ss-play-ground: var(--m-surface-hover); }
 
+/* ── AN UNVIEWED ROW HAS A GROUND OF ITS OWN ─────────────────────────────────
+   The dot, the play glyph's full colour and the name's weight already say
+   "new," but all three are small marks you have to be reading the row to
+   notice - a list of them doesn't separate into "seen" and "not" at a glance.
+   `surface-selected` is the app's one existing role for exactly this - a wash
+   of the single rationed accent, already worn by active filters and a
+   selected row elsewhere - so this reuses it rather than inventing a second
+   accent tint for the same idea.
+
+   ⚠ ANTD PAINTS THE BACKGROUND ON `td`, NOT `tr` - the row class carries the
+   state, but the colour has to be set on the cell or antd's own
+   `colorBgContainer` wins.
+
+   ⚠ EXCEPT THE STICKY PLAY CELL, which stays out of this rule on purpose:
+   its own background is `transparent` so its `::before` gradient can fade a
+   scrolling value out from underneath it (see the note above
+   `.m-ss__playcell::before`) - painting a solid colour on that specific `td`
+   would sit UNDER the gradient and erase the fade, showing a hard block
+   instead of a smooth one. Its ground moves with the row instead, through
+   `--m-ss-play-ground` (below), which is the variable that gradient already
+   reads. */
+.m-page__body .ant-table-wrapper .ant-table .ant-table-tbody > tr.m-ss__row:not(.is-viewed) > td:not(.m-ss__playcell) {
+  background: var(--m-surface-selected);
+}
+.m-page__body .ant-table-wrapper .ant-table .ant-table-tbody > tr.m-ss__row:not(.is-viewed):hover > td:not(.m-ss__playcell) {
+  background: var(--m-surface-hover);
+}
+.m-ss__table .m-ss__row:not(.is-viewed) { --m-ss-play-ground: var(--m-surface-selected); }
+.m-ss__table .m-ss__row:not(.is-viewed):hover { --m-ss-play-ground: var(--m-surface-hover); }
+
 /* ⚠ ONE THING AT THE ROW'S RIGHT EDGE. The bookmark sat beside the play for
    one morning and came off the same evening - see SessionsPage for the reason,
    which is that nobody bookmarks a session they have not watched yet. So the
