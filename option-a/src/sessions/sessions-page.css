@@ -239,21 +239,42 @@
    the only place in the app where the list writes to the search. */
 .m-ss__meta { display: flex; align-items: center; gap: var(--m-space-2); min-width: 0; }
 
+/* ── A METADATA VALUE IS A TAG, NOT A ONE-OFF PILL (Gabriel, 2026-09-04) ──────
+   A borderless flat fill read as its own invented chip next to the "Last
+   viewed" one, which IS the shared `Chip` (see the note there). This is a
+   `<button>` rather than that component - it has its own click, its own
+   tooltip and its own hover, none of which `Chip` carries - so it restates
+   the SAME tokens `.m-chip--tag` reads (`--m-status-neutral-*`, `--m-font-tag`
+   and friends) rather than composing the component, and resets the native
+   button chrome those tokens assume is already gone. */
 .m-ss__meta-chip {
   max-width: 7rem;
   overflow: hidden;
-  padding-inline: var(--m-space-2);
+  margin: 0;
+  padding-inline: var(--m-space-3);
+  border: var(--m-border-width) solid var(--m-status-neutral-border);
   border-radius: var(--m-radius-chip);
-  background: var(--m-surface-hover);
-  color: var(--m-content-secondary);
-  font-size: var(--m-text-2xs);
-  line-height: 1.5;
+  background: var(--m-status-neutral-bg);
+  color: var(--m-status-neutral-fg);
+  cursor: pointer;
+  font-family: var(--m-font-tag);
+  font-size: var(--m-tag-size);
+  font-weight: var(--m-tag-weight);
+  text-transform: var(--m-tag-case);
+  letter-spacing: var(--m-tag-tracking);
+  line-height: 1;
+  height: 1.25rem;
   white-space: nowrap;
   text-overflow: ellipsis;
   transition: background-color var(--m-duration-instant) var(--m-ease-out),
+    border-color var(--m-duration-instant) var(--m-ease-out),
     color var(--m-duration-instant) var(--m-ease-out);
 }
-.m-ss__meta-chip:hover { background: var(--m-surface-active); color: var(--m-content-primary); }
+.m-ss__meta-chip:hover {
+  background: var(--m-surface-active);
+  border-color: var(--m-border-strong);
+  color: var(--m-content-primary);
+}
 
 /* ── the play, pinned to the right edge ──────────────────────────────────────
    See SessionsPage for the three positions this glyph has had. What is here is
