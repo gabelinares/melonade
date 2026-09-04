@@ -246,7 +246,7 @@ const SPACED = {
   'control-height-md': '2.125rem', // 34
   'control-height-lg': '2.5rem',   // 40
   'row-height': '2.875rem',        // 46
-  'nav-row-height': '2.375rem',    // 38
+  'nav-row-height': '2.125rem',    // 34: pulled back with the compact value, 2026-09-04
   'header-height': '3.25rem',      // 52
 };
 
@@ -513,7 +513,7 @@ export interface ProtoCorners {
 
 export const CORNERS: Record<string, ProtoCorners> = ${j(Object.fromEntries(CORNERS.map((c) => [c.key, { label: c.label, note: c.note, chip: c.chip, control: c.control, surface: c.surface, check: c.check }])))};
 
-export const DEFAULTS = { grey: '${GREYS[0].key}', accent: '${ACCENTS[0].key}', font: '${FONTS[0].key}', density: 'compact', corners: 'soft', filters: 'outline' } as const;
+export const DEFAULTS = { grey: '${GREYS[0].key}', accent: '${ACCENTS[0].key}', font: '${FONTS[0].key}', density: 'compact', corners: 'soft', filters: 'outline', trigger: 'button' } as const;
 
 export type GreyKey = keyof typeof GREYS;
 export type AccentKey = keyof typeof ACCENTS;

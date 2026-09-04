@@ -401,8 +401,16 @@ export const layout = {
      height while the gaps around it grow reads as a spacing bug rather than as
      a roomier product". It is not `control-height-md` because a nav row is not
      a control - it went to 32 at compact for the air Mehdi asked for, where
-     every input and button stayed at 30. A section row is this minus 2. */
-  'nav-row-height': '2rem',        // 32
+     every input and button stayed at 30.
+
+     ⚠ BACK DOWN TO 30, 2026-09-04. Mehdi, on the Spaced variant: the menu was
+     too spaced, mainly the sections under an agent - a few extra pixels on one
+     row compounds down a whole list of them. Pulled back at both densities, not
+     just Spaced, so a row and its section stay the same shape wherever the
+     density control sits. The Spaced override moves with it (gen-proto-themes.mjs)
+     and so does the section row's own subtraction (nav-item.css, now -4 not -2,
+     so a section reads as clearly smaller rather than one pixel off its parent). */
+  'nav-row-height': '1.875rem',    // 30
   'header-height': '2.75rem',      // 44
 } as const;
 

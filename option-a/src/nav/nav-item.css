@@ -86,10 +86,12 @@
 
 /* A section row. No icon, so the label starts where the parent's label starts
    minus the rail, and the row is quieter than the thing it belongs to - now in
-   the type as well as in the colour: REGULAR under the parent's medium, and two
-   pixels shorter. */
+   the type as well as in the colour: REGULAR under the parent's medium, and
+   four pixels shorter (was two, 2026-09-04 - Mehdi: a whole list of these is
+   where "too spaced" actually shows up, so a section needs to read as clearly
+   smaller than its parent, not one pixel off it). */
 .m-nav-item.is-nested {
-  height: calc(var(--m-nav-row-height) - 2px);
+  height: calc(var(--m-nav-row-height) - 4px);
   color: var(--m-content-muted);
   font-weight: var(--m-weight-regular);
 }
