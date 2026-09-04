@@ -81,49 +81,79 @@
    the card. It is in the head's right-hand cluster now, where every other list
    in this app keeps its filter. */
 
-/* THE COMMON SHAPE. Everything both share: the ring, the glyph, the badge, the
-   accent, the press. */
+/* ── THE COMMON SHAPE ────────────────────────────────────────────────────────
+   Everything both shapes share: the geometry, the ring, the glyph, the badge,
+   the press.
+
+   ⚠ AND IT IS NEUTRAL AGAIN (Gabriel, 2026-09-04: "the filter design before the
+   torch was way better, the colours - the blue was not evident, only in the
+   torch"). It wore the accent for half a day, on Mehdi's *"have it in blue or
+   in something obvious"* - a tinted fill, an accent border and accent ink.
+
+   The two asks are not in conflict once you notice WHERE the colour was doing
+   its work. A permanently blue control is obvious in the way a highlighter is:
+   it is the loudest thing in a row of quiet ones whether or not you are looking
+   for it, and this page spends its one accent elsewhere. The TORCH is obvious in
+   the way a light is - it answers when you approach, and it is the same blue.
+   So the colour stayed and stopped being on all the time.
+
+   Which leaves the control drawn the way every other control here is drawn: a
+   tint on a bright card, a hairline, muted ink, and it brightens towards the
+   paper under the pointer. */
 .m-sc__filter {
   position: relative;
   isolation: isolate;
   display: inline-flex;
   align-items: center;
   gap: var(--m-space-3);
-  color: var(--m-content-accent);
-  background: var(--m-surface-selected);
-  border: var(--m-border-width) solid var(--m-border-accent);
+  color: var(--m-content-muted);
+  /* A white control on a white card is a rectangle held together by one
+     hairline; the tint is what makes it read as a place to press. */
+  background: var(--m-surface-canvas);
+  border: var(--m-border-width) solid var(--m-border-default);
   border-radius: var(--m-radius-control);
   cursor: pointer;
   transition:
+    color var(--m-duration-fast) var(--m-ease-out),
     background var(--m-duration-fast) var(--m-ease-out),
     border-color var(--m-duration-fast) var(--m-ease-out);
 }
 
-.m-sc__filter:hover { border-color: var(--m-content-accent); }
-/* A press is 40ms of nothing moving anywhere else - the one bit of physics in
-   the app, on the one control that starts something. */
+/* IT BRIGHTENS UNDER THE POINTER, which is the direction a control on a light
+   ground should move: towards the paper, not away from it. */
+.m-sc__filter:hover {
+  color: var(--m-content-secondary);
+  background: var(--m-surface-default);
+  border-color: var(--m-border-strong);
+}
+/* A press is the one bit of physics in the app, on the one control that starts
+   something. */
 .m-sc__filter:active { transform: translateY(0.5px); }
-.m-sc__filter-glyph { flex: none; }
+
+.m-sc__filter-glyph {
+  flex: none;
+  color: var(--m-content-decorative);
+  transition: color var(--m-duration-fast) var(--m-ease-out);
+}
+.m-sc__filter:hover .m-sc__filter-glyph { color: var(--m-content-secondary); }
 
 /* ── THE KEYBOARD BADGE ──────────────────────────────────────────────────────
-   It is not decoration and it is not a power-user affordance: it is the line
-   that tells you this is a LAUNCHER rather than a field, before you find out by
-   typing. Every control shaped like this one - Linear's, Raycast's, GitHub's -
-   carries it, so it reads as a convention rather than as an invention.
+   Not decoration and not a power-user affordance: it is the line that says this
+   is a LAUNCHER rather than a field, before you find out by typing. Every
+   control shaped like this one carries it, so it reads as a convention rather
+   than as an invention.
 
-   Quiet: the accent at a third, on a fill a shade off the button's own, and it
-   never takes the pointer. */
+   Quieter than the label it sits beside, and it never takes the pointer. */
 .m-sc__key {
   flex: none;
   padding: 1px var(--m-space-2);
   font-family: var(--m-font-num);
   font-size: var(--m-text-2xs);
   line-height: 1.5;
-  color: var(--m-content-accent);
+  color: var(--m-content-placeholder);
   background: var(--m-surface-default);
-  border: var(--m-border-width) solid var(--m-border-accent);
+  border: var(--m-border-width) solid var(--m-border-subtle);
   border-radius: var(--m-radius-chip);
-  opacity: 0.6;
   pointer-events: none;
 }
 
@@ -141,7 +171,6 @@
   height: var(--m-control-height-sm);
   padding-inline: var(--m-space-3) var(--m-space-2);
   font-size: var(--m-text-xs);
-  font-weight: var(--m-weight-medium);
 }
 [data-trigger='button'] .m-sc__barcopy { display: none; }
 
@@ -157,7 +186,6 @@
   height: calc(var(--m-control-height-lg) + var(--m-space-2));
   padding-inline: var(--m-space-5);
   font-size: var(--m-text-md);
-  font-weight: 400;
 }
 [data-trigger='bar'] .m-sc__filter-word { display: none; }
 [data-trigger='bar'] .m-sc__key { margin-inline-start: auto; }
@@ -176,7 +204,7 @@
 
 .m-sc__lead {
   flex: none;
-  color: var(--m-content-accent);
+  color: var(--m-content-placeholder);
 }
 
 /* A little more muted than the lead it follows: the lead is the instruction and
@@ -398,14 +426,29 @@
 
    Collapsed it is the whole row: the sentence, the count, and Clear. There is
    nothing under it, so it closes the well itself. */
+/* ⚠ ONE INSET ON ALL FOUR SIDES (Gabriel, 2026-09-04: "paddings should be the
+   same top bottom and right left").
+
+   It was 6px top, 12px sides, 0 bottom - three numbers, and the bottom one was
+   zero because the rule list underneath supplied its own. That reads as an
+   accident from the moment the row can be the ONLY thing in the card: the
+   trigger sat 12px from the card's left edge and 6px from its top, so the one
+   control on an empty filter was visibly off-centre in its own box.
+
+   `--m-sc-inset` is the card's own measurement, used by this row and by the
+   list below it, so the two can never disagree again. */
+.m-sc { --m-sc-inset: var(--m-space-4); }
+
 .m-sc__strip {
   display: flex;
   align-items: center;
   gap: var(--m-space-4);
   min-height: var(--m-control-height-md);
-  padding: var(--m-space-3) var(--m-space-5) 0;
+  padding: var(--m-sc-inset);
 }
-.m-sc__strip.is-collapsed { padding-bottom: var(--m-space-4); }
+/* The list below carries the bottom inset when there is one, so the row does
+   not double it. */
+.m-sc__strip:not(.is-empty):not(.is-collapsed) { padding-bottom: 0; }
 
 /* The disclosure and the summary are ONE control, because the sentence is the
    thing you click - pointing at a caret four pixels wide to reveal a filter you
@@ -541,7 +584,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--m-space-1);
-  padding: 0 var(--m-space-3) var(--m-space-3);
+  /* ⚠ THE SAME INSET AS THE ROW ABOVE IT, minus the row's own two pixels of
+     control padding on each side, so a rule's subject lines up with the
+     trigger's glyph rather than sitting two pixels inside it. */
+  padding: 0 var(--m-sc-inset) var(--m-sc-inset);
 }
 
 /* ── THE SECTION HEADINGS ────────────────────────────────────────────────────
@@ -637,35 +683,29 @@
 .m-sc__head-hint { margin-inline-start: auto; }
 
 /* ── THE RIGHT-HAND CLUSTER ──────────────────────────────────────────────────
-   The window, the save and the way in, at the top right - aligned with the
-   table's own right edge below it, and in the same order every other list uses.
-
-   ⚠ IT WRAPS, and that is what lets the BAR shape survive here. A full-width
-   bar in a right-hand cluster is either not full width or pushes the window off
-   the row; given a whole line of its own it is neither. */
+   The window and the save, at the far end of the row. The TRIGGER is not in
+   here any more - it is the row's first child, on the left, where the thing you
+   act on belongs and the thing it runs over does not. */
 .m-sc__head-trailing {
   display: flex;
   align-items: center;
   gap: var(--m-space-3);
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  flex: 1;
-  min-width: 0;
+  flex: none;
   margin-inline-start: auto;
 }
 
-/* THE BAR TAKES THE WHOLE LINE, under the cluster rather than in it. `order`
-   rather than a different parent, so the two shapes stay one element in one
-   place - which is the only way the comparison between them is fair. */
-[data-trigger='bar'] .m-sc__head-trailing .m-sc__triggerwrap {
-  flex: 1 0 100%;
-  order: 9;
-  margin-block-start: var(--m-space-2);
+/* ⚠ THE BAR TAKES WHAT THE WINDOW LEAVES, on the same row rather than a line of
+   its own. It needed its own line while it sat inside a right-hand cluster -
+   a full-width control and a right-aligned group cannot both have the row - and
+   the moment the trigger moved left that stopped being true. `min-width: 0` is
+   what lets it actually shrink rather than pushing the window off the end. */
+[data-trigger='bar'] .m-sc__triggerwrap {
+  flex: 1;
+  min-width: 0;
 }
 
-/* An empty search IS the head: the cluster, and nothing under it. So the row
-   closes the card itself and carries the padding a body would have had. */
-.m-sc__strip.is-empty { padding-bottom: var(--m-space-3); }
+/* An empty search IS the head: the row, and nothing under it. It closes the
+   card itself, on the same inset as every other side. */
 
 /* ⚠ `.m-sc__strip-trailing` LIVED HERE, for the morning the bar retired and
    the strip had to adopt the date range. The bar does not retire any more, so

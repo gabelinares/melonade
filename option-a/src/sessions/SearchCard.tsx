@@ -373,43 +373,31 @@ export function SearchCard({
             </span>
           )}
 
-          {/* CLEAR BELONGS TO THE SUMMARY, not to the right-hand cluster: it
-              undoes the thing the summary describes, and the cluster is the
-              three controls you reach for to BUILD a question. It does not
-              exist on an empty search, because it would clear nothing. */}
-          {any && (
-            <Button type="text" size="small" className="m-sc__clear" onClick={onClear}>
-              Clear
-            </Button>
-          )}
-
-          {/* ── THE RIGHT-HAND CLUSTER ────────────────────────────────────
-              The window, the save, and the way in - in that order, and it is
-              the SAME ORDER every other list uses: what period, then which
-              rows, then how they are drawn. See `.m-page__controls`. */}
-          <span className="m-sc__head-trailing">
-            {trailing}
-            {/* Saving is only possible once there is something to save. */}
-            {any && saveAction}
-      {/* ── THE TRIGGER, AT THE TOP RIGHT ────────────────────────────────
+      {/* ── THE TRIGGER, FIRST ON THE ROW ────────────────────────────────
           ⚠ IT HAS BEEN IN THREE PLACES IN ONE DAY, and the third is the one
           that agrees with the rest of the app. It opened the card (a search
           bar's position), then moved to the FOOT (an Add's position), and now
           sits at the head's right end - "move the filter icon to the right,
           aligned on the top right of the table" (Gabriel, 2026-09-04).
 
-          What the foot got right is that this makes rules and the rules are the
-          content. What it got wrong is that EVERY OTHER LIST IN THIS APP puts
-          its filter at the top right, beside the window and the display menu -
-          Issues, Synthetics, Runs, Audits - so a sessions page that hid it at
-          the bottom was the one page where the habit you build everywhere else
-          does not work. Consistency across seven pages beats a better argument
-          on one.
+          ⚠ AND FOURTH: THE LEFT END OF THAT ROW (Gabriel, 2026-09-04: "the
+          button, on the button version, is on the left, not right - it's just
+          this case"). The other lists put their filter at the top right because
+          there it is one control among four on a toolbar. Here it is THE
+          control, and the thing on the right is the WINDOW it runs over - so the
+          row reads in the order you build in: what you are asking for, then over
+          what period, then what to do with the answer.
 
-          ⚠ THE BAR SHAPE STILL TAKES ITS OWN LINE. It is full width by
-          definition, so in a right-hand cluster it would either not be a bar or
-          would push the window off the row. It wraps under the cluster instead;
-          see `data-trigger='bar'` in the stylesheet.
+          ⚠ FIRST IN THE DOM TOO, not shuffled into place with `order`: it is the
+          first thing you reach by keyboard on this card, and a row whose tab
+          order disagrees with its reading order is a row that works for nobody
+          looking at it.
+
+          ⚠ AND THE BAR SHARES THE ROW rather than wrapping under it. It took a
+          line of its own while the trigger was on the right, because a
+          full-width control and a right-hand cluster cannot both have the row.
+          With the trigger on the left, "full width" simply means "the width the
+          window leaves it". One row in both shapes.
 
           ── TWO SHAPES, ONE CONTROL (prototype panel → "Filter entry") ──────
           Mehdi killed the bar on 09-03 with a reason worth respecting - "we
@@ -478,6 +466,35 @@ export function SearchCard({
           taken={takenProperties}
         />
       </div>
+
+          {/* CLEAR BELONGS TO THE SUMMARY, not to the right-hand cluster: it
+              undoes the thing the summary describes, and the cluster is the
+              three controls you reach for to BUILD a question. It does not
+              exist on an empty search, because it would clear nothing. */}
+          {any && (
+            <Button type="text" size="small" className="m-sc__clear" onClick={onClear}>
+              Clear
+            </Button>
+          )}
+
+          {/* ── THE RIGHT-HAND CLUSTER ────────────────────────────────────
+              ⚠ SAVE COMES FIRST, AND THE WINDOW LAST (Gabriel, 2026-09-04:
+              "change the Save as segment and the Past 30 days order, because
+              the segment isn't saved with the date - it might be confusing").
+
+              He is right, and the reason is stronger than the ordering: A
+              SEGMENT DOES NOT STORE ITS WINDOW. It holds rules, and the window
+              belongs to whichever list you later open it in - so Save sitting
+              immediately after "Past 30 days" read as a caption on it, as if
+              the thirty days were part of what you were about to keep.
+
+              Putting the window at the far end breaks that adjacency and leaves
+              the row reading in the order you actually work: build it, keep it,
+              and separately choose the period you are looking at. */}
+          <span className="m-sc__head-trailing">
+            {/* Saving is only possible once there is something to save. */}
+            {any && saveAction}
+            {trailing}
           </span>
         </div>
       )}

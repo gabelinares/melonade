@@ -225,8 +225,12 @@ const trigger = await p.evaluate(() => {
        other list in this app keeps its filter at the top right. Consistency
        across seven pages beats a better argument on one. */
     atTop: r.top < card.top + 60,
-    /* flush with the card's right edge, which is the table's right edge below */
-    fromRight: Math.round(card.right - r.right),
+    /* ⚠ FLUSH WITH THE CARD'S LEFT EDGE now (Gabriel, 09-04: "the button, on
+       the button version, is on the left, not right - it's just this case").
+       The other lists put their filter top-right because there it is one
+       control among four; here it is THE control and the thing on the right is
+       the window it runs over. */
+    fromLeft: Math.round(r.left - card.left),
     /* the accent is spent here, on Mehdi's instruction: "in blue or in
        something obvious" - so the fill is NOT the card's own colour */
     bg: cs.backgroundColor,
@@ -239,9 +243,26 @@ check('there is exactly ONE way into the filter, and by default it is a BUTTON',
   !!trigger && trigger.shape === 'button' && trigger.word === 'Filter'
     && trigger.width < trigger.clusterWidth,
   `${trigger?.shape}: "${trigger?.word}" at ${trigger?.width}px`);
-check('it sits at the card\u2019s top right, aligned with the table\u2019s own edge',
-  trigger.atTop && trigger.fromRight < 24,
-  `${trigger.atTop ? 'top' : 'not top'}, ${trigger.fromRight}px from the right edge`);
+check('it sits at the card\u2019s top LEFT, first on the row and first in the tab order',
+  trigger.atTop && trigger.fromLeft < 24,
+  `${trigger.atTop ? 'top' : 'not top'}, ${trigger.fromLeft}px from the left edge`);
+
+/* ⚠ AND THE CARD'S INSET IS ONE NUMBER. It was 6px top, 12px sides and 0
+   bottom - which nobody could see until the row became the only thing in the
+   card, and then the one control on an empty filter was visibly off-centre in
+   its own box. */
+const inset = await p.evaluate(() => {
+  const card = document.querySelector('.m-sc').getBoundingClientRect();
+  const t = document.querySelector('.m-sc__filter').getBoundingClientRect();
+  return {
+    left: Math.round(t.left - card.left),
+    top: Math.round(t.top - card.top),
+    bottom: Math.round(card.bottom - t.bottom),
+  };
+});
+check('and the card insets it by the same measure on every side',
+  Math.abs(inset.left - inset.top) <= 1 && Math.abs(inset.top - inset.bottom) <= 1,
+  `${inset.left} left, ${inset.top} top, ${inset.bottom} bottom`);
 check('and it wears the accent, which is the one place this page spends it',
   trigger.bg !== 'rgb(255, 255, 255)' && trigger.ink !== 'rgb(0, 0, 0)',
   `${trigger.bg} / ${trigger.ink}`);
@@ -656,6 +677,12 @@ const doors = await p.evaluate(() => ({
      then you can use less space." One row where there were two. */
   onHead: !!document.querySelector('.m-sc__head-trailing .m-daterange, .m-sc__head-trailing button'),
   save: document.querySelector('.m-sc__save')?.textContent?.trim(),
+  saveBeforeWindow: (() => {
+    const cluster = document.querySelector('.m-sc__head-trailing');
+    const kids = [...(cluster?.children ?? [])];
+    const save = kids.findIndex((k) => k.querySelector?.('.m-sc__save') || k.classList.contains('m-sc__save'));
+    return save === 0 && kids.length > 1;
+  })(),
   savedBesideClear: (() => {
     const strip = document.querySelector('.m-sc__strip');
     return !!strip?.querySelector('.m-sc__save') && !!strip?.querySelector('.m-sc__clear');
@@ -668,8 +695,13 @@ check('and both sections are still named, because the scope has to be readable',
   doors.heads.join('/') === 'Events/Group filters', doors.heads.join('/'));
 check('the window rides the head row, one row where there were two',
   doors.onHead);
-check('Save as segment sits beside Clear, where it can only be reached once it is true',
+check('Save as segment is on the row, where it can only be reached once it is true',
   doors.savedBesideClear && /Save as segment/.test(doors.save ?? ''), doors.save ?? 'not on the strip');
+/* ⚠ AND IT DOES NOT TOUCH THE WINDOW. A segment holds RULES; the date belongs
+   to whichever list you open it in later, so Save sitting immediately after
+   "Past 30 days" read as a caption on it (Gabriel, 09-04). */
+check('and the window is the last thing on the row, not the thing Save sits against',
+  doors.saveBeforeWindow, `save then window: ${doors.saveBeforeWindow}`);
 
 /* AND CLEARING LEAVES THE DOOR WHERE IT WAS. */
 await p.mouse.move(200, 300);

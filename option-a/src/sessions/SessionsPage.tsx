@@ -668,7 +668,13 @@ export function SessionsPage({ model }: SessionsPageProps) {
               title={
                 model.filters.some((f) => entryOf(f.entryId)?.category === 'segments')
                   ? 'A search that uses a segment cannot itself be saved'
-                  : 'Save this search as a segment'
+                  : /* ⚠ AND IT SAYS WHAT IS NOT KEPT. A segment holds RULES; the
+                       date window belongs to whichever list you open it in
+                       later. The button used to sit next to "Past 30 days",
+                       which read as a caption on it - moving it broke the
+                       adjacency, and saying so outright closes the question for
+                       anybody who wondered. */
+                    'Save these rules as a segment. The date window is not part of it.'
               }
             >
               {/* The span is antd's own requirement: a disabled button fires no
