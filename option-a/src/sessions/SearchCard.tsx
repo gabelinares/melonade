@@ -99,8 +99,9 @@ export interface SearchCardProps {
    *  you add a second country - France filters the list to France, and France
    *  is then the only country the picker can see. */
   rows: readonly SessionRow[];
-  /** What the rules currently hold, for the strip. Defaults to `rows.length`,
-   *  which is right wherever the pool and the result are the same list. */
+  /** ⚠ NO LONGER READ, and kept because the callers still pass it and the
+   *  segment drawer may want it back. The filter's row carried a session count
+   *  until 2026-09-04; the result is stated by the component that holds it. */
   resultCount?: number;
   /** The controls that belong to the LIST rather than to the search - the date
    *  range and the display menu. They ride the search's own bar because the
@@ -195,7 +196,6 @@ export function SearchCard({
   onEventsOrder,
   onClear,
   rows,
-  resultCount,
   trailing,
   saveAction,
   variant = 'page',
@@ -334,11 +334,19 @@ export function SearchCard({
             </Tooltip>
           )}
 
-          {any && (
-            <span className="m-sc__count">
-              {resultCount ?? rows.length} {(resultCount ?? rows.length) === 1 ? 'session' : 'sessions'}
-            </span>
-          )}
+          {/* ⚠ THE RESULT COUNT LEFT THIS ROW (Gabriel, 2026-09-04: "remove
+              the sessions count from the filter bar, leave only the number of
+              events and filters").
+
+              It was here on the argument that a filter should say what it
+              caught. It should - and it already does, twice: the table's footer
+              prints "1-12 of 134" and the issue-type strip prints a count per
+              kind, both of them one component below and both about the same
+              set. Three counts of one thing is how a reader learns to check
+              which one is lying.
+
+              What is left on this row is the only count the RESULT cannot give
+              you: how many clauses produced it. */}
           {/* ⚠ AND IT CAME BACK HERE, the same day (Gabriel, 2026-09-04: "you
               also have removed the events order, then and and or - go back to
               what it was").

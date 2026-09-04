@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Button, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { Plus, Users, UserRound } from 'lucide-react';
+import { Layers, Plus, Users, UserRound } from 'lucide-react';
 import {
   describeSegment,
   segmentCount,
@@ -47,13 +47,29 @@ import './segments-panel.css';
    the same control the sessions list uses for its issue kinds, one row above,
    which is the consistency he is asking for.
 
-   It stays MULTI-SELECT, because a segment can be both yours and shared: with
-   neither picked you see everything, which is how every strip in this app reads
-   an empty selection. */
-const OWNER_TABS = [
+   ⚠ AND IT IS SINGLE-SELECT, WITH AN "ALL" (Gabriel, 2026-09-04: "there should
+   be the All item on the left tab - besides, a tab menu is one where the tab
+   MOVES, just like the others; it's not something you can select each").
+
+   It was multi-select, on the reasoning that a segment can be both yours and
+   shared, so with neither picked you saw everything. True about the data and
+   wrong about the control: a strip whose thumb can be in two places at once, or
+   in none, is not a tab bar - it is a row of checkboxes wearing one. The
+   sliding thumb is what makes a strip readable without being read, and it only
+   exists if exactly one item is on.
+
+   So the third state gets a NAME instead of being the absence of the other two.
+   "All" is what you are looking at when you have not narrowed, said out loud,
+   and it is where every other strip in this app starts. */
+type Owner = 'all' | 'mine' | 'shared';
+const OWNER_TABS: { key: Owner; label: string; icon: React.ReactNode }[] = [
+  { key: 'all', label: 'All', icon: <Layers size={13} /> },
   { key: 'mine', label: 'Mine', icon: <UserRound size={13} /> },
   { key: 'shared', label: 'Team', icon: <Users size={13} /> },
 ];
+
+const ownedBy = (seg: SavedSegment, who: Owner) =>
+  who === 'all' ? true : who === 'mine' ? seg.mine : seg.shared;
 
 type SegSort = 'updated' | 'name' | 'count';
 const SEG_SORTS = [
@@ -117,22 +133,18 @@ export interface SegmentsPanelProps {
  * ════════════════════════════════════════════════════════════════════════════
  */
 export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: SegmentsPanelProps) {
-  const [owners, setOwners] = useState<readonly string[]>([]);
+  const [owner, setOwner] = useState<Owner>('all');
   const [sort, setSort] = useState<SegSort>('updated');
   const [fields, setFields] = useState<readonly SegField[]>(['count', 'owner', 'updated']);
 
   const shown = useMemo(() => {
-    /* No owner picked is every owner, which is how every other filter in this
-       app reads an empty dimension. */
-    const kept = owners.length
-      ? segments.filter((seg) => owners.some((o) => (o === 'mine' ? seg.mine : seg.shared)))
-      : segments;
+    const kept = segments.filter((seg) => ownedBy(seg, owner));
     const by = [...kept];
     if (sort === 'name') by.sort((a, b) => a.name.localeCompare(b.name));
     else if (sort === 'count') by.sort((a, b) => segmentCount(b, pool) - segmentCount(a, pool));
     else by.sort((a, b) => b.updatedAt - a.updatedAt);
     return by;
-  }, [segments, owners, sort, pool]);
+  }, [segments, owner, sort, pool]);
 
   const has = (f: SegField) => fields.includes(f);
   const toggleField = (f: SegField) =>
@@ -141,8 +153,21 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
   /* ⚠ FILTER THEN DISPLAY, which is the order every list in this app uses:
      what period, then which rows, then how they are drawn. Tests had them the
      other way round until 09-04 and it was the only page that did. */
+  /* ⚠ THE STRIP IS ON THE LEFT AND THE BUTTONS ARE ON THE RIGHT (Gabriel,
+     2026-09-04: "the segment tabs are not consistent with everything else - it
+     is a tab menu on the left, just like sessions").
+
+     It was all one right-aligned cluster, which put a two-way choice you READ
+     in the corner reserved for controls you PRESS. Every list in this app
+     splits the row the same way: what narrows it on the left, what acts on it
+     on the right - including the sessions table one row above, which is the
+     comparison he is making.
+
+     ⚠ `.m-page__controls` IS THE RIGHT-HAND HALF, not the whole row. Its
+     `margin-left: auto` is what puts it there, so wrapping the strip in it too
+     was the bug. */
   const head = (
-    <div className="m-page__controls">
+    <>
       <FilterStrip
         label="Whose segments"
         items={OWNER_TABS.map((t) => ({
@@ -152,11 +177,12 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
           /* ⚠ COUNTED OFF THE UNFILTERED LIST, so the figures hold still as you
              narrow. A count that changes when you tick it is a count of the
              wrong thing. */
-          count: segments.filter((seg) => (t.key === 'mine' ? seg.mine : seg.shared)).length,
+          count: segments.filter((seg) => ownedBy(seg, t.key)).length,
         }))}
-        selected={owners as string[]}
-        onSelect={(k) => setOwners((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]))}
+        selected={[owner]}
+        onSelect={(k) => setOwner(k as Owner)}
       />
+      <div className="m-page__controls">
       {/* ⚠ NEW SEGMENT LEADS THE RIGHT-HAND BUTTONS (Gabriel, 2026-09-04). It
           is the only thing on this page that MAKES one, and everything else in
           the cluster only changes how the ones you have are drawn - so it goes
@@ -164,8 +190,8 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
           read as another display control. */}
       <Button size="small" className="m-seg__new" icon={<Plus size={13} />} onClick={onNew}>
         New segment
-      </Button>
-      <DisplayShell
+        </Button>
+        <DisplayShell
         label="Display segments"
         changeCount={(sort === 'updated' ? 0 : 1) + (3 - fields.length)}
         onReset={() => {
@@ -187,9 +213,10 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
           },
         ]}
         fields={SEG_FIELDS.map((f) => ({ value: f.value, label: f.label, on: has(f.value) }))}
-        onToggleField={(v) => toggleField(v as SegField)}
-      />
-    </div>
+          onToggleField={(v) => toggleField(v as SegField)}
+        />
+      </div>
+    </>
   );
 
   const columns: TableColumnsType<SavedSegment> = [

@@ -621,7 +621,11 @@ check('the order control is on the strip, beside the count it changes',
 await p.locator('.m-sc__clear').click();
 await p.waitForTimeout(350);
 await addEntry('Click');
-const before = await p.evaluate(() => document.querySelector('.m-sc__count')?.textContent?.trim());
+/* ⚠ READ OFF THE FOOTER, not the filter's row. The row carried a session count
+   until 09-04 and now carries only the clause counts - the result is stated
+   once, by the component that holds the result. */
+const footCount = () => p.evaluate(() => document.querySelector('.m-listfoot__range')?.textContent?.trim() ?? '');
+const before = await footCount();
 await p.hover('.m-srow');
 await p.waitForTimeout(200);
 await p.locator('.m-srow__prop-add').first().click();
@@ -633,9 +637,15 @@ await p.fill('.m-pick__search input', 'URL');
 await p.waitForTimeout(300);
 await p.locator('.m-pick__row').first().click();
 await p.waitForTimeout(400);
-const pending = await p.evaluate(() => document.querySelector('.m-sc__count')?.textContent?.trim());
+const pending = await footCount();
 check('a sub-filter with no value yet narrows nothing, and says so rather than emptying the list',
   pending === before, `${before} → ${pending}`);
+/* ⚠ AND THE COUNT IS STATED ONCE. The filter's row carried a session count
+   beside its clause counts, and the footer and the issue strip both carry the
+   same figure one component below - three counts of one set is how a reader
+   learns to check which of them is lying. */
+check('the filter row counts clauses, and leaves counting sessions to the result',
+  (await p.locator('.m-sc__count').count()) === 0);
 
 await p.locator('.m-srow__prop .m-vp__trigger').first().click();
 await p.waitForTimeout(450);
@@ -643,13 +653,19 @@ await p.locator('.m-vp .m-checkrow').first().click();
 await p.waitForTimeout(300);
 await p.mouse.click(900, 40);
 await p.waitForTimeout(450);
-const scoped = await p.evaluate(() => ({
-  count: document.querySelector('.m-sc__count')?.textContent?.trim(),
-  n: Number(document.querySelector('.m-sc__count')?.textContent?.trim().split(' ')[0]),
-}));
-const beforeN = Number((before ?? '0').split(' ')[0]);
+await p.waitForTimeout(300);
+const scopedText = await footCount();
+/* ⚠ THE FOOTER HAS TWO SHAPES: "1–12 of 40 sessions" when the list is paged and
+   just "10 sessions" when it fits on one page. Reading only the first was how a
+   filter that narrowed 40 to 10 reported zero. */
+const ofN = (t) => {
+  const m = t.match(/of\s+([\d,]+)/) ?? t.match(/([\d,]+)\s+sessions?/);
+  return Number((m ?? [])[1]?.replace(/,/g, '') ?? 0);
+};
+const scoped = { count: scopedText, n: ofN(scopedText) };
+const beforeN = ofN(before);
 check('AND THE EVENT-LEVEL FILTER ACTUALLY FILTERS — the funnel was decoration until 09-04',
-  scoped.n > 0 && scoped.n < beforeN, `${before} → ${scoped.count}`);
+  scoped.n > 0 && scoped.n < beforeN, `${before} → ${scopedText}`);
 
 /* ── 5c. ONE DOOR, AND IT DOES NOT MOVE ─────────────────────────────────────
    ⚠ THIRD ARRANGEMENT IN A DAY, and the reasoning is worth keeping because each
@@ -1444,7 +1460,7 @@ const strip = () =>
     return {
       collapsed: el.classList.contains('is-collapsed'),
       summary: el.querySelector('.m-sc__summary')?.textContent?.trim(),
-      count: el.querySelector('.m-sc__count')?.textContent?.trim(),
+      count: 'gone',
       hasClear: !!el.querySelector('.m-sc__clear'),
       rows: document.querySelectorAll('.m-srow').length,
       /* the row it sits on has to be doing something with its height */
@@ -1751,6 +1767,18 @@ check('the twelve grounds are actually spread over the list',
    asserted is the part that is easy to break and impossible to see in a
    screenshot - it is STICKY, so narrowing the window cannot take the one
    affordance on the page off the side of it. */
+/* ⚠ START FROM A KNOWN LIST, and a RELOAD is the only honest way to get one.
+   Everything above leaves the page in whatever state its last click made - an
+   issue tab, a date window, a filter - and any one of those can produce an
+   empty list, which here means no play glyph and a null dereference forty lines
+   later that reads as a missing feature rather than as leftover state.
+
+   Clearing the filter is not enough: it is one of four things that can empty
+   this list. */
+await p.reload({ waitUntil: 'networkidle' });
+await p.waitForTimeout(400);
+await section('Sessions');
+await p.locator('.m-ss__row').first().waitFor({ state: 'attached', timeout: 8000 });
 const playRest = await p.evaluate(() => {
   const g = document.querySelector('.m-ss__play');
   const cell = g?.closest('td');
@@ -1796,7 +1824,16 @@ const playShape = await p.evaluate(() => {
   const box = svg.getBoundingClientRect();
   return {
     paths: paths.length,
-    outlined: paths.every((x) => getComputedStyle(x).fill === 'none' && parseFloat(getComputedStyle(x).strokeWidth) > 0),
+    /* ⚠ THE OUTER PATH ONLY. The inner triangle is FILLED on an unwatched
+       session - that is the whole unwatched cue - so "every path is stroked"
+       was asserting that the first row happens to be one somebody has already
+       played. It passed for weeks and broke the moment the list started from a
+       clean reload. */
+    outlined: (() => {
+      const outer = paths.find((x) => !x.classList.contains('m-ormark__inner')) ?? paths[0];
+      const cs = getComputedStyle(outer);
+      return cs.fill === 'none' && parseFloat(cs.strokeWidth) > 0;
+    })(),
     offCentre: Math.round((box.left + box.right) / 2 - (cell.left + cell.right) / 2),
     target: Math.round(document.querySelector('.m-ss__play').getBoundingClientRect().width),
   };
@@ -2046,6 +2083,12 @@ const seg = await p.evaluate(() => {
   const panel = document.querySelector('.m-panel');
   const head = document.querySelector('.m-panel__head');
   const tabs = [...(head?.querySelectorAll('.m-seg__item') ?? [])].map((b) => b.textContent.trim());
+  /* ⚠ WHAT NARROWS THE LIST ON THE LEFT, WHAT ACTS ON IT ON THE RIGHT - the
+     same split the sessions table one row above uses. */
+  const strip = head?.querySelector('.m-seg');
+  const stripLeft = strip
+    ? Math.round(strip.getBoundingClientRect().left - head.getBoundingClientRect().left)
+    : 999;
   const buttons = [...(head?.querySelectorAll('button') ?? [])]
     .filter((b) => !b.classList.contains('m-seg__item'))
     .map((b) => (b.textContent || b.getAttribute('aria-label') || '').trim())
@@ -2054,6 +2097,8 @@ const seg = await p.evaluate(() => {
     card: !!panel && getComputedStyle(panel).backgroundColor !== 'rgba(0, 0, 0, 0)',
     radius: panel ? getComputedStyle(panel).borderRadius : null,
     tabs,
+    stripLeft,
+    on: head?.querySelectorAll('.m-seg__item[aria-pressed="true"], .m-seg__item.is-on').length ?? 0,
     buttons,
     /* no question panel here: there is no filter over a list of saved filters */
     panels: document.querySelectorAll('.m-page__body > .m-panel').length,
@@ -2072,9 +2117,16 @@ check('the segments tab is a card like every other list, not a table on the grou
 
    And NEW SEGMENT LEADS THE RIGHT-HAND BUTTONS: it is the only thing here that
    makes one, and everything else only changes how the ones you have are drawn. */
-check('the strip is Mine and Team, on the left, each with its own count',
-  /^Mine\d/.test(seg.tabs[0] ?? '') && /^Team\d/.test(seg.tabs[1] ?? ''),
-  seg.tabs.join(' | ') || 'no strip');
+check('the strip is All, Mine and Team, on the left, each with its own count',
+  /^All\d/.test(seg.tabs[0] ?? '') && /^Mine\d/.test(seg.tabs[1] ?? '')
+    && /^Team\d/.test(seg.tabs[2] ?? '') && seg.stripLeft < 24,
+  `${seg.tabs.join(' | ')} at ${seg.stripLeft}px from the left`);
+/* ⚠ AND EXACTLY ONE IS ON, which is what makes it a tab bar rather than a row
+   of checkboxes: the sliding thumb only exists if the selection is single
+   (Gabriel, 09-04: "a tab menu is one where the tab MOVES; it's not something
+   you can select each"). */
+check('and exactly one tab is on, so the thumb has somewhere to be',
+  seg.on === 1, `${seg.on} selected`);
 check('and New segment leads the buttons, with Display after it',
   /New segment/.test(seg.buttons[0] ?? '') && /Display segments/.test(seg.buttons[1] ?? ''),
   seg.buttons.slice(0, 3).join(' | ') || 'no buttons');
