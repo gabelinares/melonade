@@ -6,12 +6,26 @@
 
 /* Two lines, and the row is as tall as they are. Same shape as an audit's name
    over its scope, for the same reason: the second line is what the first one
-   means. */
-.m-seg__cell { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+   means.
+
+   ⚠ THE SAME NUMBERS AS `.m-audits__name-cell` AND `.m-pa__name-cell`, on
+   purpose (Gabriel, 2026-09-04: "segments has the same structure as audits and
+   alerts, but it looks different, with a different padding"). It said "same
+   shape" and was a 1px flex gap with no block padding against their 3px grid
+   gap inside 6px of padding - a row two lines tall on three pages, and the
+   third one shorter. Three copies of one rule is already one too many; if a
+   fourth two-line cell arrives, that is the day it becomes a component. */
+.m-seg__cell {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding-block: var(--m-space-3);
+}
 
 .m-seg__name {
   color: var(--m-content-primary);
   font-weight: var(--m-weight-medium);
+  line-height: var(--m-leading-tight);
 }
 
 /* THE RULES, in the search's own voice. Muted and one size down: it is the
@@ -19,6 +33,7 @@
 .m-seg__rules {
   color: var(--m-content-muted);
   font-size: var(--m-text-xs);
+  line-height: var(--m-leading-tight);
 }
 
 .m-seg__n {
