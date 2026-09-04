@@ -5844,3 +5844,48 @@ in-memory), asserts each table or grid renders its fixture rows, that
 search/filter/sort narrow the visible set, that a `StubDrawer` opens and
 closes on a row, and reads computed dark-mode styles rather than trusting
 class presence.
+
+## §41 — The inspector under the recording (2026-09-04)
+
+Mehdi asked for the replay's dev tools three times (08-26, 08-27, 09-01) as
+*the one addition anywhere* to the scope. The first cut put Console and
+Network in the journey side panel as two more tabs; Gabriel sent
+production's own screenshots the same afternoon and set the shape: **"a
+bottom collapse/expand section, just like the inspecting tool of Chrome …
+using exactly the capabilities of OpenReplay, don't bring data we don't
+have."**
+
+**What production has, read out of the player code** (`Controls.tsx`,
+`shared/DevTools/*`, `Session_/OverviewPanel`, `Session_/Performance`,
+`Session_/Storage`): seven tabs in the transport bar — X-Ray, Console,
+Network, Performance, State, Events, Traces — a red dot on the ones with
+errors, a panel that grows above the bar with a resize handle, a 40px header
+of sub-tabs on the left and filters on the right, rows that carry their time,
+fade once they are ahead of the playhead, and jump when clicked. State only
+exists when a store is detected, Events when `tracker.event()` or an
+integration posted something, Traces when a backend-log integration is
+connected.
+
+**What was built** (`src/replay/devtools/`): the strip is its own thin row
+between the stage and the transport — Chrome's shape, tabs on the lid of the
+thing they open — so the track keeps its width. The panel is one box the tabs
+swap the inside of; height persists across tabs; the open tab closes on a
+second click. X-Ray, Console, Network and Performance are drawn in full from
+data the tracker sends (`sessionLogs`, `sessionRequests`,
+`sessionPerformance` in `shared/replay.ts`, all read off `replayMarkers`, so
+a failed request, a red console line and the danger ring on the journey are
+one moment). State, Events and Traces show production's own empty states,
+because this fixture has no store, no custom events and no log integration —
+a true thing about the session rather than an invented one.
+
+Deliberate departures from production, each for a reason: a request opens
+inline rather than into a 500px drawer (the panel already is the drawer, and
+only what this project captures — facts and timings — is shown; "headers and
+bodies are not captured" is production's own line); "All tabs / Current tab"
+is not drawn on a single-tab session (a control whose click changes nothing);
+X-Ray's Hide/Show menu is a strip (a strip shows what is hidden too).
+
+Not done, on purpose: the Synthetics run drawer keeps its own
+console/network (Gabriel: "run flows network and console its still
+pending"); player fullscreen; autoscroll. Mehdi still owes the list of which
+of the seven to keep.

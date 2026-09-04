@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Issue, IssueSession } from '@shared/issues-data.ts';
 import { REPLAY_HOST, failureMoment, replayMarkers, replayUrl } from '@shared/replay.ts';
 import { ReplayFrame } from './ReplayFrame.tsx';
 import { ReplayTimeline } from './ReplayTimeline.tsx';
+import { DevTools, type DevTab } from './devtools/DevTools.tsx';
 import type { ReplayClock } from './useReplayClock.ts';
 import './replay-player.css';
 
@@ -56,6 +57,13 @@ export function ReplayPlayer({ issue, url, session, clock }: ReplayPlayerProps) 
   /* a click lands within a second of a marker, and rage clicks repeat */
   const justClicked = active != null && clock.at - active.at < 1;
 
+  /* THE DEV TOOLS BELONG TO THE PLAYER, not to the pane around it: the same
+     recording opened from the issue queue or from the sessions list carries
+     the same console, so the state lives at the one place both reach. Closed
+     by default - the recording is what you came for, the tools are what you
+     open when it raises a question. */
+  const [devTab, setDevTab] = useState<DevTab | null>(null);
+
   return (
     <section className="m-player" aria-label="Session replay">
       <div className="m-player__chrome">
@@ -89,6 +97,11 @@ export function ReplayPlayer({ issue, url, session, clock }: ReplayPlayerProps) 
           {active ? active.label : 'Session start'}
         </p>
       </div>
+
+      {/* The inspector, docked between the stage and the transport - Chrome's
+          shape. Its strip is always there; its panel takes the stage's height
+          when a tab is open, so the track below never moves. */}
+      <DevTools session={session} clock={clock} tab={devTab} onTab={setDevTab} />
 
       {/* No width toggle down here. Widening the player means collapsing the
           panel beside it, and that control lives in the pane header with the
