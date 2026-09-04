@@ -11,6 +11,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import type { Issue, IssueSession } from './issues-data.ts';
+import type { ConsoleLine, NetworkCall } from './runs-data.ts';
 
 export type MarkerKind = 'click' | 'rage' | 'error' | 'slow' | 'input' | 'nav';
 
@@ -244,4 +245,103 @@ export function journeySteps(issue: Issue, session: IssueSession): JourneyStep[]
       failure: markers.length > 0 && i === broke,
     };
   });
+}
+
+/* ── CONSOLE AND NETWORK, THE SAME SHAPE SYNTHETICS ALREADY DRAWS ────────────
+   Mehdi, 2026-09-01: design console and network once, on the replay page, then
+   put the same thing on a Synthetics run - "the one addition anywhere" to this
+   week's scope. It shipped in the other order: the run drawer's own
+   `NetworkTable`/`ConsoleView` (`tests/RunDrawer.tsx`) went out first, seeded
+   on `RunData`. This reads that design backwards onto a session - `ConsoleLine`
+   and `NetworkCall` are the run drawer's own types (`runs-data.ts`), not a
+   second version of the same idea, and the two lists share the drawer's own
+   `consoleErrorCount`/`netErrorCount` for their tab badges.
+
+   ⚠ A RUN ONLY KEEPS THESE WHEN IT FAILED - there is nothing to look at on a
+   pass. A SESSION is not that: it is a real visit, and there is always
+   something in the console and on the wire whether or not anything broke. So
+   the baseline lines and calls below are unconditional, and a marker's own
+   kind - found by `replayMarkers`, the same list the track and the journey
+   panel already read - only ADDS to them, at the moment it happened. The
+   three panels (track, journey, console/network) can never disagree about
+   when something went wrong, because all three are reading the one marker
+   list.
+
+   Seeded on the journey string rather than `Math.random`, for the reason
+   every other fixture in this file is: reload the page and the same session
+   shows the same lines at the same timestamps. */
+function hash32(str: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+const timingFor = (seed: number, wait: number) => ({
+  blocked: 1 + (seed % 3),
+  dns: seed % 7,
+  connect: 4 + (seed % 9),
+  send: 1,
+  wait,
+  receive: 2 + (seed % 5),
+});
+
+/** Where a marker's own label points, by the same rule `journeySteps` carries
+ *  forward - applied with no `Issue` to start it from, because the sessions
+ *  list opens this replay on no issue at all. */
+function pathFor(label: string, fallback: string): string {
+  const hit = PATH_RULES.find(([re]) => re.test(label));
+  return hit ? hit[1] : fallback;
+}
+
+/** The console, as the session's own markers would have produced it. */
+export function sessionConsole(session: IssueSession): ConsoleLine[] {
+  const seed = hash32(session.journey);
+  const markers = replayMarkers(session);
+  const lines: ConsoleLine[] = [
+    { level: 'log', at: 80, text: 'app: hydrated' },
+    {
+      level: 'log',
+      at: 240 + (seed % 300),
+      text: `router: navigated to ${pathFor(markers[0]?.label ?? '', '/')}`,
+    },
+  ];
+  for (const m of markers) {
+    const at = m.at * 1000;
+    if (m.kind === 'error') {
+      lines.push(
+        { level: 'error', at: Math.max(0, at - 60), text: 'Failed to load resource: the server responded with a status of 500' },
+        { level: 'error', at, text: `Uncaught (in promise) Error: ${m.label.toLowerCase()}` },
+      );
+    } else if (m.kind === 'slow') {
+      lines.push({ level: 'warn', at: Math.max(0, at - 400), text: 'Slow network is throttled: XHR finished loading in 4200ms' });
+    }
+  }
+  return lines.sort((a, b) => a.at - b.at);
+}
+
+/** The requests the session made. Same seed as `sessionConsole`, and read off
+ *  the same marker list, so the two panels never disagree about when things
+ *  went wrong. */
+export function sessionNetwork(session: IssueSession): NetworkCall[] {
+  const seed = hash32(session.journey);
+  const markers = replayMarkers(session);
+  const t = (wait: number) => timingFor(seed, wait);
+  const calls: NetworkCall[] = [
+    { method: 'GET', url: '/api/session', status: 200, time: 84 + (seed % 40), size: 1240, timing: t(70) },
+    { method: 'GET', url: '/api/user', status: 200, time: 96 + (seed % 50), size: 2180, timing: t(82) },
+  ];
+  for (const m of markers) {
+    const path = pathFor(m.label, '/');
+    if (m.kind === 'error') {
+      calls.push({ method: 'POST', url: `/api${path}`, status: 500, time: 5010, size: 180, timing: t(4980) });
+    } else if (m.kind === 'slow') {
+      calls.push({ method: 'GET', url: `/api${path}`, status: 200, time: 4200 + (seed % 600), size: 8600, timing: t(4100) });
+    } else if (m.kind === 'nav') {
+      calls.push({ method: 'GET', url: `/api${path}`, status: 200, time: 110 + (seed % 70), size: 3400, timing: t(90) });
+    }
+  }
+  return calls;
 }

@@ -55,11 +55,14 @@ const NEW_ISSUE_IDS: ReadonlySet<number> = new Set(
  * A union rather than a boolean per panel, because they share one column: two
  * booleans would let both be true and there is nowhere to put the second one.
  */
-/* Two TABS in the one side panel, and the panel belongs to the SESSION REPLAY:
-   'journey' is what the person did, 'details' is the write-up read beside the
-   recording. Neither exists at the issue depth, where the write-up is the
-   document on the page. */
-export type SidePanel = 'journey' | 'details';
+/* FOUR tabs in the one side panel now, and the panel belongs to the SESSION
+   REPLAY: 'journey' is what the person did, 'details' is the write-up read
+   beside the recording, and 'console'/'network' are the dev tools Mehdi asked
+   for three times over (08-26, 08-27, 09-01) as "the one addition anywhere" -
+   designed once here and read the same way a Synthetics run already reads its
+   own (`tests/RunDrawer.tsx`). None of the four exist at the issue depth,
+   where the write-up is the document on the page. */
+export type SidePanel = 'journey' | 'details' | 'console' | 'network';
 
 export function useIssues() {
   const [state, setState] = useState<IssuesState>(INITIAL_STATE);

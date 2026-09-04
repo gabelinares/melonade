@@ -239,6 +239,103 @@
   background: var(--m-border-subtle);
 }
 
+/* The error count on a tab, the same reading as the run drawer's own (Mehdi's
+   dev tools, designed once): a tab that says 2 is the reason anybody opens
+   it, so it is not a neutral chip. */
+.m-jrn__tab-err {
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-danger);
+}
+
+.m-jrn__none { padding: var(--m-space-6) var(--m-space-5); font-size: var(--m-text-sm); color: var(--m-content-muted); }
+
+/* ── CONSOLE, MACHINE OUTPUT ─────────────────────────────────────────────────
+   Same reading as the Synthetics run drawer's own (`tests/run-drawer.css`):
+   mono, and the level is the only colour. Narrower here, so the timestamp and
+   the message share a line rather than sitting in fixed columns. */
+.m-jrn__console { display: flex; flex-direction: column; padding: 0 var(--m-space-5) var(--m-space-6); }
+.m-jrn__cline {
+  display: flex;
+  gap: var(--m-space-3);
+  padding: var(--m-space-3) 0;
+  border-top: 1px solid var(--m-border-subtle);
+  font-family: var(--m-font-mono);
+  font-size: var(--m-text-xs);
+  line-height: var(--m-leading-snug);
+}
+.m-jrn__cline:first-child { border-top: none; }
+.m-jrn__cmsg { flex: 1; min-width: 0; color: var(--m-content-secondary); overflow-wrap: anywhere; }
+.m-jrn__cline.is-warn .m-jrn__cmsg { color: var(--m-content-warning); }
+.m-jrn__cline.is-error .m-jrn__cmsg { color: var(--m-content-danger); }
+
+/* ── NETWORK, THE FAILURE IS WHY THE TAB EXISTS ──────────────────────────────
+   Two lines a call rather than the drawer's one row of columns - method,
+   status and time on the first, the url on its own line below - because
+   18.5rem has no room for four columns beside each other. */
+.m-jrn__net { display: flex; flex-direction: column; padding: 0 var(--m-space-5) var(--m-space-6); }
+.m-jrn__call + .m-jrn__call { border-top: 1px solid var(--m-border-subtle); }
+.m-jrn__call-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--m-space-3) 0;
+  border: 0;
+  background: none;
+  border-radius: var(--m-radius-control);
+  text-align: left;
+  font-size: var(--m-text-xs);
+  cursor: pointer;
+}
+.m-jrn__call-row:hover { background: var(--m-surface-hover); }
+.m-jrn__call-head { display: flex; align-items: center; gap: var(--m-space-3); }
+.m-jrn__chev { flex: none; color: var(--m-content-decorative); transition: rotate var(--m-duration-fast) var(--m-ease-out); }
+.m-jrn__chev.is-open { rotate: 90deg; }
+.m-jrn__method { flex: none; font-family: var(--m-font-mono); color: var(--m-content-muted); }
+/* ⚠ THE AUTO MARGIN GOES ON `status` ALONE. Two auto margins on adjacent flex
+   items split the free space between them instead of pushing the pair
+   together to the edge - status would drift from method and time would drift
+   again from status, leaving an uneven gap where "200 · 84 ms" should read as
+   one group. */
+.m-jrn__status {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--m-font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-muted);
+}
+.m-jrn__time {
+  flex: none;
+  font-family: var(--m-font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--m-content-muted);
+}
+.m-jrn__url {
+  padding-left: calc(0.75rem + var(--m-space-3));
+  font-family: var(--m-font-mono);
+  color: var(--m-content-primary);
+}
+.m-jrn__call.is-bad .m-jrn__status { color: var(--m-content-danger); }
+.m-jrn__call.is-bad .m-jrn__url { color: var(--m-content-danger); }
+
+/* The HAR phases as one bar - same reading as the drawer's own, one segment
+   per phase rather than six numbers nobody compares. */
+.m-jrn__timing { display: flex; gap: 2px; padding: 0 0 var(--m-space-3) calc(0.75rem + var(--m-space-3)); }
+.m-jrn__phase {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-top: var(--m-space-4);
+  border-top: 3px solid var(--m-border-default);
+  font-size: var(--m-text-2xs);
+  overflow: hidden;
+}
+.m-jrn__phase em { font-style: normal; color: var(--m-content-muted); text-transform: capitalize; }
+.m-jrn__phase b { font-family: var(--m-font-num); font-weight: var(--m-weight-regular); color: var(--m-content-secondary); }
+.m-jrn__phase.is-wait { border-top-color: var(--m-content-accent); }
+
 /* Below this the pane cannot give up 18.5rem and stay readable, so the journey
    goes and the track along the bottom is the way through the session. */
 @media (max-width: 1240px) {
