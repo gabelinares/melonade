@@ -1,15 +1,6 @@
-import { useMemo, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { useMemo } from 'react';
 import type { Issue, IssueSession } from '@shared/issues-data.ts';
-import {
-  formatClock,
-  journeySteps,
-  sessionConsole,
-  sessionNetwork,
-  type JourneyStep,
-} from '@shared/replay.ts';
-import type { ConsoleLine, NetworkCall } from '@shared/runs-data.ts';
-import { consoleErrorCount, netErrorCount } from '@shared/runs-logic.ts';
+import { formatClock, journeySteps, type JourneyStep } from '@shared/replay.ts';
 import { CountSuffix } from '../components/CountSuffix.tsx';
 import { KIND_ICON, KIND_NAME } from './kinds.tsx';
 import type { ReplayClock } from './useReplayClock.ts';
@@ -64,14 +55,6 @@ export interface JourneyPanelProps {
  */
 export function JourneyPanel({ issue, session, clock, tab, onTab }: JourneyPanelProps) {
   const steps = useMemo(() => journeySteps(issue, session), [issue, session]);
-  /* ⚠ THE DEV TOOLS, DESIGNED ONCE HERE (Mehdi, 08-26/08-27/09-01: "the one
-     addition anywhere" to this week's scope). Same seed as the track and the
-     journey above - `sessionConsole`/`sessionNetwork` both read
-     `replayMarkers(session)`, so a request failing here is the same event as
-     the danger ring on the journey step and the marker on the track below,
-     never a second opinion about what happened. */
-  const consoleLines = useMemo(() => sessionConsole(session), [session]);
-  const networkCalls = useMemo(() => sessionNetwork(session), [session]);
 
   /* The last step the head has passed. -1 during the lead-in, so nothing is lit
      before the session has actually started. */
@@ -117,34 +100,10 @@ export function JourneyPanel({ issue, session, clock, tab, onTab }: JourneyPanel
         >
           Details
         </button>
-        <button
-          type="button"
-          role="tab"
-          className={`m-jrn__tab${shown === 'console' ? ' is-on' : ''}`}
-          aria-selected={shown === 'console'}
-          onClick={() => onTab('console')}
-        >
-          Console
-          {consoleErrorCount(consoleLines) > 0 && <em className="m-jrn__tab-err">{consoleErrorCount(consoleLines)}</em>}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          className={`m-jrn__tab${shown === 'network' ? ' is-on' : ''}`}
-          aria-selected={shown === 'network'}
-          onClick={() => onTab('network')}
-        >
-          Network
-          {netErrorCount(networkCalls) > 0 && <em className="m-jrn__tab-err">{netErrorCount(networkCalls)}</em>}
-        </button>
       </header>
 
       <div className="m-jrn__scroll">
-        {shown === 'console' ? (
-          <ConsoleLines lines={consoleLines} />
-        ) : shown === 'network' ? (
-          <NetworkCalls calls={networkCalls} />
-        ) : shown === 'details' ? (
+        {shown === 'details' ? (
           /* ── THE THREE ANSWERS, STACKED ────────────────────────────────────
              What happened, why it happens, what to do about it. They were three
              TABS inside the write-up, which made the reader click twice to read
@@ -243,70 +202,5 @@ function Step({ step, last, past, active, onSeek }: StepProps) {
         </span>
       </button>
     </li>
-  );
-}
-
-/** The console, at the level it was logged. Same shape and the same reading
- *  order as the Synthetics run drawer's own (`tests/RunDrawer.tsx`) - the
- *  design travelled, not just the type. */
-function ConsoleLines({ lines }: { lines: ConsoleLine[] }) {
-  if (lines.length === 0) return <p className="m-jrn__none">Nothing was logged.</p>;
-  return (
-    <div className="m-jrn__console">
-      {lines.map((l, i) => (
-        <div key={i} className={`m-jrn__cline is-${l.level}`}>
-          <span className="m-jrn__at m-mono">{(l.at / 1000).toFixed(1)}s</span>
-          <span className="m-jrn__cmsg">{l.text}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** The requests, and the one that failed is the reason this tab exists - so
- *  the failure is what the eye lands on and the rest stays grey. Narrower
- *  than the drawer's own table, so a call is two lines (method + status on
- *  one, the url on the next) rather than a row of columns with nowhere to
- *  put them at 18.5rem. */
-function NetworkCalls({ calls }: { calls: NetworkCall[] }) {
-  const [open, setOpen] = useState<number | null>(null);
-  if (calls.length === 0) return <p className="m-jrn__none">No requests were recorded.</p>;
-  return (
-    <div className="m-jrn__net">
-      {calls.map((c, i) => {
-        const bad = c.status >= 400;
-        return (
-          <div key={i} className={`m-jrn__call${bad ? ' is-bad' : ''}`}>
-            <button
-              type="button"
-              className="m-jrn__call-row"
-              onClick={() => setOpen(open === i ? null : i)}
-              aria-expanded={open === i}
-            >
-              <ChevronRight size={12} className={`m-jrn__chev${open === i ? ' is-open' : ''}`} aria-hidden="true" />
-              <span className="m-jrn__call-head">
-                <span className="m-jrn__method">{c.method}</span>
-                <span className="m-jrn__status">{c.status}</span>
-                <span className="m-jrn__time m-mono">{c.time} ms</span>
-              </span>
-              <span className="m-jrn__url m-mono m-truncate" title={c.url}>{c.url}</span>
-            </button>
-            {open === i && (
-              /* The HAR phases, as the bar the viewer draws - same reading as
-                 the drawer's own timing bar, one phase per segment rather than
-                 six numbers nobody compares. */
-              <div className="m-jrn__timing">
-                {(['blocked', 'dns', 'connect', 'send', 'wait', 'receive'] as const).map((k) => (
-                  <span key={k} className={`m-jrn__phase is-${k}`} style={{ flexGrow: Math.max(c.timing[k], 0.5) }}>
-                    <em>{k}</em>
-                    <b>{c.timing[k]} ms</b>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
   );
 }
