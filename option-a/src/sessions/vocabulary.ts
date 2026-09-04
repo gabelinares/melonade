@@ -32,3 +32,17 @@ export const EVENT_SCOPE = 'Applied to this event only';
    above survived because they are not the fork's: they name the two kinds
    wherever the two kinds are named, which is now the picker's group headings
    and the two sections of the rule list. */
+
+/* ── WHAT AN EMPTY SECTION SAYS ───────────────────────────────────────────────
+   ⚠ BOTH SECTIONS EXIST WHENEVER THE FILTER DOES, so one of them is routinely
+   a heading over nothing - and a heading over nothing reads as a section that
+   failed to load rather than as one you have not used.
+
+   ⚠ AND IT IS PLAIN. The first version tried to say what the absence MEANT -
+   "Nothing has to have happened", "No condition held across them" - which is
+   accurate, reads as a riddle, and is the wrong register for a line that
+   appears in the corner of a card you are in the middle of using. An empty
+   section only has to say it is empty; the heading above it already says what
+   the section is for. */
+export const EVENTS_EMPTY = 'No events yet';
+export const GROUP_EMPTY = 'No group filters yet';

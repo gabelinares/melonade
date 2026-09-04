@@ -482,9 +482,19 @@
 /* Open, it is a count of rows you can see, so it is quiet. Collapsed, it IS the
    filter - the only place the clauses are legible - so it takes primary ink and
    the room to say so. */
+/* ⚠ IT HOLDS ITS WIDTH, which is the whole point of counting instead of
+   narrating. `tabular-nums` stops the row twitching as a count crosses from one
+   digit to two, and it never wraps or truncates - the sentence it replaced did
+   both, and did them in the middle of a serialised error string.
+
+   No `min-width`: the two kinds already give it a floor of about twenty
+   characters, and a fixed one would leave a gap on the common case to defend
+   against a case that cannot happen. */
 .m-sc__summary {
-  min-width: 0;
+  flex: none;
   font-size: var(--m-text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: var(--m-content-muted);
 }
 .m-sc__summary.is-static { padding-inline: var(--m-space-2); }
@@ -710,3 +720,18 @@
 /* ⚠ `.m-sc__strip-trailing` LIVED HERE, for the morning the bar retired and
    the strip had to adopt the date range. The bar does not retire any more, so
    the list's controls never move and the strip never needs the slot. */
+
+/* ── AN EMPTY SECTION ────────────────────────────────────────────────────────
+   As quiet as text gets while still being read: the smallest size in the scale,
+   the most muted ink, and it sits on the rows' own left edge so it reads as
+   where a row WOULD be rather than as a caption on the heading above it.
+
+   No icon, no dashed box, no "add one" link. Two of the three would be louder
+   than the rules they stand in for, and the third is the button at the other
+   end of the row that you have already been given. */
+.m-sc__none {
+  margin: 0;
+  padding: var(--m-space-2) var(--m-space-3);
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-placeholder);
+}

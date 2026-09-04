@@ -12,7 +12,7 @@ import { EmptyState } from '../components/EmptyState.tsx';
 import { ListFooter } from '../components/ListFooter.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { PagePanel } from '../components/PageCard.tsx';
-import { FilterMenu } from '../components/FilterMenu.tsx';
+import { FilterStrip } from '../components/FilterStrip.tsx';
 import { DisplayShell, MenuSelect } from '../components/DisplayMenu.tsx';
 import './segments-panel.css';
 
@@ -35,17 +35,25 @@ import './segments-panel.css';
 
    The vocabulary is its own too: you filter segments by WHOSE they are, which
    is the only dimension a saved search has that a session does not. */
-type OwnerKey = 'owner';
-/** ⚠ EVERY OPTION CARRIES ITS COUNT, which the menu requires and is right to:
- *  an option that would return nothing should say so before you pick it, not
- *  after. Counted off the unfiltered list, so the figures do not move as you
- *  narrow - a count that changes when you tick it is a count of the wrong
- *  thing. */
-const ownerOptions = (segments: readonly SavedSegment[]) => [
-  { value: 'mine', label: 'Yours', count: segments.filter((s) => s.mine).length },
-  { value: 'shared', label: 'Shared with the team', count: segments.filter((s) => s.shared).length },
+/* ⚠ A TAB BAR, NOT A FILTER MENU (Gabriel, 2026-09-04: "to be consistent, in
+   segments you'll add a tab bar with Mine and Team, with icons, on the left on
+   top of the table").
+
+   Whose a segment is has exactly two answers and every segment has one, which
+   is the shape a strip is for and the shape a menu is not: a menu hides a
+   two-way choice behind a click and a badge, and then needs a count on the
+   trigger to tell you whether it is doing anything. The strip shows both
+   answers, both counts and the current state without being opened - and it is
+   the same control the sessions list uses for its issue kinds, one row above,
+   which is the consistency he is asking for.
+
+   It stays MULTI-SELECT, because a segment can be both yours and shared: with
+   neither picked you see everything, which is how every strip in this app reads
+   an empty selection. */
+const OWNER_TABS = [
+  { key: 'mine', label: 'Mine', icon: <UserRound size={13} /> },
+  { key: 'shared', label: 'Team', icon: <Users size={13} /> },
 ];
-const SEG_FILTER_ICONS = { owner: UserRound };
 
 type SegSort = 'updated' | 'name' | 'count';
 const SEG_SORTS = [
@@ -135,14 +143,28 @@ export function SegmentsPanel({ segments, pool, onOpen, onApply, onNew }: Segmen
      other way round until 09-04 and it was the only page that did. */
   const head = (
     <div className="m-page__controls">
-      <FilterMenu<OwnerKey>
-        dimensions={[{ key: 'owner', label: 'Owner', options: ownerOptions(segments) }]}
-        isActive={(_k, v) => owners.includes(v)}
-        onToggle={(_k, v) => setOwners((s) => (s.includes(v) ? s.filter((x) => x !== v) : [...s, v]))}
-        activeCount={owners.length}
-        icons={SEG_FILTER_ICONS}
-        label="Filter segments"
+      <FilterStrip
+        label="Whose segments"
+        items={OWNER_TABS.map((t) => ({
+          key: t.key,
+          label: t.label,
+          icon: t.icon,
+          /* ⚠ COUNTED OFF THE UNFILTERED LIST, so the figures hold still as you
+             narrow. A count that changes when you tick it is a count of the
+             wrong thing. */
+          count: segments.filter((seg) => (t.key === 'mine' ? seg.mine : seg.shared)).length,
+        }))}
+        selected={owners as string[]}
+        onSelect={(k) => setOwners((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]))}
       />
+      {/* ⚠ NEW SEGMENT LEADS THE RIGHT-HAND BUTTONS (Gabriel, 2026-09-04). It
+          is the only thing on this page that MAKES one, and everything else in
+          the cluster only changes how the ones you have are drawn - so it goes
+          first, where a primary action goes, rather than last where it would
+          read as another display control. */}
+      <Button size="small" className="m-seg__new" icon={<Plus size={13} />} onClick={onNew}>
+        New segment
+      </Button>
       <DisplayShell
         label="Display segments"
         changeCount={(sort === 'updated' ? 0 : 1) + (3 - fields.length)}

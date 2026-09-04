@@ -526,3 +526,14 @@
   top: var(--m-panel-head-h, 0px);
   z-index: 2;
 }
+
+/* ⚠ THE DISPLAY MENU IS RIGHT-ALIGNED, as it is on every other page (Gabriel,
+   2026-09-04). It followed the issue-type strip immediately, which put it at a
+   different horizontal position on every page - the strip's width is the number
+   of issue kinds - so the one control you reach for without reading was
+   somewhere new each time.
+
+   `margin-inline-start: auto` rather than a spacer element: the head is a flex
+   row and the strip is allowed to take whatever it needs, so the menu is
+   whatever is left over at the end. */
+.m-ss__display { margin-inline-start: auto; }

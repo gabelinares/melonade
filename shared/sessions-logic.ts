@@ -655,6 +655,47 @@ export function describeRules(
   return parts.join(', ');
 }
 
+/**
+ * ════════════════════════════════════════════════════════════════════════════
+ * THE FILTER IN NUMBERS, which is what the COLLAPSED row prints.
+ *
+ * ⚠ IT USED TO PRINT THE SENTENCE (`describeRules`), on the argument that
+ * collapsing something should never cost you knowing what it said. The argument
+ * is right and the sentence was the wrong instrument for it. Two things went
+ * wrong, and the second is the one you cannot design around:
+ *
+ *   IT TRUNCATES WHERE THE CONTENT IS. A real error filter carries a serialised
+ *   response - `Error where Value is {"message":"GET error on /managed-saas/
+ *   billing"} then Page, OS contains…` - so the ellipsis lands in the middle of
+ *   a JSON blob and the clauses AFTER it, which are the ones you have not read
+ *   yet, are the ones you lose.
+ *
+ *   AND ITS WIDTH IS THE FILTER'S WIDTH. A row that is 40 characters wide with
+ *   two clauses and 400 with three makes the collapsed state a different shape
+ *   every time you meet it, which is exactly what a collapsed state must not be:
+ *   the thing you learn to glance at.
+ *
+ * So the row counts instead - "2 events · 1 group filter" - in the vocabulary
+ * the sections use, and the sentence moves to the toggle's tooltip, where
+ * length costs nothing. Nothing is hidden; it is one hover away instead of
+ * truncated in place.
+ *
+ * A kind with nothing in it is omitted rather than printed as a zero: "0 group
+ * filters" is a fact about a section that is not there.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+export function summariseRules(
+  events: readonly SearchFilter[],
+  properties: readonly SearchFilter[],
+): string {
+  const parts: string[] = [];
+  if (events.length) parts.push(`${events.length} ${events.length === 1 ? 'event' : 'events'}`);
+  if (properties.length) {
+    parts.push(`${properties.length} group ${properties.length === 1 ? 'filter' : 'filters'}`);
+  }
+  return parts.join(' · ');
+}
+
 /** A segment's own rules as that sentence. */
 export const describeSegment = (seg: SavedSegment): string => {
   const { events, properties } = splitFilters(seg.filters);

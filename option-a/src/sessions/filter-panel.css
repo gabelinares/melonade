@@ -13,7 +13,21 @@
    beats the rule of thumb when the rule's reason does not apply. */
 .m-fpanel {
   position: absolute;
-  inset-block-start: 0;
+  /* ⚠ UNDER THE TRIGGER, NOT OVER IT (Gabriel, 2026-09-04: "make the filter
+     popover not on top of the filter bar but below it, like how a dropdown
+     usually works").
+
+     It opened AT the trigger's own top-left, which is what made the morph
+     literal - the first frame was the button, in the button's place. It also
+     meant the control you had just pressed disappeared under its own menu, so
+     there was nothing on screen tying the panel to the thing that opened it,
+     and closing it made a control reappear where a list had been.
+
+     The morph survives intact: the panel still starts at the trigger's measured
+     width and height, it simply starts them one gap lower. So it still grows
+     out of the button - downwards, which is where every dropdown in this app
+     and every dropdown anywhere else goes. */
+  inset-block-start: calc(100% + var(--m-space-2));
   inset-inline-start: 0;
   z-index: 20;
   display: flex;

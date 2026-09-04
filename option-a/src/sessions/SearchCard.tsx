@@ -3,6 +3,7 @@ import { Button, Select, Tooltip } from 'antd';
 import { Filter } from 'lucide-react';
 import {
   describeRules,
+  summariseRules,
   type CatalogueEntry,
   type EventsOrder,
   type SearchFilter,
@@ -14,7 +15,7 @@ import { FilterPanel } from './FilterPanel.tsx';
 import { SearchRow } from './SearchRow.tsx';
 import { useFilterCollapse } from './useFilterCollapse.ts';
 import { useTorch } from './useTorch.ts';
-import { EVENTS_HEAD, GROUP_HEAD, GROUP_SCOPE } from './vocabulary.ts';
+import { EVENTS_HEAD, EVENTS_EMPTY, GROUP_HEAD, GROUP_EMPTY, GROUP_SCOPE } from './vocabulary.ts';
 import './search-card.css';
 
 /* ── WHAT THE BUTTON SAYS ─────────────────────────────────────────────────────
@@ -294,26 +295,45 @@ export function SearchCard({
               true and it is not worth a line: it restates the absence of a
               filter to somebody who can see there is no filter, next to a
               button whose whole job is to make one. */}
-          {!any ? null : canCollapse ? (
-            <button
-              type="button"
-              className="m-sc__toggle"
-              onClick={toggleCollapsed}
-              aria-expanded={!collapsed}
-              aria-controls="m-sc-rows"
+          {!any ? null : (
+            /* ⚠ THE SUMMARY IS A COUNT, NOT A SENTENCE (Gabriel, 2026-09-04:
+                "make the closed version a better summary - maybe just the
+                number of events and filters, in a way that the width of the
+                collapsed version is always the same").
+
+                It printed `describeRules`, on the argument that collapsing
+                something should never cost you knowing what it said. Right
+                argument, wrong instrument: a real error filter carries a
+                serialised response, so the ellipsis landed inside a JSON blob
+                and ate the clauses you had not read yet - and the row was a
+                different width every time you met it, which is the one thing a
+                collapsed state must not be.
+
+                THE SENTENCE MOVED TO THE TOOLTIP, where length costs nothing.
+                Nothing is hidden; it is one hover away instead of truncated in
+                place. See `summariseRules`. */
+            <Tooltip
+              title={describeRules(events, properties, eventsOrder)}
+              mouseEnterDelay={0.4}
+              placement="bottomLeft"
             >
-              <ChevronDown size={13} className="m-sc__caret" aria-hidden="true" />
-              <span className="m-sc__summary m-truncate">
-                {collapsed
-                  ? describeRules(events, properties, eventsOrder)
-                  : `${rowCount} ${rowCount === 1 ? 'filter' : 'filters'}`}
-              </span>
-            </button>
-          ) : (
-            <span className="m-sc__summary is-static">
-              {rowCount === 1 ? '1 filter' : `${rowCount} filters`}
-            </span>
+              {canCollapse ? (
+                <button
+                  type="button"
+                  className="m-sc__toggle"
+                  onClick={toggleCollapsed}
+                  aria-expanded={!collapsed}
+                  aria-controls="m-sc-rows"
+                >
+                  <ChevronDown size={13} className="m-sc__caret" aria-hidden="true" />
+                  <span className="m-sc__summary">{summariseRules(events, properties)}</span>
+                </button>
+              ) : (
+                <span className="m-sc__summary is-static">{summariseRules(events, properties)}</span>
+              )}
+            </Tooltip>
           )}
+
           {any && (
             <span className="m-sc__count">
               {resultCount ?? rows.length} {(resultCount ?? rows.length) === 1 ? 'session' : 'sessions'}
@@ -467,16 +487,6 @@ export function SearchCard({
         />
       </div>
 
-          {/* CLEAR BELONGS TO THE SUMMARY, not to the right-hand cluster: it
-              undoes the thing the summary describes, and the cluster is the
-              three controls you reach for to BUILD a question. It does not
-              exist on an empty search, because it would clear nothing. */}
-          {any && (
-            <Button type="text" size="small" className="m-sc__clear" onClick={onClear}>
-              Clear
-            </Button>
-          )}
-
           {/* ── THE RIGHT-HAND CLUSTER ────────────────────────────────────
               ⚠ SAVE COMES FIRST, AND THE WINDOW LAST (Gabriel, 2026-09-04:
               "change the Save as segment and the Past 30 days order, because
@@ -492,6 +502,27 @@ export function SearchCard({
               the row reading in the order you actually work: build it, keep it,
               and separately choose the period you are looking at. */}
           <span className="m-sc__head-trailing">
+            {/* ⚠ CLEAR IS RIGHT-ALIGNED WITH THE REST (Gabriel, 2026-09-04:
+                "the Clear button should always be aligned in the right part,
+                not in a random place").
+
+                It sat after the summary, on the argument that it undoes the
+                thing the summary describes - which put it at a different
+                horizontal position for every filter, because the summary's
+                width was the filter's width. That was already the wrong side of
+                the trade before the summary became a count, and it is plainly
+                wrong now: a destructive verb should be somewhere you can find
+                without reading, and "wherever the sentence happens to end" is
+                the opposite of that.
+
+                It leads the cluster rather than closing it, so the two verbs
+                that DISPOSE of a filter stay together and the window - which
+                belongs to neither - stays at the far end. */}
+            {any && (
+              <Button type="text" size="small" className="m-sc__clear" onClick={onClear}>
+                Clear
+              </Button>
+            )}
             {/* Saving is only possible once there is something to save. */}
             {any && saveAction}
             {trailing}
@@ -542,6 +573,11 @@ export function SearchCard({
           <div className="m-sc__head">
             <span className="m-sc__head-name">{EVENTS_HEAD}</span>
           </div>
+          {/* ⚠ A SUBTLE EMPTY STATE, because both headings exist whenever the
+              filter does (Gabriel, 2026-09-04). A heading over nothing reads as
+              a section that failed to load; a line saying what the absence
+              MEANS reads as a section you have not used yet. */}
+          {events.length === 0 && <p className="m-sc__none">{EVENTS_EMPTY}</p>}
           {events.map((f, i) => (
             <SearchRow
               key={f.key}
@@ -579,6 +615,7 @@ export function SearchCard({
             {events.length > 0 && <span className="m-sc__head-hint">{GROUP_SCOPE}</span>}
           </div>
 
+          {properties.length === 0 && <p className="m-sc__none">{GROUP_EMPTY}</p>}
           {properties.map((f) => (
             <SearchRow
               key={f.key}

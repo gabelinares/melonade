@@ -675,13 +675,18 @@ const doors = await p.evaluate(() => ({
      summary strip. Mehdi, 09-03: "maybe custom range and that button for
      display on the right - maybe then you can merge with the line above it and
      then you can use less space." One row where there were two. */
-  onHead: !!document.querySelector('.m-sc__head-trailing .m-daterange, .m-sc__head-trailing button'),
+  onHead: !!document.querySelector('.m-sc__head-trailing .m-dr, .m-sc__head-trailing button'),
   save: document.querySelector('.m-sc__save')?.textContent?.trim(),
+  /* ⚠ BEFORE THE WINDOW, wherever Clear happens to be. Clear leads the cluster
+     since 09-04 so the two verbs that dispose of a filter stay together; what
+     has to hold is that SAVE is not sitting against the window, which is what
+     made it read as a caption on it. */
   saveBeforeWindow: (() => {
-    const cluster = document.querySelector('.m-sc__head-trailing');
-    const kids = [...(cluster?.children ?? [])];
-    const save = kids.findIndex((k) => k.querySelector?.('.m-sc__save') || k.classList.contains('m-sc__save'));
-    return save === 0 && kids.length > 1;
+    const kids = [...(document.querySelector('.m-sc__head-trailing')?.children ?? [])];
+    const at = (sel) => kids.findIndex((k) => k.matches?.(sel) || k.querySelector?.(sel));
+    const save = at('.m-sc__save');
+    const win = at('.m-dr');
+    return save >= 0 && win > save;
   })(),
   savedBesideClear: (() => {
     const strip = document.querySelector('.m-sc__strip');
@@ -1127,7 +1132,7 @@ const emptyFilter = await p.evaluate(() => ({
   pills: document.querySelectorAll('.m-sc__example, .m-sc__empty, .m-sc__hint').length,
   strip: !!document.querySelector('.m-sc__strip'),
   summary: document.querySelector('.m-sc__summary')?.textContent?.trim(),
-  window: !!document.querySelector('.m-sc__head-trailing .m-daterange, .m-sc__head-trailing button'),
+  window: !!document.querySelector('.m-sc__head-trailing .m-dr'),
 }));
 /* ⚠ THE HEAD SURVIVES AN EMPTY FILTER, and that is the change. It used to
    appear only once there was something to summarise, which meant the DATE
@@ -1458,12 +1463,24 @@ check('scrolling into the results collapses the filter by itself',
   shut.collapsed && shut.rows === 0, `collapsed ${shut.collapsed}, ${shut.rows} rows drawn`);
 /* COLLAPSED IT STILL SAYS WHAT IT IS. That is the difference between a collapse
    and hiding something: the same `describeFilter` the segments list prints. */
-/* The order word is whatever the earlier step left it as, so match any of the
-   three rather than pinning it - the claim is that the SENTENCE is there, not
-   which conjunction is in it. */
-check('and collapsed it prints the whole filter as one sentence',
-  /add_to_cart (then|and|or) checkout_start, Country/.test(shut.summary ?? '') && !!shut.count,
+/* ⚠ IT COUNTS RATHER THAN NARRATING (Gabriel, 2026-09-04). It printed the whole
+   filter as a sentence, on the argument that collapsing should never cost you
+   knowing what it said - right argument, wrong instrument: a real error filter
+   carries a serialised response, so the ellipsis landed inside a JSON blob and
+   ate the clauses you had not read, and the row was a different width every
+   time you met it. The sentence is one hover away instead. */
+check('and collapsed it counts the two kinds, in the vocabulary the sections use',
+  /^\d+ events? · \d+ group filters?$/.test(shut.summary ?? '') && !!shut.count,
   `${shut.summary} · ${shut.count}`);
+/* antd renders its tooltip into a portal on hover, so this is a real hover
+   rather than a title attribute read off the trigger. */
+await p.locator('.m-sc__toggle').hover();
+await p.locator('.ant-tooltip:visible').first().waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
+const tip = (await p.locator('.ant-tooltip:visible').first().textContent().catch(() => null))?.trim();
+check('and the sentence survives on the toggle, where length costs nothing',
+  /add_to_cart (then|and|or) checkout_start/.test(tip ?? ''), tip ?? 'no tooltip');
+await p.mouse.move(200, 300);
+await p.waitForTimeout(300);
 
 await p.locator('.m-sc__toggle').click();
 await p.waitForTimeout(400);
@@ -1486,7 +1503,7 @@ const one = await p.evaluate(() => ({
   summary: document.querySelector('.m-sc__summary')?.textContent?.trim(),
 }));
 check('one clause keeps the disclosure, because a control that comes and goes reads as broken',
-  one.toggle && one.summary === '1 filter', `toggle ${one.toggle}, says ${one.summary}`);
+  one.toggle && one.summary === '1 group filter', `toggle ${one.toggle}, says ${one.summary}`);
 
 /* ── 13. AN OPEN CONTROL IS NOT AN ACCENT ───────────────────────────────────
    Gabriel, on the operator dropdown: "this colour in that state is a weird
@@ -2028,13 +2045,16 @@ await p.waitForTimeout(500);
 const seg = await p.evaluate(() => {
   const panel = document.querySelector('.m-panel');
   const head = document.querySelector('.m-panel__head');
-  const controls = [...(head?.querySelectorAll('button') ?? [])]
-    .map((b) => (b.getAttribute('aria-label') ?? b.textContent ?? '').trim())
+  const tabs = [...(head?.querySelectorAll('.m-seg__item') ?? [])].map((b) => b.textContent.trim());
+  const buttons = [...(head?.querySelectorAll('button') ?? [])]
+    .filter((b) => !b.classList.contains('m-seg__item'))
+    .map((b) => (b.textContent || b.getAttribute('aria-label') || '').trim())
     .filter(Boolean);
   return {
     card: !!panel && getComputedStyle(panel).backgroundColor !== 'rgba(0, 0, 0, 0)',
     radius: panel ? getComputedStyle(panel).borderRadius : null,
-    controls,
+    tabs,
+    buttons,
     /* no question panel here: there is no filter over a list of saved filters */
     panels: document.querySelectorAll('.m-page__body > .m-panel').length,
     rows: document.querySelectorAll('.m-seg__row').length,
@@ -2043,9 +2063,21 @@ const seg = await p.evaluate(() => {
 check('the segments tab is a card like every other list, not a table on the ground',
   seg.card && seg.radius !== '0px' && seg.rows > 0,
   `card ${seg.card}, radius ${seg.radius}, ${seg.rows} rows`);
-check('and it carries a filter and a display menu, in that order',
-  /Filter segments/.test(seg.controls[0] ?? '') && /Display segments/.test(seg.controls[1] ?? ''),
-  seg.controls.slice(0, 3).join(' | ') || 'no controls');
+/* ⚠ A STRIP RATHER THAN A FILTER MENU (Gabriel, 2026-09-04: "add a tab bar with
+   Mine and Team, with icons, on the left on top of the table"). Whose a segment
+   is has two answers and every segment has one, which is the shape a strip is
+   for: a menu would hide a two-way choice behind a click and a badge. It is
+   also the control the sessions list uses one row above, which is the
+   consistency he asked for.
+
+   And NEW SEGMENT LEADS THE RIGHT-HAND BUTTONS: it is the only thing here that
+   makes one, and everything else only changes how the ones you have are drawn. */
+check('the strip is Mine and Team, on the left, each with its own count',
+  /^Mine\d/.test(seg.tabs[0] ?? '') && /^Team\d/.test(seg.tabs[1] ?? ''),
+  seg.tabs.join(' | ') || 'no strip');
+check('and New segment leads the buttons, with Display after it',
+  /New segment/.test(seg.buttons[0] ?? '') && /Display segments/.test(seg.buttons[1] ?? ''),
+  seg.buttons.slice(0, 3).join(' | ') || 'no buttons');
 check('and it is ONE component, because a list of saved searches has nothing to filter above it',
   seg.panels === 1, `${seg.panels} panels`);
 await section('Sessions');
