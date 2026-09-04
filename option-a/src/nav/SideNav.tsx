@@ -137,56 +137,31 @@ export function SideNav({ active, onNavigate, agentCount, newSessions = 0, colla
 
   return (
     <nav className={`m-nav${collapsed ? ' is-collapsed' : ''}`} aria-label="Main">
-      {/* ── the logo, and the collapse opposite it ──────────────────────────
-          The mark and the name on the left; the collapse in the top right
-          corner (Gabriel, 2026-09-03), where it reshapes the column from the
-          column's own corner rather than from a row of unrelated glyphs at the
-          bottom.
+      {/* ── the logo ────────────────────────────────────────────────────────
+          ⚠ BIGGER, AND ALONE ON ITS ROW (Mehdi, 2026-09-04: *"make the
+          OpenReplay logo bigger, like Sessions - almost the same ratios as the
+          title"*). The wordmark is set at the page title's own size, so the
+          product's name and the page's name are two things at one weight, one
+          above the other, rather than a caption over a heading.
 
-          The mark sits in the glyph column like every other icon here: same
-          15px glyph, same 8px inset, so it, Search's glyph and every agent's
-          share one centre in both widths. A logo that is nearly in the column
-          is worse than one that is obviously not. */}
+          THE COLLAPSE LEFT THIS ROW the same day - *"that button to close the
+          menu, can we put it down on top of the 50K"* - and it sits in the foot
+          with the other tools, directly over the credits meter. That is where
+          it lived before 09-03; it moved up here so the logo would have company
+          and came back down so the logo could grow. Both states of the column
+          keep the control in the same place, which is the property that
+          mattered when it was in the corner.
+
+          The mark sits in the glyph column like every other icon here, so
+          narrow, it is the one thing on the row and it is centred on the rail
+          like everything under it. */}
       <div className="m-nav__brand" data-mark-host>
-        {collapsed ? (
-          /* ⚠ NARROW, THE WHOLE ROW IS THE CONTROL. 52px does not hold a mark
-             and a button, and a collapsed menu whose only way out is a
-             keyboard shortcut is a trap. So the mark stays, the row carries the
-             tooltip, and the expand glyph comes up over the mark on hover -
-             which keeps the control in the same corner in both states. */
-          <Tooltip title={`${collapseLabel}  ${COLLAPSE_KEY}`} placement="right">
-            <button
-              type="button"
-              className="m-nav__brand-toggle"
-              aria-label={collapseLabel}
-              aria-expanded={false}
-              onClick={onToggleCollapsed}
-            >
-              <OpenReplayMark size={16} className="m-nav__mark" />
-              <PanelLeftOpen size={15} className="m-nav__brand-open" aria-hidden="true" />
-            </button>
-          </Tooltip>
-        ) : (
-          <>
-            <OpenReplayMark size={16} className="m-nav__mark" />
-            {/* ⚠ THE PRODUCT IS OPENREPLAY (Mehdi, 2026-09-02). The strategy
-                question closed on the facelift rather than the separate brand,
-                so the name search and the whole Melonade wordmark went with it.
-                One word, because "OpenReplay" is one word in their own logo. */}
-            <span className="m-nav__brand-name">OpenReplay</span>
-            <Tooltip title={`${collapseLabel}  ${COLLAPSE_KEY}`} placement="right">
-              <button
-                type="button"
-                className="m-nav__collapse"
-                aria-label={collapseLabel}
-                aria-expanded
-                onClick={onToggleCollapsed}
-              >
-                <PanelLeftClose size={15} aria-hidden="true" />
-              </button>
-            </Tooltip>
-          </>
-        )}
+        <OpenReplayMark size={22} className="m-nav__mark" />
+        {/* ⚠ THE PRODUCT IS OPENREPLAY (Mehdi, 2026-09-02). The strategy
+            question closed on the facelift rather than the separate brand,
+            so the name search and the whole Melonade wordmark went with it.
+            One word, because "OpenReplay" is one word in their own logo. */}
+        <span className="m-nav__brand-name">OpenReplay</span>
       </div>
 
       {/* ── the account. Pinned. ───────────────────────────────────────────
@@ -336,12 +311,31 @@ export function SideNav({ active, onNavigate, agentCount, newSessions = 0, colla
           row that flipped to a column would snap to a column while the menu was
           still 256px wide.
 
-          ⚠ FIVE GLYPHS, NOT SIX: the collapse left for the top right corner on
-          2026-09-03. What is here is what Gabriel listed - preferences,
-          notifications, support, theme, the person - and every one of them
-          OPENS something, which is what the collapse never did. */}
+          ⚠ SIX GLYPHS AGAIN: the collapse is back down here (Mehdi,
+          2026-09-04: "put it down on top of the 50K"), first in the row, so
+          that narrow - when the grid is one track wide - it is the top of the
+          stack and the first thing under the menu. It is the one control here
+          that reshapes the column rather than opening something, which is why
+          it went to the corner on 09-03; the corner is the logo's now. The
+          other five are what Gabriel listed - preferences, notifications,
+          support, theme, the person. */}
       <div className="m-nav__foot">
         <div className="m-nav__tools">
+          <Tooltip title={`${collapseLabel}  ${COLLAPSE_KEY}`} placement="right">
+            <button
+              type="button"
+              className="m-nav__tool m-nav__collapse"
+              aria-label={collapseLabel}
+              aria-expanded={!collapsed}
+              onClick={onToggleCollapsed}
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={15} aria-hidden="true" />
+              ) : (
+                <PanelLeftClose size={15} aria-hidden="true" />
+              )}
+            </button>
+          </Tooltip>
           <Tooltip title="Preferences" placement="right">
             <button
               type="button"

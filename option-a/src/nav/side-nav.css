@@ -95,91 +95,30 @@
     padding-inline var(--m-duration-normal) var(--m-ease-out);
 }
 
-/* The one chromatic thing in the whole shell, and it is 15px at BOTH widths:
+/* The one chromatic thing in the whole shell, and it is 22px at BOTH widths:
    the collapse takes words. A logo that also changed size would be the collapse
-   taking the brand as well. */
+   taking the brand as well. 22 rather than the rows' 15 since 09-04, when the
+   wordmark went to the title's size and the mark had to keep up with it. */
 .m-nav__mark { flex: none; }
 
 /* THE TOP OF THE TYPE RAMP, and the only place it is set. 16px medium over the
    rows' 13px regular is one clear step and no second voice - it is not
    uppercase, not tracked out, not semibold. Lowercase, because that is the
    logotype: the landing page sets the same word the same way. */
-/* ── THE COLLAPSE, IN THE TOP RIGHT CORNER (Gabriel, 2026-09-03) ─────────────
-   It was the fifth glyph in the foot. What that placement missed: every other
-   control down there OPENS something, and this one reshapes the thing they all
-   sit in - so it read as a sibling of Support when it is a property of the
-   column itself.
+/* ── THE COLLAPSE IS A FOOT TOOL AGAIN (2026-09-04) ──────────────────────────
+   It draws as `.m-nav__tool` - same 28px tile, same hover - and this class only
+   names it for the checks and the tooltip. The rules that put it in the top
+   corner, and the brand-row-as-toggle it needed when the column was narrow, are
+   gone with the placement: `git show 1a351c3:option-a/src/nav/side-nav.css` has
+   them if the corner ever comes back. */
 
-   `margin-left: auto` rather than a spacer, so the brand row stays two objects
-   and a gap. It is quiet at rest and takes the row's own hover fill, like the
-   foot's tools - a control in a corner does not need to advertise itself, it
-   needs to be findable, and the corner is where people look. */
-.m-nav__collapse {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin-left: auto;
-  border-radius: var(--m-radius-control);
-  color: var(--m-content-decorative);
-  transition: background-color var(--m-duration-fast) var(--m-ease-out),
-    color var(--m-duration-fast) var(--m-ease-out);
-}
-.m-nav__collapse:hover { background: var(--m-surface-hover); color: var(--m-content-primary); }
-.m-nav__collapse:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: -2px; }
-
-/* ⚠ NARROW, THE BRAND ROW *IS* THE CONTROL. 52px does not hold a mark and a
-   button side by side, and a collapsed menu whose only way out is a keyboard
-   shortcut is a trap. So the mark stays where it is, the row carries the
-   tooltip and the click, and the expand glyph crossfades in over the mark on
-   hover: the control is in the same corner in both states, which was the one
-   good property of having it in the foot. */
-.m-nav__brand-toggle {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: var(--m-radius-control);
-  color: var(--m-content-decorative);
-  transition: background-color var(--m-duration-fast) var(--m-ease-out);
-}
-.m-nav__brand-toggle:hover { background: var(--m-surface-hover); }
-.m-nav__brand-toggle:focus-visible { outline: 2px solid var(--m-focus-ring); outline-offset: -2px; }
-
-/* Both layers sit in the same 28px box, so nothing moves as they swap - a mark
-   that shifted a pixel on hover would read as the logo being a button, which
-   is exactly the confusion the 09-02 pass removed from the switcher. */
-.m-nav__brand-toggle .m-nav__mark,
-.m-nav__brand-open {
-  transition: opacity var(--m-duration-fast) var(--m-ease-out);
-}
-.m-nav__brand-open { position: absolute; inset: 0; margin: auto; opacity: 0; }
-.m-nav__brand-toggle:hover .m-nav__mark { opacity: 0; }
-.m-nav__brand-toggle:hover .m-nav__brand-open { opacity: 1; color: var(--m-content-primary); }
-
-/* ⚠ AND THE MARK DOES NOT SHAPE-SHIFT IN HERE. `[data-mark-host]` is this row
-   in both widths, so the logo's own hover - the two triangles trading places,
-   see openreplay-mark.css - would otherwise run underneath a mark that is
-   fading out, which is two animations arguing over one gesture and neither of
-   them readable. Narrow, this row means *expand*, and the glyph that says so
-   is the only thing that should answer the cursor.
-
-   One extra class beats the mark stylesheet's own `[data-mark-host]:hover`
-   selector on specificity, so no `!important` is needed. */
-[data-mark-host]:is(:hover, :focus-visible) .m-nav__brand-toggle .m-ormark__fill {
-  transform: none;
-}
-[data-mark-host]:is(:hover, :focus-visible) .m-nav__brand-toggle .m-ormark__eye {
-  opacity: 0;
-}
-
+/* ⚠ THE PAGE TITLE'S OWN SIZE (Mehdi, 2026-09-04: "almost the same ratios as
+   the title"). Same token arithmetic as `.m-page__title`, so the two can only
+   move together; the weight stays medium rather than borrowing the display
+   weight, because a wordmark is a name, not a heading. */
 .m-nav__brand-name {
   min-width: 0;
-  font-size: var(--m-text-lg);
+  font-size: calc(var(--m-text-2xl) * var(--m-display-scale));
   font-weight: var(--m-weight-medium);
   letter-spacing: var(--m-tracking-tight);
   color: var(--m-content-primary);
