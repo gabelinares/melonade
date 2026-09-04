@@ -1,19 +1,26 @@
-/* ── THE PLANE ───────────────────────────────────────────────────────────────
-   The card the whole app is inside. It fills its share of the window and does
-   its own scrolling, so the ground's margin stays visible on all four sides at
-   every scroll position - a plane that grows with its rows would push its own
-   bottom margin off the screen and the wrap would only be true at the top. */
+/* ── ⚠ THE PLANE GAVE UP ITS SURFACE (2026-09-04) ────────────────────────────
+   It was the card the whole app was inside: one white plane on the nav's
+   ground, with an equal margin on four sides. Mehdi asked for the thing
+   production does instead - two or three COMPONENTS with air between them -
+   and the cheap way to give him that would have been to inset cards into the
+   plane. Ground, plane, card is three surfaces deep, and three is what Gabriel
+   warned about on the call: *"it would feel really disconnected."*
+
+   So the plane keeps its margin, its scrolling and its header, and loses its
+   border, its radius and its fill. The header sits on the ground; the
+   components below it are the only cards on screen. TWO LEVELS, which is
+   exactly as many as before, and it is production's own arrangement.
+
+   It still does its own scrolling, for the reason it always did: a plane that
+   grows with its rows would push its own bottom margin off the screen, and the
+   wrap would only be true at the top. */
 .m-page {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
   width: 100%;
-  border: 1px solid var(--m-border-subtle);
-  border-radius: var(--m-radius-surface);
-  background: var(--m-surface-default);
   overflow: hidden;
-  /* no shadow. A card is defined by its edge in this system. */
 }
 
 /* ── THE HEADER ──────────────────────────────────────────────────────────────
@@ -127,13 +134,72 @@
   flex-wrap: wrap;
 }
 
-/* everything below the header scrolls, so the plane's own edges never move */
+/* everything below the header scrolls, so the plane's own edges never move.
+   ⚠ THE GAP IS THE AIR Mehdi asked for, and it is the ONLY thing separating
+   two components - no rule, no shadow, no third colour. One gap the size of
+   the shell's own margin, so the space between the components and the space
+   around them are the same measurement. */
 .m-page__body {
   display: flex;
   flex-direction: column;
+  gap: var(--m-space-5);
   min-width: 0;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
+
+/* ── A COMPONENT ─────────────────────────────────────────────────────────────
+   The card the plane used to be, at the size of one idea rather than one page.
+   Same edge, same radius, same fill - which is the point: nothing new was
+   invented here, the surface just moved down a level.
+
+   ⚠ `overflow: clip`, NOT `hidden`. Both round the corners off a table; only
+   hidden makes this a scroll container, and a sticky head then sticks to a box
+   that never scrolls. Clip has no scrollport, so the head goes on sticking to
+   the page body. That one word is the difference between a working sticky
+   header and one that silently does nothing. */
+.m-panel {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  min-width: 0;
+  border: 1px solid var(--m-border-subtle);
+  border-radius: var(--m-radius-surface);
+  background: var(--m-surface-default);
+  overflow: clip;
+}
+
+/* ⚠ EXCEPT WHERE SOMETHING GROWS OUT OF IT. See `spills` in PagePanel: the
+   filter's catalogue extends past the card's bottom edge, and a clipped menu
+   is still laid out - so it still tests as visible and still swallows nothing,
+   while every click on it lands on whatever is painted behind. */
+.m-panel.is-spilling { overflow: visible; }
+
+/* THE HEAD, and it STICKS. What was above the scroll before - the narrowing
+   tabs, the display menu - is inside the scrolling area now, so it has to hold
+   its place itself. Opaque, because rows pass under it. */
+.m-panel__head {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  flex: none;
+  flex-wrap: wrap;
+  padding: var(--m-space-3) var(--m-space-5);
+  background: var(--m-surface-default);
+  border-bottom: 1px solid var(--m-border-subtle);
+}
+
+/* ⚠ NO `flex: 1` ON THE LAST PANEL, and it was there for one build. The idea
+   was that a short list should reach the bottom of the plane rather than leave
+   ground showing under a half-height card. The cost was invisible until the
+   window got short: `flex: 1` plus `overflow: clip` is a box that CUTS its own
+   overflow and cannot scroll it, so on a 560px window the pagination was inside
+   the card, below its bottom edge, and unreachable by any means.
+
+   A card ends where its content ends. Ground under a short list is what a card
+   layout looks like, and the page body is the thing that scrolls. */
 

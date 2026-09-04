@@ -375,7 +375,10 @@ const rowSteps = await p.evaluate(() => {
     ground,
     hover: cs.getPropertyValue('--m-nav-row-hover').trim(),
     on: getComputedStyle(document.querySelector('.m-nav-item.is-active')).backgroundColor,
-    plane: getComputedStyle(document.querySelector('.m-page')).backgroundColor,
+    /* ⚠ `.m-panel`, NOT `.m-page`. The plane gave up its surface on 09-04 and
+       the components on it are the cards now - a nav row that matched a
+       transparent plane would be asserting nothing. */
+    plane: getComputedStyle(document.querySelector('.m-panel')).backgroundColor,
   };
 });
 check('a nav row steps off the ground rather than towards a card that is not there',
@@ -663,7 +666,9 @@ const listShell = await p.evaluate(() => {
              padL: cs.paddingLeft, h: Math.round(r.height) }; };
   const t = document.querySelector('.m-page__title');
   const ts = t ? getComputedStyle(t) : null;
-  return { card: box('.m-page'), head: box('.m-page__head'),
+  /* ⚠ `.m-panel` is the list's card since 09-04; `.m-page` is the ground it
+     sits on and has neither a radius nor a fill to compare against. */
+  return { card: box('.m-panel'), head: box('.m-page__head'),
            titleFont: ts ? `${ts.fontSize}/${ts.fontWeight}` : null };
 });
 

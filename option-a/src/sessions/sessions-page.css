@@ -47,12 +47,12 @@
    The search asks "which sessions". The toolbar above it - which does not
    scroll at all, because PageCard puts it outside the body - asks "of those,
    which kind, when, and drawn how". Two altitudes, and now both of them stay. */
-.m-ss__sticky {
-  position: sticky;
-  top: 0;
-  z-index: var(--m-z-sticky);
-  background: var(--m-surface-default);
-}
+/* ⚠ `.m-ss__sticky` LIVED HERE. It was the wrapper that pinned the SEARCH while
+   the rows went past it, and it went with the two-component split on 09-04: the
+   question scrolls away now and the ANSWER panel's head is what holds its place
+   (see `.m-panel__head` in page-card.css). Everything this rule was careful
+   about - opacity, no gap under it, no margin on the card - moved there with
+   the job. */
 
 /* ── the who cell ───────────────────────────────────────────────────────────
    The dot, the name, and two marks that only some rows carry. The dot's slot is
@@ -505,3 +505,24 @@
    list. */
 .m-ss__row.is-viewed .m-ss__name { font-weight: var(--m-weight-regular); }
 
+
+
+/* ── THE COLUMN TITLES PIN UNDER THE PANEL'S HEAD ────────────────────────────
+   The two things you never stop needing while you read a list are the breakdown
+   and the column titles, so both hold their place and the QUESTION above them
+   scrolls away.
+
+   ⚠ `top` IS THE HEAD'S OWN HEIGHT, published by `PagePanel` as a variable.
+   Both are sticky against the same scrollport, so at the same offset the titles
+   pin BEHIND the head (which outranks them) and read as not sticking at all.
+
+   ⚠ AND THE SELECTOR CARRIES `.ant-table-wrapper .ant-table`, for the reason
+   the play cell's rule documents three hundred lines up: antd sets `position`
+   on cells from three classes deep behind a `:where()`, two classes TIE and
+   lose on order, and the declaration lands in the stylesheet applying to
+   nothing. Read the computed value, never the file. */
+.m-page__body .ant-table-wrapper .ant-table .ant-table-thead > tr > th {
+  position: sticky;
+  top: var(--m-panel-head-h, 0px);
+  z-index: 2;
+}

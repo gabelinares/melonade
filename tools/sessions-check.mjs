@@ -72,9 +72,14 @@ const shell = await p.evaluate(() => ({
      filters. */
   tabsArePills: !!document.querySelector('.m-page__tabs .m-seg__item'),
   /* the issue-type strip and its whole toolbar row are gone */
-  hasToolbar: !!document.querySelector('.m-page__toolbar'),
-  tags: [...document.querySelectorAll('.m-page__toolbar .m-seg__item')].map((e) => e.textContent.trim()),
-  tagCounts: [...document.querySelectorAll('.m-page__toolbar .m-seg__item')].map((e) =>
+  /* ⚠ IN THE ANSWER PANEL'S HEAD SINCE 2026-09-04, not on the shell's own
+     toolbar row. Mehdi, 09-03: "you have the tabs first, all errors whatever,
+     and then you have the filters - IT SHOULD BE REVERSED. You filter something
+     and then you look at the tabs to see what's in there." */
+  hasToolbar: !!document.querySelector('.m-panel__head .m-seg__item'),
+  onOldToolbar: !!document.querySelector('.m-page__toolbar'),
+  tags: [...document.querySelectorAll('.m-panel__head .m-seg__item')].map((e) => e.textContent.trim()),
+  tagCounts: [...document.querySelectorAll('.m-panel__head .m-seg__item')].map((e) =>
     Number((e.textContent.match(/(\d+)$/) ?? [])[1] ?? 0),
   ),
   columns: [...document.querySelectorAll('.m-ss__table th')].map((e) => e.textContent.trim()).filter(Boolean),
@@ -84,6 +89,7 @@ const shell = await p.evaluate(() => ({
      FIELD carries the tint. See the note on `.m-sc`. */
   searchBg: getComputedStyle(document.querySelector('.m-sc')).backgroundColor,
   planeBg: getComputedStyle(document.querySelector('.m-page')).backgroundColor,
+  cardBg: getComputedStyle(document.querySelector('.m-panel')).backgroundColor,
   fieldBg: getComputedStyle(document.querySelector('.m-sc__filter')).backgroundColor,
   tableBg: getComputedStyle(document.querySelector('.m-ss__table')).backgroundColor,
 }));
@@ -114,9 +120,9 @@ check('the three sections are in the strip and in the menu, with the same names'
 /* ⚠ THE STRIP IS BACK, AND THE ERRORS COLUMN IS WHAT PAID FOR IT (Mehdi,
    2026-09-02, both instructions the same day). "It would be too much data to
    read and people wouldn't get it. That's why we made it as tabs." */
-check('the issue-type strip is on a toolbar row of its own',
-  shell.hasToolbar && shell.tags.length === 7 && shell.tags[1].startsWith('Errors'),
-  shell.tags.join(' | '));
+check('the issue-type strip rides the ANSWER panel, under the filter rather than over it',
+  shell.hasToolbar && !shell.onOldToolbar && shell.tags.length === 7 && shell.tags[1].startsWith('Errors'),
+  `${shell.tags.join(' | ')} — old toolbar ${shell.onOldToolbar}`);
 check('and every tab has a real count, so none of them is decoration',
   shell.tagCounts.length === 7 && shell.tagCounts.every((n) => n > 0),
   shell.tagCounts.join(', '));
@@ -155,9 +161,14 @@ check('and only the two columns the backend can order carry a sorter',
    Now the section shares the plane's ground and the FIELD is the tinted thing -
    the ordinary way round for a form, and it puts the fill on the one shape here
    you actually act on. */
-check('the filter section shares its ground with the plane, and the field carries the tint',
-  shell.searchBg === shell.planeBg && shell.fieldBg !== shell.searchBg,
-  `section ${shell.searchBg} on plane ${shell.planeBg}, field ${shell.fieldBg}`);
+/* ⚠ THE COMPARISON MOVED WITH THE SURFACE (2026-09-04). It used to read
+   "shares its ground with the plane"; the plane has no ground any more - it is
+   transparent, and the CARD is what the filter sits on. The claim underneath is
+   unchanged: the section takes its container's own colour and the FIELD is the
+   tinted thing, which is the ordinary way round for a form. */
+check('the filter shares its ground with the card it is in, and the field carries the tint',
+  shell.searchBg === shell.cardBg && shell.fieldBg !== shell.searchBg,
+  `section ${shell.searchBg} on card ${shell.cardBg}, field ${shell.fieldBg}`);
 
 /* THE FIGURES LINE UP. The card could not do this and it is the reason for the
    table: three columns, one face, one right edge each. */
@@ -1078,59 +1089,99 @@ check('the sentence path is switched off at the callsite', !parked.offer && park
 await p.keyboard.press('Escape');
 await p.waitForTimeout(200);
 
-/* ── 9. IT STICKS ────────────────────────────────────────────────────────────
-   Asserted on a SHORT window, because the plane fits a page of twelve rows on
-   a tall one and a body that never scrolls cannot prove anything. */
+/* ── 9. TWO COMPONENTS, AND THE RIGHT ONE STICKS ────────────────────────────
+   ⚠ REWRITTEN 2026-09-04. This used to assert that the SEARCH holds its place
+   while the rows go past it, which was true and is now the opposite of the
+   design.
+
+   Mehdi, 09-03, walking production: *"We need to have components. This screen
+   should probably be two components… this is just a technique we used over time
+   to have it more airy."* Two here, three at the very most.
+
+   The split is what makes the set against what reads the set: the QUESTION
+   (filter, window, Save, Clear) and the ANSWER (breakdown, display, columns,
+   rows, count). And it reverses what sticks — you stop needing the filter once
+   you are reading results, which is the argument its own collapse is built on,
+   while the two things you never stop needing are the breakdown and the column
+   titles.
+
+   Asserted on a SHORT window, because a tall one fits twelve rows and a body
+   that never scrolls cannot prove anything. */
 await p.setViewportSize({ width: 1400, height: 560 });
 await p.waitForTimeout(400);
-const stick = await (async () => {
-  const read = () => p.evaluate(() => {
-    const body = document.querySelector('.m-page__body');
-    const sc = document.querySelector('.m-sc').getBoundingClientRect();
-    return { scroll: body.scrollTop, canScroll: body.scrollHeight - body.clientHeight, top: Math.round(sc.top) };
-  });
-  const rest = await read();
-  await p.evaluate(() => { document.querySelector('.m-page__body').scrollTop = 300; });
-  await p.waitForTimeout(400);
-  return { rest, after: await read() };
-})();
-check('the body scrolls on a short window', stick.rest.canScroll > 100, `${stick.rest.canScroll}px of overflow`);
-check('and the search holds its place while the rows go past it',
-  stick.after.scroll > 100 && stick.after.top === stick.rest.top,
-  `scrolled ${stick.after.scroll}px, search stayed at ${stick.after.top}`);
-/* ⚠ NO GAP UNDER IT, and the sticky box is opaque (Mehdi, 2026-09-02: "on the
-   top of the table titles there's an empty row"). The band's hairline is the
-   separation; 16px of the plane's colour between the band and the header row
-   read as a blank row of the table. The margin still has to be zero and the box
-   still has to be opaque - both were load-bearing before and still are. */
-await p.evaluate(() => document.querySelector('.m-page__body').scrollTo(0, 0));
-await p.waitForTimeout(200);
-const gapOwner = await p.evaluate(() => {
-  const w = document.querySelector('.m-ss__sticky');
-  const cs = getComputedStyle(w);
-  const th = document.querySelector('.m-ss__table th').getBoundingClientRect();
+
+const shape = await p.evaluate(() => {
+  const body = document.querySelector('.m-page__body');
+  const panels = [...body.querySelectorAll(':scope > .m-panel')];
+  const plane = getComputedStyle(document.querySelector('.m-page'));
+  const shell = getComputedStyle(document.querySelector('.m-shell'));
   return {
-    pad: cs.paddingBottom,
-    margin: getComputedStyle(document.querySelector('.m-sc')).marginBottom,
-    bg: cs.backgroundColor,
-    gapToHeader: Math.round(th.top - document.querySelector('.m-sc').getBoundingClientRect().bottom),
+    n: panels.length,
+    /* ⚠ THE PLANE GAVE UP ITS SURFACE rather than holding cards inside itself.
+       Ground, plane, card is three levels deep, and two is what this had
+       before. */
+    planeBg: plane.backgroundColor,
+    planeBorder: plane.borderTopWidth,
+    ground: shell.backgroundColor,
+    cardBg: panels[0] ? getComputedStyle(panels[0]).backgroundColor : null,
+    /* the air between them, which is the whole of the separation - no rule, no
+       shadow, no third colour */
+    air: panels.length > 1
+      ? Math.round(panels[1].getBoundingClientRect().top - panels[0].getBoundingClientRect().bottom)
+      : 0,
   };
 });
-check('the column titles sit directly under the search, with no blank row between',
-  gapOwner.pad === '0px' && gapOwner.margin === '0px' && gapOwner.gapToHeader === 0 && gapOwner.bg !== 'rgba(0, 0, 0, 0)',
-  `pad ${gapOwner.pad}, card margin ${gapOwner.margin}, gap ${gapOwner.gapToHeader}px, opaque ${gapOwner.bg}`);
-/* AND THE STICKY IS STILL OPAQUE. Putting the sticky on the card itself made
-   `.m-page__body > .m-sc` out-specify `.m-sc`, and rows showed through it.
-   ⚠ The colour it has to hold is the PLANE's now rather than the well's - see
-   the inversion in §1 - so what is asserted is that it is not transparent,
-   which was always the load-bearing half. */
-const well = await p.evaluate(() => ({
-  sc: getComputedStyle(document.querySelector('.m-sc')).backgroundColor,
-  sticky: getComputedStyle(document.querySelector('.m-ss__sticky')).backgroundColor,
-}));
-check('and the band is opaque, so the rows cannot show through it as they pass',
-  well.sc !== 'rgba(0, 0, 0, 0)' && well.sticky !== 'rgba(0, 0, 0, 0)',
-  `${well.sc} on ${well.sticky}`);
+check('the page is TWO components on the ground, not one plane holding everything',
+  shape.n === 2 && shape.planeBg === 'rgba(0, 0, 0, 0)' && shape.planeBorder === '0px',
+  `${shape.n} panels, plane ${shape.planeBg} with a ${shape.planeBorder} border`);
+check('and they are cards on the ground rather than a third surface level',
+  shape.cardBg !== shape.ground && shape.cardBg !== 'rgba(0, 0, 0, 0)',
+  `card ${shape.cardBg} on ground ${shape.ground}`);
+check('with real air between them, and nothing else separating them',
+  shape.air >= 8, `${shape.air}px`);
+
+/* ⚠ THE QUESTION SCROLLS AWAY AND THE ANSWER'S HEAD DOES NOT. */
+const read = () => p.evaluate(() => {
+  const body = document.querySelector('.m-page__body');
+  const q = document.querySelector('.m-sc').getBoundingClientRect();
+  const head = document.querySelector('.m-panel__head');
+  const h = head.getBoundingClientRect();
+  const th = document.querySelector('.m-ss__table th').getBoundingClientRect();
+  return {
+    scroll: body.scrollTop,
+    canScroll: body.scrollHeight - body.clientHeight,
+    question: Math.round(q.top),
+    head: Math.round(h.top),
+    headBg: getComputedStyle(head).backgroundColor,
+    /* the column titles ride directly under the head, with no band of ground
+       showing between them - which is the same complaint the old gap was */
+    gapToTitles: Math.round(th.top - h.bottom),
+  };
+});
+const rest = await read();
+await p.evaluate(() => { document.querySelector('.m-page__body').scrollTop = 300; });
+await p.waitForTimeout(400);
+const after = await read();
+check('the body scrolls on a short window', rest.canScroll > 100, `${rest.canScroll}px of overflow`);
+check('the question scrolls away, because you stop needing it once you are reading',
+  after.question < rest.question - 100, `${rest.question} → ${after.question}`);
+/* ⚠ PINNED AT THE BODY'S TOP, not held at its resting position - it starts
+   BELOW the question panel and rises to the scrollport's edge, which is what
+   sticky means and what the first version of this assertion got wrong. */
+const bodyTop = await p.evaluate(() =>
+  Math.round(document.querySelector('.m-page__body').getBoundingClientRect().top));
+check("the answer's head pins to the top of the scroll rather than leaving with it",
+  Math.abs(after.head - bodyTop) <= 1 && after.head < rest.head,
+  `${rest.head} → ${after.head}, body top ${bodyTop}`);
+check('and the column titles pin directly under it, not behind it',
+  after.gapToTitles === 0, `${after.gapToTitles}px between them`);
+check('and the head is opaque, so the rows cannot show through it as they pass',
+  after.headBg !== 'rgba(0, 0, 0, 0)', after.headBg);
+await p.evaluate(() => { document.querySelector('.m-page__body').scrollTop = 0; });
+/* ⚠ AND GIVE THE WINDOW BACK. Everything after this expects to be able to
+   reach the footer, and a 560px viewport puts it below the fold. */
+await p.setViewportSize({ width: 1680, height: 1000 });
+await p.waitForTimeout(300);
 
 /* ── 10. THE RING'S THIRD RULE: FOCUS HAS NO POINTER ────────────────────────
    The torch itself is asserted further down, where the pointer is driven around

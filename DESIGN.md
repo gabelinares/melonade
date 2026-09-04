@@ -5646,3 +5646,95 @@ they capture"*, so a marker on the unseen is a marker on everything, and the pla
 glyph cannot carry it because it only exists on hover; **merge the date-range and
 Display line into the line above**; **metadata badges bigger**. And above all
 them, the layout: **two components on this page, three at most.**
+
+---
+
+## §39 — Two components, and the plane gives up its surface (2026-09-04)
+
+Mehdi's 09-03 ask, and the thing he called the important one: *"We need to have
+components. This screen should probably be two components… this is just a
+technique we used over time to have it more airy."* Two here, three at the very
+most. He walked production's cards page to show five — title, each series,
+breakdown, card, drill-down.
+
+### The line that answers every list page
+
+Not header-over-table. **What makes the set, against what reads the set.**
+
+- **The question** — the filter, the date window, and the verbs that dispose of
+  the query itself (Save as segment, Clear). Everything that changes *which rows
+  exist.*
+- **The answer** — the narrowing tabs, the display menu, the column headers and
+  their sorters, the rows, the pagination. Everything that changes *how you read
+  the rows that exist.*
+
+**The test that settles the hard cases:** a control that displays counts derived
+from the result belongs to the result. `All 38 · Errors 6` is arithmetic on what
+the filter returned, so it cannot sit above the thing it counts. Which is the
+conclusion Mehdi reached by instinct: *"you have the tabs first, all errors
+whatever, and then you have the filters — it should be reversed."*
+
+It also settles Display, which changes nothing about which rows exist.
+
+⚠ **And the distinction that will bite on every other page:** two kinds of tab
+look identical and belong in different places. **Destination** tabs (Sessions /
+Bookmarks / Segments, or Tests / Runs / Environments) are different lists and
+stay in the page header. **Narrowing** tabs are one list filtered, carry counts,
+and belong in the answer's head.
+
+### The plane gave up its surface rather than holding cards
+
+The obvious way to add components would have been to inset cards into the
+existing plane. That is **three surfaces deep** — ground, plane, card — and
+Gabriel had already named the risk on the call: *"if we use that separation with
+a lot of components it wouldn't make sense, it would feel really disconnected."*
+
+So the plane keeps its margin, its scrolling and its header, and loses its
+border, its radius and its fill. The header sits on the ground; the components
+are the only cards on screen. **Two levels, exactly as many as before**, and it
+is production's own arrangement: a grey application background with white cards
+on it.
+
+The 09-04 inversion survives unchanged inside the card — a white component with
+a tinted filter field.
+
+**The air is a single `gap`**, the same measurement as the shell's own margin,
+so the space between the components and the space around them are one number. No
+rule, no shadow, no third colour.
+
+**Pages that are one component did not have to change.** `PageCard` wraps
+`toolbar` and `children` in a panel unless the page passes `split`, so Issues,
+Tests, Runs and Audits became header-on-ground plus one card for free.
+
+### What sticks, and it reversed
+
+The question scrolls away — you stop needing the filter once you are reading
+results, which is the argument its own collapse is built on — and the two things
+you never stop needing hold their place: **the breakdown and the column titles.**
+
+Three traps, all of which look like something else:
+
+⚠ **`overflow: clip`, not `hidden`.** Both round the corners off a table; only
+`hidden` makes the panel its own scroll container, and a sticky child then
+sticks to a box that never scrolls. A sticky head that silently does nothing.
+
+⚠ **The question panel must not be clipped at all.** Its catalogue grows out of
+a button and extends past the card's bottom edge. A clipped menu is worse than
+it sounds: still laid out, so it still answers hit-testing as *visible*, but
+painted nowhere — so every click on it lands on whatever is behind. It took a
+Playwright log naming the element underneath to see it.
+
+⚠ **The head's height is published as a variable.** The panel head and the
+table's column titles are sticky against the same scrollport, so at the same
+offset the titles pin *behind* the head — which reads as the titles not sticking.
+A `ResizeObserver` writes `--m-panel-head-h`, because the head wraps and its
+height depends on the plane's width.
+
+### And one that only appeared on a short window
+
+`flex: 1` on the last panel — so a short list would reach the bottom of the
+plane rather than leaving ground showing — plus `overflow: clip` is a box that
+cuts its own overflow and cannot scroll it. On a 560px window the pagination was
+inside the card, below its bottom edge, and unreachable by any means. **A card
+ends where its content ends;** ground under a short list is what a card layout
+looks like, and the page body is the thing that scrolls.

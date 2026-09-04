@@ -97,8 +97,16 @@ t('TESTS: the row is the queue\u2019s row', tests.rowH === issues.rowH, `${tests
 /* The queue lost its expand caret on 08-28, which is what made one inset
    possible: a checkbox, an impact meter and an audit's name now all start where
    their page title starts. */
+/* ⚠ WITHIN A PIXEL SINCE 2026-09-04, and the pixel is a card's own edge. The
+   title sits on the GROUND now and the table sits inside a component (see
+   PagePanel), so the two are separated by the panel's 1px border. Both still
+   use the same inset token; forcing them to land on the same physical column
+   would mean the cell inset no longer equals the token, to fix a difference
+   nobody can see. The claim that matters - the two tables agree with each other
+   and with their titles - is unchanged. */
+const near = (a, b) => Math.abs(a - b) <= 1;
 t('TABLES: one left inset, and it is the title\u2019s',
-  tests.inset === issues.inset && tests.inset === tests.titleX && issues.inset === issues.titleX,
+  tests.inset === issues.inset && near(tests.inset, tests.titleX) && near(issues.inset, issues.titleX),
   `queue ${issues.inset}/${issues.titleX}, tests ${tests.inset}/${tests.titleX}`);
 t('TESTS: seven columns still fit', tests.tableOverflow === 0, `${tests.tableOverflow}px over`);
 t('TESTS: shell continuity with the queue',
@@ -563,8 +571,8 @@ t('AUDITS: it asks the same three questions as every other list',
 t('AUDITS: the taller row is the only break in the rhythm',
   audits.rowH > issues.rowH && audits.tableOverflow === 0, `${audits.rowH}px vs ${issues.rowH}px`);
 t('AUDITS: the same left inset as the other two',
-  audits.inset === issues.inset && audits.inset === audits.titleX,
-  `${audits.inset} vs ${issues.inset}`);
+  audits.inset === issues.inset && near(audits.inset, audits.titleX),
+  `${audits.inset} vs ${issues.inset}, title at ${audits.titleX}`);
 t('AUDITS: shell continuity with the queue',
   audits.left === issues.left && audits.width === issues.width && audits.headH === issues.headH,
   `${audits.left}/${audits.width}/${audits.headH}`);

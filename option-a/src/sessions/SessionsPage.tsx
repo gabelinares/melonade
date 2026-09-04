@@ -34,7 +34,7 @@ import type { useSessions } from '../state/useSessions.ts';
 import { hueIndexFor, seedFor } from '@shared/avatar.ts';
 import { displayNameOf } from '@shared/sessions-data.ts';
 import { DateRange } from '../components/DateRange.tsx';
-import { PageCard } from '../components/PageCard.tsx';
+import { PageCard, PagePanel } from '../components/PageCard.tsx';
 import { DisplayShell, MenuSelect } from '../components/DisplayMenu.tsx';
 import { EmptyState } from '../components/EmptyState.tsx';
 import { FilterStrip } from '../components/FilterStrip.tsx';
@@ -610,41 +610,19 @@ export function SessionsPage({ model }: SessionsPageProps) {
           </Dropdown>
         </>
       }
-      toolbar={
-        model.tab === 'segments' ? undefined : (
-          <FilterStrip
-            label="Filter by issue type"
-            items={ISSUE_TABS.map((t) => ({
-              key: t.value,
-              label: t.label,
-              icon: iconFor(t.value),
-              /* Counted against everything the search and the window already
-                 left, so the figure on a tab is the length of the list that tab
-                 produces. */
-              count: issueTypeCount(model.inScope, t.value),
-            }))}
-            selected={[model.tag]}
-            onSelect={(key) => model.setTag(key as SessionTag)}
-          />
-        )
-      }
-      /* ⚠ THE ISSUE-TYPE STRIP IS BACK ON A TOOLBAR ROW (Mehdi, 2026-09-02:
-         "we're missing the tabs for errors, this and that... it should be the
-         same tabs as we have in tests"). It was deleted the same morning, on
-         his ask, and the reason it returns arrived with the rest of his
-         sentence: THE ERRORS COLUMN GOES, and this is what answers the question
-         it was answering. See ISSUE_TABS for why it is its own state rather
-         than a second path to the `issueType` property.
+      /* ⚠ NO `toolbar` (2026-09-04). The issue-type strip used to ride the
+         shell's own row, above everything. It is in the ANSWER panel's head
+         now, beside the display menu, for the reason Mehdi gave on 09-03:
+         "you have the tabs first, all errors whatever, and then you have the
+         filters - IT SHOULD BE REVERSED. You filter something and then you look
+         at the tabs to see what's in there."
 
-         ⚠ ONLY ON THE SESSION TABS. Segments is a list of a different thing, so
-         a strip that narrows sessions has nothing to narrow there - and
-         PageCard's toolbar is one row for the whole page, so it has to be the
-         page that decides.
-
-         The date range and the display menu stay on the SEARCH's own bar rather
-         than moving up here, for the reason they went there: that bar is what
-         STICKS, and a window you cannot change without scrolling back up is the
-         complaint the sticky came out of. */
+         The rule under his instinct is worth stating, because it decides the
+         same question on every other list: a control that displays COUNTS
+         DERIVED FROM THE RESULT belongs to the result. "All 38 · Errors 6" is
+         arithmetic on what the filter returned, so it cannot sit above the
+         thing it counts. See PagePanel. */
+      split
     >
       {/* ⚠ A SECTION REPLACES THE BODY. On the segments tab there is no filter
           card and no sessions table, because you are not looking at sessions -
@@ -662,7 +640,10 @@ export function SessionsPage({ model }: SessionsPageProps) {
         />
       ) : (
         <>
-      <div className="m-ss__sticky">
+      {/* ── 1 · THE QUESTION ──────────────────────────────────────────────
+          Everything that changes WHICH ROWS EXIST: the filter, the window it
+          runs over, and the two verbs that dispose of the query itself. */}
+      <PagePanel spills>
         <SearchCard
           events={model.events}
           properties={model.properties}
@@ -712,48 +693,86 @@ export function SessionsPage({ model }: SessionsPageProps) {
                   custom range is a real pair of dates rather than the preset
                   that quietly applied ninety days. */}
               <DateRange field="Started" value={model.range} onChange={model.setRange} />
-              <DisplayShell
-                changeCount={model.displayChangeCount}
-                onReset={model.resetDisplay}
-                rows={[
-                  {
-                    id: 'sort',
-                    label: 'Order',
-                    control: (
-                      <MenuSelect
-                        id="sort"
-                        value={display.sort}
-                        choices={SORT_CHOICES}
-                        onChange={(v) => model.setDisplay('sort', v)}
-                      />
-                    ),
-                  },
-                  {
-                    id: 'viewed',
-                    label: 'Watched',
-                    control: (
-                      <MenuSelect
-                        id="viewed"
-                        value={display.viewed}
-                        choices={WATCHED_CHOICES}
-                        onChange={(v) => model.setDisplay('viewed', v)}
-                      />
-                    ),
-                  },
-                ]}
-                fields={FIELD_CHOICES.map((f) => ({
-                  value: f.value,
-                  label: f.label,
-                  on: has(f.value),
-                }))}
-                onToggleField={(v) => model.toggleField(v as SessionField)}
-              />
             </>
           }
         />
-      </div>
+      </PagePanel>
 
-      {model.dataState === 'loading' ? (
+      {/* ── 2 · THE ANSWER ────────────────────────────────────────────────
+          Everything that reads the rows the question returned: how they are
+          broken down, how they are drawn, the rows, and how many there are.
+
+          ⚠ ITS HEAD STICKS AND THE QUESTION SCROLLS AWAY. You stop needing the
+          filter once you are reading results - which is the same argument the
+          filter's own collapse is built on - and the two things you never stop
+          needing are the breakdown and the column titles. */}
+      <PagePanel
+        head={
+          <>
+            {/* ⚠ NARROWING TABS, NOT DESTINATION TABS, which is why these are
+                here and Sessions/Bookmarks/Segments are in the page header. One
+                is a filter on this list and carries counts of it; the other
+                three are different lists. They look identical and they belong
+                in different places. */}
+            <FilterStrip
+              label="Filter by issue type"
+              items={ISSUE_TABS.map((t) => ({
+                key: t.value,
+                label: t.label,
+                icon: iconFor(t.value),
+                /* Counted against everything the search and the window already
+                   left, so the figure on a tab is the length of the list that
+                   tab produces. */
+                count: issueTypeCount(model.inScope, t.value),
+              }))}
+              selected={[model.tag]}
+              onSelect={(key) => model.setTag(key as SessionTag)}
+            />
+            {/* The display menu changes nothing about which rows exist, only
+                which columns you see - so it belongs to the answer, at the far
+                end of the row the breakdown starts. */}
+            <span className="m-ss__display">
+        <DisplayShell
+          changeCount={model.displayChangeCount}
+          onReset={model.resetDisplay}
+          rows={[
+            {
+              id: 'sort',
+              label: 'Order',
+              control: (
+                <MenuSelect
+                  id="sort"
+                  value={display.sort}
+                  choices={SORT_CHOICES}
+                  onChange={(v) => model.setDisplay('sort', v)}
+                />
+              ),
+            },
+            {
+              id: 'viewed',
+              label: 'Watched',
+              control: (
+                <MenuSelect
+                  id="viewed"
+                  value={display.viewed}
+                  choices={WATCHED_CHOICES}
+                  onChange={(v) => model.setDisplay('viewed', v)}
+                />
+              ),
+            },
+          ]}
+          fields={FIELD_CHOICES.map((f) => ({
+            value: f.value,
+            label: f.label,
+            on: has(f.value),
+          }))}
+          onToggleField={(v) => model.toggleField(v as SessionField)}
+        />
+            </span>
+          </>
+        }
+      >
+        {model.dataState === 'loading' ? (
         <SkeletonRows rows={8} />
       ) : model.rows.length === 0 ? (
         empty
@@ -824,6 +843,7 @@ export function SessionsPage({ model }: SessionsPageProps) {
           />
         </>
       )}
+      </PagePanel>
         </>
       )}
 
