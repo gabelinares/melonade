@@ -37,6 +37,18 @@ import { useCobrowse } from '../state/useCobrowse.ts';
 import { useSpot } from '../state/useSpot.ts';
 import './app-shell.css';
 
+/* A parent row is a destination too, and none of the six draws a page of its
+   own - Recordings, Agents, Product Analytics and Data Management are all just
+   the row above a list of children. Recordings has its own case in `navigate`
+   because its first child also has to move `sessions.tab`; these three only
+   need `active` itself redirected, which is why they are a plain lookup rather
+   than three copies of the sessions special case. */
+const PARENT_LANDING: Record<string, string> = {
+  agents: 'agents/issues',
+  analytics: 'analytics/dashboards',
+  data: 'data/activity',
+};
+
 /* One ground, one plane: the window is painted in the menu's colour, the menu
    sits on it with no surface of its own, and the content is a card with an
    equal margin on all four sides. See app-shell.css.
@@ -108,8 +120,10 @@ export function AppShell() {
         /* The parent row is a destination too, and it lands on the first of its
            children rather than on a page that does not exist. */
         sessions.setTab(leaf === 'bookmarks' || leaf === 'segments' ? leaf : 'all');
+        setActive(key);
+        return;
       }
-      setActive(key);
+      setActive(PARENT_LANDING[key] ?? key);
     },
     [sessions],
   );
