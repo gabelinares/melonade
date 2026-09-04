@@ -1,10 +1,11 @@
-import { App, Button, Dropdown, Table, Tag } from 'antd';
+import { App, Button, Dropdown, Table } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { BookOpen, Lock, MoreHorizontal, Pencil, Plus, Settings2, Trash2, Users } from 'lucide-react';
 import { type Dashboard, type DashboardScope } from '@shared/dashboards-data.ts';
 import { minutesSince } from '@shared/tests-data.ts';
 import type { DataState } from '@shared/issues-logic.ts';
 import type { DashboardsController } from '../state/useDashboards.ts';
+import { Chip } from '../components/Chip.tsx';
 import { EmptyState } from '../components/EmptyState.tsx';
 import { FilterStrip } from '../components/FilterStrip.tsx';
 import { IconButton } from '../components/IconButton.tsx';
@@ -65,9 +66,10 @@ export function DashboardsPage({ model, dataState }: DashboardsPageProps) {
       key: 'visibility',
       width: '19%',
       render: (_: unknown, d) => (
-        <Tag icon={d.visibility === 'team' ? <Users size={12} /> : <Lock size={12} />} bordered={false}>
+        <Chip kind="tag">
+          {d.visibility === 'team' ? <Users size={11} /> : <Lock size={11} />}
           {d.visibility === 'team' ? 'Team' : 'Private'}
-        </Tag>
+        </Chip>
       ),
     },
     {
