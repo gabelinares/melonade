@@ -89,20 +89,26 @@
 .m-page__tabs {
   flex: none;
   padding: 0 var(--m-space-7);
-  border-bottom: 1px solid var(--m-border-subtle);
 }
 
-/* antd draws its own rule under the nav, inset with it. Ours is full-bleed, so
-   the strip's hairline lines up with the toolbar's and the plane has one set of
-   horizontal rules rather than two lengths of them. */
+/* ⚠ NO RULE UNDER THE STRIP, AND THE REASON IS THE GROUND (2026-09-04). It had
+   one, full-bleed, so the strip's hairline lined up with the toolbar's and the
+   plane carried one set of horizontal rules rather than two lengths of them.
+   That was right while the strip was INSIDE the plane and the rule was a
+   division of one surface.
+
+   The strip sits on the ground now, and a full-bleed rule on a ground is a line
+   that belongs to nothing: it ran left past the card below it and crossed its
+   rounded corner, so the corner read as broken and the card as overflowing its
+   own edge. There is nothing under the strip to divide any more - the air and
+   the card's own border do that - so the rule goes and the tab's ink bar is the
+   only mark left on the strip.
+
+   antd draws its own rule under the nav too, and that one is still off. */
 .m-page__tabs .ant-tabs-nav { margin: 0; }
 .m-page__tabs .ant-tabs-nav::before { display: none; }
 /* No panes: the tab strip navigates, and the page renders the section. */
 .m-page__tabs .ant-tabs-content-holder { display: none; }
-
-/* The strip's hairline IS the toolbar's top edge. Two adjacent 1px borders read
-   as one 2px one, which is the only place in this app a rule doubles. */
-.m-page--tabbed .m-page__toolbar { border-top: 0; }
 
 .m-page__toolbar {
   display: flex;

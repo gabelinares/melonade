@@ -210,35 +210,77 @@ const trigger = await p.evaluate(() => {
   const b = document.querySelector('.m-sc__filter');
   if (!b) return null;
   const r = b.getBoundingClientRect();
-  const bar = document.querySelector('.m-sc__bar').getBoundingClientRect();
+  const foot = document.querySelector('.m-sc__foot').getBoundingClientRect();
+  const card = document.querySelector('.m-sc').getBoundingClientRect();
   const cs = getComputedStyle(b);
   return {
+    shape: document.documentElement.getAttribute('data-trigger'),
     word: b.querySelector('.m-sc__filter-word')?.textContent?.trim(),
+    key: b.querySelector('.m-sc__key')?.textContent?.trim(),
     width: Math.round(r.width),
-    barWidth: Math.round(bar.width),
-    /* the accent is spent here, on his instruction: "in blue or in something
-       obvious" - so the fill is NOT the plane's own colour */
+    footWidth: Math.round(foot.width),
+    /* ⚠ AT THE FOOT (Gabriel, 09-04: "the add filter button should be on the
+       bottom"). It opened the card until then, which is where a search bar goes
+       and not where an Add goes: the rules are the content, and a control that
+       makes more of them belongs after the ones you have. */
+    belowHalf: r.top > card.top + card.height / 2,
+    /* the accent is spent here, on Mehdi's instruction: "in blue or in
+       something obvious" - so the fill is NOT the card's own colour */
     bg: cs.backgroundColor,
     ink: cs.color,
-    /* and no text input anywhere on the bar: that is what a bar would be */
-    inputs: document.querySelectorAll('.m-sc__bar input[type="text"], .m-sc__bar input:not([readonly])').length,
+    /* and no text input anywhere in the card: that is what a bar would be */
+    inputs: document.querySelectorAll('.m-sc input[type="text"], .m-sc input:not([readonly])').length,
   };
 });
-check('there is exactly ONE way into the filter, and it is a BUTTON rather than a bar',
-  !!trigger && trigger.word === 'Filter' && trigger.width < trigger.barWidth / 3,
-  `"${trigger?.word}" at ${trigger?.width}px on a ${trigger?.barWidth}px row`);
+check('there is exactly ONE way into the filter, and by default it is a BUTTON',
+  !!trigger && trigger.shape === 'button' && trigger.word === 'Filter'
+    && trigger.width < trigger.footWidth / 3,
+  `${trigger?.shape}: "${trigger?.word}" at ${trigger?.width}px in a ${trigger?.footWidth}px row`);
+check('it sits at the FOOT of the card, after the rules it adds to',
+  trigger.belowHalf, `top ${trigger.belowHalf ? 'below' : 'above'} the card's middle`);
 check('and it wears the accent, which is the one place this page spends it',
   trigger.bg !== 'rgb(255, 255, 255)' && trigger.ink !== 'rgb(0, 0, 0)',
   `${trigger.bg} / ${trigger.ink}`);
+/* ⚠ THE BADGE IS A PROMISE, so the shortcut has to answer it - asserted below,
+   at "the badge is not decoration". A control that advertises a shortcut and
+   ignores it is worse than one that advertises nothing. */
+check('it says how to reach it from the keyboard',
+  /K$/.test(trigger.key ?? ''), trigger.key ?? 'no badge');
 
-/* ⚠ NOTHING ON THE ROW INVITES TYPING. No text input, and no rotating example
-   after the word "like" - which is what the 09-04 bar had, and which is the
-   invitation he described with a worked demonstration attached. The examples
-   have now been removed twice, for two different reasons; see the note above
-   LABEL in SearchCard. */
-check('and nothing on the row invites you to type into it',
-  trigger.inputs === 0 && (await p.locator('.m-sc__eg').count()) === 0,
-  `${trigger.inputs} inputs, ${await p.locator('.m-sc__eg').count()} examples`);
+/* ⚠ NOTHING IN THE CARD INVITES TYPING - no text input, and in the button shape
+   no rotating specimen either. */
+check('and nothing in the card is a text field',
+  trigger.inputs === 0 && (await p.locator('.m-sc__eg:visible').count()) === 0,
+  `${trigger.inputs} inputs, ${await p.locator('.m-sc__eg:visible').count()} specimens`);
+
+/* ── THE KEYBOARD PATH, BOTH HALVES ─────────────────────────────────────────
+   ⌘K opens it from anywhere, and a printable character typed AT it opens the
+   catalogue with that character already searched. The second one is the answer
+   to the objection the bar died of - "people type into the bar, they're
+   expecting to see results" - and it is the reason the bar can be offered
+   again at all. */
+await p.keyboard.press('Escape');
+await p.waitForTimeout(200);
+await p.keyboard.press('Meta+k');
+await p.waitForTimeout(450);
+check('the badge is not decoration: the shortcut opens the catalogue',
+  (await p.locator('.m-fpanel').count()) === 1);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(300);
+
+await p.locator('.m-sc__filter').focus();
+await p.keyboard.press('r');
+await p.waitForTimeout(450);
+const typed = await p.evaluate(() => ({
+  open: !!document.querySelector('.m-fpanel'),
+  query: document.querySelector('.m-pick__search input')?.value ?? '',
+  rows: document.querySelectorAll('.m-pick__row').length,
+}));
+check('and typing at it opens the catalogue with the keystroke already in it',
+  typed.open && typed.query === 'r' && typed.rows > 0,
+  `"${typed.query}" — ${typed.rows} matches`);
+await p.keyboard.press('Escape');
+await p.waitForTimeout(300);
 
 /* ⚠ NOT A SEARCH BAR AND NOT CALLED SEARCH (Gabriel, 2026-09-02). The magnifier
    IS the search signal, so the glyph is a funnel; and the control's own verb is
@@ -604,7 +646,11 @@ const doors = await p.evaluate(() => ({
   heads: [...document.querySelectorAll('.m-sc__head-name')].map((e) => e.textContent.trim()),
   /* the list's controls never move either, because the row they sit on never
      goes away */
-  onBar: !!document.querySelector('.m-sc__bar .m-daterange, .m-sc__bar button'),
+  /* ⚠ ON THE HEAD ROW SINCE 2026-09-04, which is the row that used to be a
+     summary strip. Mehdi, 09-03: "maybe custom range and that button for
+     display on the right - maybe then you can merge with the line above it and
+     then you can use less space." One row where there were two. */
+  onHead: !!document.querySelector('.m-sc__head-trailing .m-daterange, .m-sc__head-trailing button'),
   save: document.querySelector('.m-sc__save')?.textContent?.trim(),
   savedBesideClear: (() => {
     const strip = document.querySelector('.m-sc__strip');
@@ -616,8 +662,8 @@ check('there is one way in and it is still there once the list has filled',
   `${doors.button} button, ${doors.adds} section adds`);
 check('and both sections are still named, because the scope has to be readable',
   doors.heads.join('/') === 'Events/Group filters', doors.heads.join('/'));
-check('the date range stays on the bar rather than moving when the filter fills',
-  doors.onBar);
+check('the window rides the head row, one row where there were two',
+  doors.onHead);
 check('Save as segment sits beside Clear, where it can only be reached once it is true',
   doors.savedBesideClear && /Save as segment/.test(doors.save ?? ''), doors.save ?? 'not on the strip');
 
@@ -1044,10 +1090,20 @@ const emptyFilter = await p.evaluate(() => ({
      field read as one control among several rather than as THE control. */
   pills: document.querySelectorAll('.m-sc__example, .m-sc__empty, .m-sc__hint').length,
   strip: !!document.querySelector('.m-sc__strip'),
+  summary: document.querySelector('.m-sc__summary')?.textContent?.trim(),
+  window: !!document.querySelector('.m-sc__head-trailing .m-daterange, .m-sc__head-trailing button'),
 }));
-check('an empty filter is simply a field, with no empty state under it',
-  emptyFilter.rows === 0 && emptyFilter.pills === 0 && !emptyFilter.strip,
-  `${emptyFilter.pills} leftover example elements`);
+/* ⚠ THE HEAD SURVIVES AN EMPTY FILTER, and that is the change. It used to
+   appear only once there was something to summarise, which meant the DATE
+   WINDOW - a control that narrows the list whether or not a filter does -
+   vanished with it. Empty, the row reads "Every session" beside the window,
+   which is exactly true. */
+check('an empty filter is one head row and a trigger, with no empty state under it',
+  emptyFilter.rows === 0 && emptyFilter.pills === 0 && emptyFilter.strip,
+  `${emptyFilter.rows} rows, ${emptyFilter.pills} leftover example elements, head ${emptyFilter.strip}`);
+check('and it says what it currently means, beside the window it runs over',
+  /Every session/.test(emptyFilter.summary ?? '') && emptyFilter.window,
+  `"${emptyFilter.summary}", window ${emptyFilter.window}`);
 
 /* ⚠ REVERSED 2026-09-03, AND THE OLD ASSERTION IS WORTH LEAVING IN THE RECORD.
    It read "the field is the biggest control on the page and the only one at
@@ -1057,8 +1113,11 @@ check('an empty filter is simply a field, with no empty state under it',
    controls beside it and it is told apart by COLOUR instead. */
 const weight = await p.evaluate(() => {
   const f = document.querySelector('.m-sc__filter');
-  const others = [...document.querySelectorAll('.m-sc__bar .ant-select, .m-sc__bar button')]
-    .filter((e) => !e.classList.contains('m-sc__filter'));
+  /* ⚠ THE NEIGHBOURS MOVED. The trigger is at the FOOT now and the window is on
+     the HEAD row, so "the controls beside it" are the head's - which is still
+     the comparison that matters: one coloured control that is not taller than
+     the app's own scale. */
+  const others = [...document.querySelectorAll('.m-sc__head-trailing .ant-select, .m-sc__head-trailing button')];
   return {
     h: Math.round(f.getBoundingClientRect().height),
     others: others.map((e) => Math.round(e.getBoundingClientRect().height)),

@@ -43,12 +43,14 @@ export interface ProtoTokens {
   density: DensityKey;
   corners: CornersKey;
   filters: FiltersKey;
+  trigger: TriggerKey;
   setGrey: (k: GreyKey) => void;
   setAccent: (k: AccentKey) => void;
   setFont: (k: FontKey) => void;
   setDensity: (k: DensityKey) => void;
   setCorners: (k: CornersKey) => void;
   setFilters: (k: FiltersKey) => void;
+  setTrigger: (k: TriggerKey) => void;
   reset: () => void;
 }
 
@@ -63,11 +65,27 @@ interface Saved {
   density: DensityKey;
   corners: CornersKey;
   filters: FiltersKey;
+  trigger: TriggerKey;
 }
 
 /** How an applied filter is drawn. Pure CSS - antd draws none of this - so it
  *  is the one switch that does not go through ConfigProvider. */
 export type FiltersKey = 'outline' | 'tinted' | 'text';
+
+/**
+ * ⚠ THE FILTER'S ENTRY CONTROL, AND IT IS A SWITCH BECAUSE THE ROOM DISAGREES.
+ *
+ * Mehdi killed the full-width bar on 2026-09-03 with a reason worth respecting:
+ * *"I wouldn't put it as a bar. We tried the bar before. People sometimes they
+ * type into the bar, they're expecting to see results in there."* A shipped
+ * failure, not a preference. Gabriel then said he loved it.
+ *
+ * Both are right about something, so both are built: `button` is the decided
+ * default and `bar` is the one to put in front of him. Pure CSS off a root
+ * attribute - one component, two shapes - because a second code path is how the
+ * two drift into different behaviour and the comparison stops being fair.
+ */
+export type TriggerKey = 'bar' | 'button';
 export const FILTERS: Record<FiltersKey, { label: string; note: string }> = {
   outline: { label: 'Outline', note: 'a control you can take off' },
   tinted: { label: 'Tinted', note: 'a state the list is in' },
@@ -91,6 +109,7 @@ function read(): Saved {
       density: v.density === 'spaced' ? 'spaced' : fallback.density,
       corners: v.corners && CORNERS[v.corners] ? v.corners : fallback.corners,
       filters: v.filters && FILTERS[v.filters] ? v.filters : fallback.filters,
+      trigger: v.trigger === 'bar' ? 'bar' : fallback.trigger,
     };
   } catch {
     return fallback;
@@ -121,6 +140,7 @@ export function ProtoTokensProvider({ children, frozen = false }: ProtoTokensPro
     root.setAttribute('data-density', saved.density);
     root.setAttribute('data-corners', saved.corners);
     root.setAttribute('data-filters', saved.filters);
+    root.setAttribute('data-trigger', saved.trigger);
   }, [saved]);
 
   /* WARM EVERY FACE THE PAIRINGS CAN ASK FOR. A <link> to Google Fonts only DECLARES the
@@ -166,6 +186,7 @@ export function ProtoTokensProvider({ children, frozen = false }: ProtoTokensPro
       setDensity: (density) => setSaved((s) => ({ ...s, density })),
       setCorners: (corners) => setSaved((s) => ({ ...s, corners })),
       setFilters: (filters) => setSaved((s) => ({ ...s, filters })),
+      setTrigger: (trigger) => setSaved((s) => ({ ...s, trigger })),
       reset: () => setSaved({ ...DEFAULTS }),
     }),
     [saved],

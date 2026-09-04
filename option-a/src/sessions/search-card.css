@@ -58,63 +58,39 @@
    A sticky element that has to be opaque cannot also be the element whose
    colour means something. */
 
-/* ── the bar ─────────────────────────────────────────────────────────────────
-   The field, and the two controls that belong to the LIST rather than to the
-   search - the date range and the display menu, handed in as `trailing`. They
-   are here because THIS is what sticks: a window you cannot change without
-   scrolling back up is the same complaint the sticky came out of.
+/* ⚠ `.m-sc__bar` LIVED HERE - the row that opened the card, holding the trigger
+   and the window. Both moved on 2026-09-04: the window onto the head row (one
+   row where there were two, which is what Mehdi asked for), and the trigger to
+   the FOOT, because it makes more rules and belongs after the ones you have. */
 
-   A HAIRLINE UNDER IT, because the well needs a head and a body to read as a
-   container at all: it is a 6% step off the plane, and 6% plus three loose
-   lines is not a container. Same grammar as the picker (a field, a rule, a
-   body) and the account card (a head, a rule, its groups) - one convention,
-   three uses. */
-.m-sc__bar {
+/* ── THE TRIGGER, AT THE FOOT OF THE CARD ───────────────────────────────────
+   ⚠ TWO SHAPES OF ONE CONTROL, chosen by `data-trigger` on the root (prototype
+   panel → "Filter entry"). One component, one set of behaviours, one keyboard
+   path; only the box changes. A second component would have been easier to
+   write and impossible to compare - the two would drift, and the comparison is
+   the whole point of building both.
+
+   Mehdi killed the bar on 09-03 with a reason worth respecting; Gabriel liked
+   it. Rather than remember the argument, both are on the page.
+
+   ⚠ AND THE BAR'S FAILURE MODE IS FIXED RATHER THAN ARGUED WITH. His complaint
+   was that people TYPE into a bar and expect results. They can now: the first
+   character opens the catalogue with that character in its search, and the ⌘K
+   badge says so before you try. */
+.m-sc__foot {
   display: flex;
-  align-items: center;
-  gap: var(--m-space-4);
-  padding: var(--m-space-4) var(--m-space-5);
-  border-bottom: var(--m-border-width) solid var(--m-border-default);
+  padding: var(--m-space-3) var(--m-space-3) var(--m-space-4);
 }
 
-/* ── THE TRIGGER: A BUTTON, AND IT WAS A BAR FOR A DAY ───────────────────────
-   ⚠ Mehdi, 2026-09-03: *"I wouldn't put it as a bar. We tried the bar before.
-   People sometimes they type into the bar, they're expecting to see results in
-   there."* A shipped failure, not a preference - so what was a 44px-tall field
-   spanning the plane is now a control the size of the two beside it.
-
-   THE ACCENT IS SPENT HERE, on his instruction: *"you can have a nice button
-   like this funnel... and have it in blue or in something obvious."* It is a
-   tinted fill rather than a solid one, which is enough to be the only coloured
-   object in the row without becoming the loudest thing on the page - and this
-   page's one accent was previously unspent, so nothing is displaced.
-
-   ⚠ NOT `--m-action-primary-bg`. That token is near-black in light and
-   near-white in dark, which is the trap the Switch fell into on 09-04: a
-   "primary" colour that is not a hue at all. The accent tokens are.
-
-   ⚠ HEIGHT IS `sm`, NOT `md`, and it is measured rather than eyeballed: the
-   date range and the display menu are antd `size="small"` and land at 26px, so
-   `md` (30px) put the one coloured control 4px taller than everything beside
-   it - which is the old bar's mistake in miniature. Three controls on one row,
-   one baseline, and the accent is the only thing that distinguishes it. */
+/* THE COMMON SHAPE. Everything both share: the ring, the glyph, the badge, the
+   accent, the press. */
 .m-sc__filter {
   position: relative;
   isolation: isolate;
   display: inline-flex;
   align-items: center;
-  gap: var(--m-space-2);
-  flex: none;
-  height: var(--m-control-height-sm);
-  padding-inline: var(--m-space-4);
-  font-size: var(--m-text-xs);
-  font-weight: var(--m-weight-medium);
+  gap: var(--m-space-3);
   color: var(--m-content-accent);
-  /* ⚠ `surface-selected`, which IS the accent tint - #e5f5f8 on white and
-     #022227 under dark. There is no `--m-surface-accent`; this token is the
-     one the palette generates from the accent hue, and it is what every other
-     tinted-accent surface in the app already uses. Inventing a second name for
-     the colour that already exists is how two tints drift apart. */
   background: var(--m-surface-selected);
   border: var(--m-border-width) solid var(--m-border-accent);
   border-radius: var(--m-radius-control);
@@ -124,19 +100,105 @@
     border-color var(--m-duration-fast) var(--m-ease-out);
 }
 
-.m-sc__filter:hover {
-  background: var(--m-surface-selected);
-  border-color: var(--m-content-accent);
-}
-
+.m-sc__filter:hover { border-color: var(--m-content-accent); }
+/* A press is 40ms of nothing moving anywhere else - the one bit of physics in
+   the app, on the one control that starts something. */
+.m-sc__filter:active { transform: translateY(0.5px); }
 .m-sc__filter-glyph { flex: none; }
 
-/* ⚠ THE WORD IS NOT `aria-hidden`. On the bar the text was decorative - the
-   button carried an `aria-label` and the visible sentence repeated it - and a
-   hidden label on a control whose whole content is that label leaves a button
-   with no accessible name at all if the label ever drifts. Here the word IS the
-   name, and the `aria-label` only lengthens it. */
-.m-sc__filter-word { white-space: nowrap; }
+/* ── THE KEYBOARD BADGE ──────────────────────────────────────────────────────
+   It is not decoration and it is not a power-user affordance: it is the line
+   that tells you this is a LAUNCHER rather than a field, before you find out by
+   typing. Every control shaped like this one - Linear's, Raycast's, GitHub's -
+   carries it, so it reads as a convention rather than as an invention.
+
+   Quiet: the accent at a third, on a fill a shade off the button's own, and it
+   never takes the pointer. */
+.m-sc__key {
+  flex: none;
+  padding: 1px var(--m-space-2);
+  font-family: var(--m-font-num);
+  font-size: var(--m-text-2xs);
+  line-height: 1.5;
+  color: var(--m-content-accent);
+  background: var(--m-surface-default);
+  border: var(--m-border-width) solid var(--m-border-accent);
+  border-radius: var(--m-radius-chip);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ══ SHAPE 1 · THE BUTTON ════════════════════════════════════════════════════
+   ⚠ NOT A SMALL BAR. The first version of this was the bar with its width taken
+   away, which is why it read as a shrunken field rather than as a button: same
+   height as its neighbours, same border, one word. It is a real button now -
+   its own height, medium weight, a badge on the end, and it sizes to its
+   content so nothing about it suggests a place to put text.
+
+   `sm` height, measured rather than eyeballed: the date range beside it is antd
+   `size="small"` at 26px, and `md` put the one coloured control 4px taller than
+   everything around it. */
+[data-trigger='button'] .m-sc__filter {
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-3) var(--m-space-2);
+  font-size: var(--m-text-xs);
+  font-weight: var(--m-weight-medium);
+}
+[data-trigger='button'] .m-sc__barcopy { display: none; }
+
+/* ══ SHAPE 2 · THE BAR ═══════════════════════════════════════════════════════
+   Full width, tall, and the badge parked at the far end - which is the shape
+   Gabriel liked and the shape Mehdi has seen fail. It gets the same behaviour
+   as the button and one extra: the rotating specimen after "like".
+
+   The lead never shrinks and the specimen truncates, because the instruction is
+   the half that has to survive a narrow plane. */
+[data-trigger='bar'] .m-sc__filter {
+  width: 100%;
+  height: calc(var(--m-control-height-lg) + var(--m-space-2));
+  padding-inline: var(--m-space-5);
+  font-size: var(--m-text-md);
+  font-weight: 400;
+}
+[data-trigger='bar'] .m-sc__filter-word { display: none; }
+[data-trigger='bar'] .m-sc__key { margin-inline-start: auto; }
+
+.m-sc__barcopy {
+  display: flex;
+  align-items: baseline;
+  /* The space between the lead and its specimen. A literal one in the JSX would
+     be collapsed by the flex box. */
+  gap: 0.32em;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.m-sc__lead {
+  flex: none;
+  color: var(--m-content-accent);
+}
+
+/* A little more muted than the lead it follows: the lead is the instruction and
+   this only illustrates it. Same size, same face - the difference is entirely
+   in the ink, which is the quietest way to say "and this part is an aside". */
+.m-sc__eg {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.62;
+  animation: m-sc-eg-in var(--m-duration-slow) var(--m-ease-out) both;
+}
+
+@keyframes m-sc-eg-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 0.62; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-sc__eg { animation: none; }
+  .m-sc__filter:active { transform: none; }
+}
 
 /* ── THE RING ────────────────────────────────────────────────────────────────
    The one piece of expression on this page.
@@ -574,6 +636,19 @@
    name and its Add on the left, the qualifier on the right. On the events
    heading that right-hand slot is the order control. */
 .m-sc__head-hint { margin-inline-start: auto; }
+
+/* THE WINDOW, on the head row rather than a bar of its own. Pushed right, with
+   the two verbs after it. */
+.m-sc__head-trailing {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-4);
+  margin-inline-start: auto;
+}
+
+/* An empty search still has a head - it says "Every session" beside the window -
+   and it has nothing under it, so it closes the card itself. */
+.m-sc__strip.is-empty { padding-bottom: var(--m-space-3); }
 
 /* ⚠ `.m-sc__strip-trailing` LIVED HERE, for the morning the bar retired and
    the strip had to adopt the date range. The bar does not retire any more, so

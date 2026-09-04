@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Segmented, Select, Slider, Tooltip } from 'antd';
 import { ChevronDown, FlaskConical, RotateCcw } from 'lucide-react';
 import { AGENTS } from '../nav/agents.ts';
-import { FILTERS, useProtoTokens, type FiltersKey } from '../theme/ProtoTokens.tsx';
+import { FILTERS, useProtoTokens, type FiltersKey, type TriggerKey } from '../theme/ProtoTokens.tsx';
 import {
   ACCENTS,
   CORNERS,
@@ -225,6 +225,25 @@ export function PrototypePanel({
               value={tok.filters}
               onChange={(v) => tok.setFilters(v as FiltersKey)}
               options={opts(FILTERS)}
+            />
+          </div>
+
+          {/* ⚠ TWO SHAPES FOR ONE CONTROL, because the room disagrees about it.
+              Mehdi killed the full-width bar on 09-03 - "we tried the bar
+              before, people type into the bar, they're expecting to see
+              results" - and Gabriel liked it. Rather than remember the argument,
+              both are on the page and either can be shown. */}
+          <div className="m-proto__field">
+            <span className="m-proto__label">Filter entry</span>
+            <Segmented
+              size="small"
+              block
+              value={tok.trigger}
+              onChange={(v) => tok.setTrigger(v as TriggerKey)}
+              options={[
+                { value: 'button', label: 'Button' },
+                { value: 'bar', label: 'Bar' },
+              ]}
             />
           </div>
 

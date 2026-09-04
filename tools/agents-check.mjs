@@ -278,6 +278,7 @@ const sections = await p.evaluate(() => ({
     const tab = document.querySelector('.m-page__tabs .ant-tabs-tab')?.getBoundingClientRect();
     return plane && tab ? Math.round(tab.left - plane.left) : null;
   })(),
+  tabsBorder: getComputedStyle(document.querySelector('.m-page__tabs')).borderBottomWidth,
   toolbarTop: getComputedStyle(document.querySelector('.m-page__toolbar')).borderTopWidth,
 }));
 /* ⚠ INVERTED ON 09-03, and the inversion is the point. This used to assert
@@ -304,8 +305,15 @@ t('SECTIONS: the header is a title and a sentence, with no rule under it',
   `${sections.title} / ${sections.sub}`);
 t('SECTIONS: the strip starts where the title starts', sections.tabsX === tests.titleX,
   `tabs ${sections.tabsX} vs title ${tests.titleX}`);
-t('SECTIONS: the strip\u2019s hairline is the toolbar\u2019s top edge, drawn once',
-  sections.toolbarTop === '0px', `toolbar border-top ${sections.toolbarTop}`);
+/* ⚠ INVERTED 2026-09-04, and it is the same fact read the other way. The strip
+   used to carry a full-bleed rule and the toolbar dropped its top border so the
+   two would not double into a 2px line. The strip sits on the GROUND now, where
+   a full-bleed rule belongs to nothing - it ran left past the card below and
+   crossed its rounded corner, which read as the card overflowing its own edge.
+   So the strip has no rule, and the toolbar draws its own top edge again. */
+t('SECTIONS: the strip has no rule on the ground, so the toolbar draws its own',
+  sections.tabsBorder === '0px' && sections.toolbarTop !== '0px',
+  `strip ${sections.tabsBorder}, toolbar top ${sections.toolbarTop}`);
 t('SECTIONS: one toolbar band, not two', sections.bands === 1, `${sections.bands} bands`);
 
 /* ── THE TESTS FILTER MENU ──────────────────────────────────────────────────

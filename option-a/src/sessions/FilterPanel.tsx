@@ -9,6 +9,10 @@ export interface FilterPanelProps {
   onPick: (entry: CatalogueEntry) => void;
   /** Properties already in the search, so the filters list can disable them. */
   taken?: readonly string[];
+  /** What the catalogue's search starts with. A character typed AT the trigger
+   *  opens the panel and lands here, so the keystroke is not swallowed - which
+   *  is the whole answer to "people type into the bar". */
+  seed?: string;
 }
 
 /**
@@ -56,7 +60,7 @@ export interface FilterPanelProps {
  * `prefers-reduced-motion` gets the same panel with no interpolation.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function FilterPanel({ open, onClose, onPick, taken = [] }: FilterPanelProps) {
+export function FilterPanel({ open, onClose, onPick, taken = [], seed }: FilterPanelProps) {
   const [grown, setGrown] = useState(false);
   const box = useRef<HTMLDivElement>(null);
 
@@ -126,6 +130,7 @@ export function FilterPanel({ open, onClose, onPick, taken = [] }: FilterPanelPr
         taken={taken}
         onPick={onPick}
         onDone={onClose}
+        seed={seed}
         placeholder="An event or a group filter"
       />
     </div>

@@ -75,6 +75,8 @@ export interface FilterPickerProps {
    *  appears, and "Applied to this event only" is the entire difference between
    *  this list and the identical-looking rows in the group filters below. */
   note?: string;
+  /** What the search starts with, when something typed its way in here. */
+  seed?: string;
   children: ReactElement;
 }
 
@@ -137,11 +139,12 @@ export function PickerBody({
   initialCategory,
   placeholder = 'An event, a property, or a sentence',
   note,
+  seed,
   onDone,
   onBack,
   backLabel,
 }: PickerBodyProps) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(seed ?? '');
   const [cat, setCat] = useState<string>(initialCategory ?? ALL);
   const bodyRef = useRef<HTMLDivElement>(null);
 
