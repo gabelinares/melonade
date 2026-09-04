@@ -386,11 +386,11 @@ export function PickerBody({
  * THE SAME BODY IN A POPOVER, which is how the EVENT ROW uses it - the funnel
  * and the subject both hang a small menu off a control in a row.
  *
- * ⚠ THE SESSION BAR NO LONGER USES THIS. It opens `FilterFork`, which hosts the
- * same `PickerBody` on a surface that morphs out of the bar itself, so the bar,
- * the fork and the catalogue are one continuous object rather than three
+ * ⚠ THE FILTER BUTTON NO LONGER USES THIS. It opens `FilterPanel`, which hosts
+ * the same `PickerBody` on a surface that morphs out of the button itself, so
+ * the button and the catalogue are one object changing shape rather than two
  * overlapping panels. Two hosts, one body: the alternative was a lookalike, and
- * a lookalike is how the row's picker and the bar's picker drift apart.
+ * a lookalike is how the row's picker and the button's picker drift apart.
  */
 export function FilterPicker({ children, ...rest }: FilterPickerProps) {
   const [open, setOpen] = useState(false);

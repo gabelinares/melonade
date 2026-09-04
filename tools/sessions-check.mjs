@@ -84,7 +84,7 @@ const shell = await p.evaluate(() => ({
      FIELD carries the tint. See the note on `.m-sc`. */
   searchBg: getComputedStyle(document.querySelector('.m-sc')).backgroundColor,
   planeBg: getComputedStyle(document.querySelector('.m-page')).backgroundColor,
-  fieldBg: getComputedStyle(document.querySelector('.m-sc__field')).backgroundColor,
+  fieldBg: getComputedStyle(document.querySelector('.m-sc__filter')).backgroundColor,
   tableBg: getComputedStyle(document.querySelector('.m-ss__table')).backgroundColor,
 }));
 check('the page renders with the shell every other page uses',
@@ -185,147 +185,137 @@ check('every figure in a column shares one left edge and one face',
   figs.n === 12 && figs.lefts === 1 && /tabular/.test(figs.numeric ?? ''),
   `${figs.n} cells, ${figs.lefts} edge, ${figs.numeric}`);
 
-/* ── 2. ONE BUTTON ───────────────────────────────────────────────────────────
-   Mehdi's ask, and the one part of the search that survived every revision:
-   "have event and filters within a single button." One control on the bar, and
-   the two kinds are told apart AFTER it rather than before. */
-check('there is exactly ONE way into the filter, and it is a field',
-  (await p.locator('.m-sc__field').count()) === 1
-    && /^Filter/.test(((await p.locator('.m-sc__lead').textContent()) ?? '').trim()),
-  (await p.locator('.m-sc__field-text').textContent()) ?? 'no field');
+/* ── 2. ONE BUTTON, AND IT IS A BUTTON ──────────────────────────────────────
+   Mehdi's ask on 09-02, and the one part of the search that survived every
+   revision: "have event and filters within a single button."
 
-/* ⚠ THE EXAMPLES ARE BACK AND THEY ARE A DIFFERENT THING (Gabriel, 09-04). The
-   09-02 pair rotated prose you were invited to TYPE, and they came out the same
-   day because the field cannot read a sentence. These sit after the word "like"
-   and are SPECIMENS of what a filter can say - you read one and click, you
-   never type it - so the promise is true and the field stays a button.
-
-   The natural-language path is still parked: `onTranslate` is its one switch
-   and nothing passes it. That is asserted separately, below. */
-const eg = await p.evaluate(() => {
-  const el = document.querySelector('.m-sc__eg');
-  const lead = document.querySelector('.m-sc__lead');
-  if (!el || !lead) return null;
+   ⚠ AND ON 09-03 THE SECOND HALF OF THAT SENTENCE BECAME LOAD-BEARING TOO:
+   *"I wouldn't put it as a bar. WE TRIED THE BAR BEFORE. People sometimes they
+   type into the bar, they're expecting to see results in there."* OpenReplay
+   shipped a type-into-it bar and removed it, so a field-shaped control that
+   cannot take text is a known failure rather than a matter of taste - which is
+   why this asserts the SHAPE and not only the count. */
+const trigger = await p.evaluate(() => {
+  const b = document.querySelector('.m-sc__filter');
+  if (!b) return null;
+  const r = b.getBoundingClientRect();
+  const bar = document.querySelector('.m-sc__bar').getBoundingClientRect();
+  const cs = getComputedStyle(b);
   return {
-    text: el.textContent.trim(),
-    /* "a little more muted" than the lead it follows */
-    ink: getComputedStyle(el).color,
-    leadInk: getComputedStyle(lead).color,
-    ends: /like$/.test(lead.textContent.trim()),
+    word: b.querySelector('.m-sc__filter-word')?.textContent?.trim(),
+    width: Math.round(r.width),
+    barWidth: Math.round(bar.width),
+    /* the accent is spent here, on his instruction: "in blue or in something
+       obvious" - so the fill is NOT the plane's own colour */
+    bg: cs.backgroundColor,
+    ink: cs.color,
+    /* and no text input anywhere on the bar: that is what a bar would be */
+    inputs: document.querySelectorAll('.m-sc__bar input[type="text"], .m-sc__bar input:not([readonly])').length,
   };
 });
-check('the lead ends on "like" and an example follows it, quieter than the lead',
-  !!eg && eg.ends && eg.text.length > 6 && eg.ink !== eg.leadInk,
-  `${eg?.text} — ${eg?.ink} against ${eg?.leadInk}`);
+check('there is exactly ONE way into the filter, and it is a BUTTON rather than a bar',
+  !!trigger && trigger.word === 'Filter' && trigger.width < trigger.barWidth / 3,
+  `"${trigger?.word}" at ${trigger?.width}px on a ${trigger?.barWidth}px row`);
+check('and it wears the accent, which is the one place this page spends it',
+  trigger.bg !== 'rgb(255, 255, 255)' && trigger.ink !== 'rgb(0, 0, 0)',
+  `${trigger.bg} / ${trigger.ink}`);
+
+/* ⚠ NOTHING ON THE ROW INVITES TYPING. No text input, and no rotating example
+   after the word "like" - which is what the 09-04 bar had, and which is the
+   invitation he described with a worked demonstration attached. The examples
+   have now been removed twice, for two different reasons; see the note above
+   LABEL in SearchCard. */
+check('and nothing on the row invites you to type into it',
+  trigger.inputs === 0 && (await p.locator('.m-sc__eg').count()) === 0,
+  `${trigger.inputs} inputs, ${await p.locator('.m-sc__eg').count()} examples`);
+
 /* ⚠ NOT A SEARCH BAR AND NOT CALLED SEARCH (Gabriel, 2026-09-02). The magnifier
-   is the search signal, so it is a filter glyph; and no word a reader sees says
-   "search". */
+   IS the search signal, so the glyph is a funnel; and the control's own verb is
+   Filter. */
 const words = await p.evaluate(() => {
   const nav = document.querySelector('.m-sc');
-  const glyph = nav.querySelector('.m-sc__field-glyph');
+  const glyph = nav.querySelector('.m-sc__filter-glyph');
   return {
-    glyph: glyph?.classList.contains('lucide-list-filter') || glyph?.getAttribute('class') || '',
-    lead: nav.querySelector('.m-sc__lead')?.textContent?.trim() ?? '',
+    glyph: glyph?.getAttribute('class') || '',
+    label: nav.querySelector('.m-sc__filter')?.getAttribute('aria-label') ?? '',
     all: nav.textContent ?? '',
-    labels: [...nav.querySelectorAll('[aria-label]')].map((e) => e.getAttribute('label') ?? e.getAttribute('aria-label')).join(' | '),
   };
 });
-/* ⚠ RELAXED 2026-09-04, and only in one direction. The rule was that no word a
-   reader sees says "search"; the copy Gabriel asked for says "save search
-   segments", where "search" is the NOUN for the saved thing rather than the
-   name of this control. So what is asserted now is the part that always
-   mattered: the control's own verb is Filter, and nothing invites you to
-   search the sessions. */
-check('the control calls itself a filter, whatever it says about saved searches',
-  /^filter/i.test(words.lead) && !/search (these |the )?(sessions|recordings)/i.test(words.all),
-  words.lead);
-check('and the glyph is a filter, not a magnifier',
+check('the control calls itself a filter, in one word and in its long name',
+  /^Filter/.test(words.label) && !/search (these |the )?(sessions|recordings)/i.test(words.all),
+  words.label);
+check('and the glyph is a funnel, not a magnifier',
   !/magnif|search/i.test(String(words.glyph)), String(words.glyph).slice(0, 60));
 
-/* ── 2b. ONE ENTRY POINT, TWO CATALOGUES ────────────────────────────────────
-   ⚠ REWRITTEN 2026-09-04, and the assertion it replaces is the interesting
-   part. It used to read "the one picker holds both kinds" and it passed for two
-   days: the 09-02 build had merged production's two lists into one scroll.
+/* ── 2b. ONE BUTTON, ONE MERGED LIST ────────────────────────────────────────
+   ⚠ THIRD VERSION OF THIS BLOCK IN TWO DAYS, and the churn is the record of a
+   real argument rather than indecision, so it is worth stating where it landed
+   and why.
 
-   That was a step past what Mehdi asked for. He wanted ONE BUTTON - "have event
-   and filters within a single button" - and the build heard one LIST. Gabriel,
-   09-04: "separate filter from events in a way that doesn't compromise the
-   unified filter field... the list in the picker should stay exactly the same
-   as it is currently in OpenReplay."
+     09-02  one merged list behind one button
+     09-04  a FORK: two cards first, then production's two lists, recut
+     09-04  back to one merged list behind one button
 
-   So the catalogue is recut to production's two, and the single entry point
-   survives by forking BEFORE the list rather than merging inside it. What is
-   asserted now is that both halves of that are true: one control on the bar,
-   and each list scoped to one kind. */
-await p.locator('.m-sc__field').click();
-await p.waitForTimeout(450);
-const forked = await p.evaluate(() => {
-  const el = document.querySelector('.m-fork');
-  const cards = [...document.querySelectorAll('.m-fork__card')];
+   Mehdi rejected the fork on 09-03 by naming its two costs - *"you need to
+   understand what a group filter is and what an event is, PLUS IT ADDS ANOTHER
+   CLICK"* - and Gabriel agreed in the room: *"I definitely think the best
+   option is merging them all."* He reached it the long way: he floated two
+   buttons himself, walked production's two menus, and noticed Autocapture
+   appears in BOTH, which makes the split redundant exactly where it is visible.
+
+   So the kind is decided by WHAT YOU PICK, not before you pick. What this
+   asserts is that both halves of that hold: one control, and one list holding
+   both kinds with the kinds still legible in it. */
+await p.locator('.m-sc__filter').click();
+await p.waitForTimeout(500);
+const picker = await p.evaluate(() => {
+  const el = document.querySelector('.m-pick');
+  if (!el) return null;
+  const cats = [...el.querySelectorAll('.m-pick__cat')].map((e) => e.textContent.trim());
   return {
-    open: !!el,
-    heads: cards.map((c) => c.querySelector('.m-fork__head')?.textContent?.trim()),
-    blurbs: cards.map((c) => c.querySelector('.m-fork__blurb')?.textContent?.trim()),
-    glyphs: cards.filter((c) => c.querySelector('.m-fork__glyph svg')).length,
-    /* no catalogue yet: the fork is a choice, not a list */
-    rows: document.querySelectorAll('.m-pick__row').length,
+    rows: el.querySelectorAll('.m-pick__row').length,
+    /* both halves of the catalogue, in one rail: the four categories the
+       backend special-cases (all events) AND the property categories */
+    events: ['Autocapture', 'Events', 'Features', 'Segments'].every((n) => cats.some((c) => c.includes(n))),
+    props: ['Session', 'Technology', 'Geography', 'Metadata'].every((n) => cats.some((c) => c.includes(n))),
+    /* ⚠ NO FORK. Not a card, not a stage, not a back arrow. */
+    cards: document.querySelectorAll('.m-fork__card').length,
+    back: document.querySelectorAll('.m-pick__back').length,
   };
 });
-check('the bar forks into the two kinds before it shows a list',
-  forked.open && forked.heads.join(' / ') === 'Events / Group filters' && forked.rows === 0,
-  `${forked.heads.join(' / ')} — ${forked.rows} entries`);
-check('and each card draws its own glyph and says what its kind does',
-  forked.glyphs === 2 && forked.blurbs.every((b) => (b ?? '').length > 20),
-  `${forked.glyphs} glyphs — ${forked.blurbs.join(' | ')}`);
+check('one button opens ONE list holding both kinds, with no step in between',
+  !!picker && picker.events && picker.props && picker.cards === 0 && picker.rows > 30,
+  `${picker?.rows} entries, events ${picker?.events}, properties ${picker?.props}, ${picker?.cards} fork cards`);
 
-/* ⚠ IT GROWS OUT OF THE BAR rather than appearing beside it. The surface starts
-   at the bar's own measured width and moves to the panel's, so the first
-   painted frame is the bar. Asserted as a REAL transition on the box, because
-   a fade-in would satisfy any looser test. */
+/* AND THE PANEL STILL GROWS OUT OF ITS TRIGGER. The fork went; the morph is
+   the half worth keeping, and it says more now than it did - a 108px button
+   becoming a 528px panel is a bigger claim than a bar widening slightly. */
 const morph = await p.evaluate(() => {
-  const el = document.querySelector('.m-fork');
+  const el = document.querySelector('.m-fpanel');
   const cs = getComputedStyle(el);
   return {
-    from: cs.getPropertyValue('--m-fork-w0').trim(),
+    from: cs.getPropertyValue('--m-fpanel-w0').trim(),
     grown: el.classList.contains('is-grown'),
     props: cs.transitionProperty,
     width: Math.round(el.getBoundingClientRect().width),
-    bar: Math.round(document.querySelector('.m-sc__fieldwrap').getBoundingClientRect().width),
   };
 });
-check('the fork morphs out of the bar it came from, at the bar\u2019s own measured size',
-  parseInt(morph.from, 10) > 400 && morph.grown && /width/.test(morph.props) && morph.width < morph.bar,
-  `from ${morph.from} to ${morph.width}px, bar is ${morph.bar}px`);
+check('and the panel morphs out of the button, from its own measured size',
+  parseInt(morph.from, 10) > 40 && parseInt(morph.from, 10) < 300
+    && morph.grown && /width/.test(morph.props) && morph.width > parseInt(morph.from, 10),
+  `from ${morph.from} to ${morph.width}px`);
 
-/* THE CATALOGUE BEHIND A CARD IS ONE KIND, which is production's own split. */
-await p.locator('.m-fork__card').first().click();
-await p.waitForTimeout(450);
-const evList = await p.evaluate(() => {
-  const el = document.querySelector('.m-pick');
-  return {
-    rail: [...el.querySelectorAll('.m-pick__cat')].map((e) => e.textContent.trim().replace(/\d+$/, '')),
-    rows: el.querySelectorAll('.m-pick__row').length,
-    /* the four categories the backend special-cases are all events, and all
-       four have to be visible AS categories: a segment does not behave like an
-       event */
-    special: ['Autocapture', 'Events', 'Features', 'Segments'].every((n) =>
-      [...el.querySelectorAll('.m-pick__cat')].some((e) => e.textContent.includes(n)),
-    ),
-    /* and nothing from the other half leaked in */
-    leaked: ['Geography', 'Technology', 'Metadata'].filter((n) =>
-      [...el.querySelectorAll('.m-pick__cat')].some((e) => e.textContent.includes(n)),
-    ),
-    back: !!el.querySelector('.m-pick__back'),
-  };
-});
-check('choosing Events opens production\u2019s events list and only that',
-  evList.special && evList.leaked.length === 0 && evList.rows > 10,
-  `${evList.rows} entries, rail ${evList.rail.join('/')}${evList.leaked.length ? ` — leaked ${evList.leaked}` : ''}`);
-check('and it can go back, because a fork you cannot reverse is a trap',
-  evList.back);
+/* ⚠ AND THE TWO KINDS ARE STILL TOLD APART, twice, neither of them a step: the
+   list heads each group with its name when a result spans both, and the row
+   lands in the matching section below. That is what replaces the fork. */
+const kinds = await p.evaluate(() =>
+  [...document.querySelectorAll('.m-pick__kind-head .m-pick__kind-name')].map((e) => e.textContent.trim()));
+check('the merged list still names its two kinds, in the words the sections use',
+  kinds.join(' / ') === 'Events / Group filters', kinds.join(' / ') || 'no headings');
 
-/* SEARCH STILL SPANS EVERY CATEGORY WITHIN A KIND, which is what makes the
-   rail optional rather than a maze. */
+/* SEARCH SPANS EVERY CATEGORY, which is what two scoped pickers cannot do and
+   the single biggest thing the merge buys: you never have to know whether the
+   thing you want is an event before you can look for it. */
 await p.fill('.m-pick__search input', 'rage');
 await p.waitForTimeout(300);
 const spans = await p.evaluate(() => {
@@ -367,21 +357,19 @@ await p.keyboard.press('Escape');
 await p.waitForTimeout(200);
 
 /* ⚠ TWO DOORS, AND WHICH ONE IS OPEN DEPENDS ON WHETHER THE SEARCH IS EMPTY -
-   which is the behaviour, not an inconvenience. The bar forks you into a kind
-   on the FIRST clause and then retires; from the second on you add from the
-   section you are adding to. The helper does what a person does: use the bar if
-   it is there, otherwise the Add in the right section. */
+   which is the behaviour, not an inconvenience. The button retires the moment
+   there is a rule; from the second clause on you add from the section you are
+   adding to. The helper does what a person does: use the button if it is
+   there, otherwise the Add in the right section. */
 const EVENTY = /^(Click|Input|Page|Rage click|Dead click|Error|Network request|GraphQL|State action|Crash|Tap rage|Swipe|search_performed|add_to_cart|checkout_start|checkout_complete|signup_submitted|plan_upgraded|invite_sent|support_opened)$/;
 const addEntry = async (name, kind = EVENTY.test(name) ? 'events' : 'filters') => {
   const head = kind === 'events' ? 'Events' : 'Group filters';
-  if (await p.locator('.m-sc__field').count()) {
-    await p.locator('.m-sc__field').click();
-    await p.waitForTimeout(400);
-    await p.locator('.m-fork__card', { hasText: head }).first().click();
+  if (await p.locator('.m-sc__filter').count()) {
+    await p.locator('.m-sc__filter').click();
   } else {
     await p.locator('.m-sc__head', { hasText: head }).locator('.m-sc__add').first().click();
   }
-  await p.waitForTimeout(350);
+  await p.waitForTimeout(400);
   await p.fill('.m-pick__search input', name);
   await p.waitForTimeout(300);
   await p.locator('.m-pick__row').first().click();
@@ -572,7 +560,7 @@ check('AND THE EVENT-LEVEL FILTER ACTUALLY FILTERS — the funnel was decoration
    only once its own section is occupied is an Add you cannot reach until after
    you have used it - which is why production draws both headings always. */
 const retired = await p.evaluate(() => ({
-  bar: document.querySelectorAll('.m-sc__field').length,
+  bar: document.querySelectorAll('.m-sc__filter').length,
   heads: [...document.querySelectorAll('.m-sc__head-name')].map((e) => e.textContent.trim()),
   adds: document.querySelectorAll('.m-sc__add').length,
   /* the list's own controls came down with it rather than vanishing */
@@ -628,7 +616,7 @@ await p.waitForTimeout(400);
 await p.locator('.m-sc__clear').click();
 await p.waitForTimeout(400);
 check('and clearing brings the bar back',
-  (await p.locator('.m-sc__field').count()) === 1 && (await p.locator('.m-sc__head').count()) === 0);
+  (await p.locator('.m-sc__filter').count()) === 1 && (await p.locator('.m-sc__head').count()) === 0);
 
 /* ── 6. the metadata chip writes to the search ─────────────────────────────
    ⚠ THE COLUMN IS ON BY DEFAULT since 2026-09-02 ("then it should be by
@@ -1050,22 +1038,25 @@ check('an empty filter is simply a field, with no empty state under it',
   emptyFilter.rows === 0 && emptyFilter.pills === 0 && !emptyFilter.strip,
   `${emptyFilter.pills} leftover example elements`);
 
-/* THE FIELD IS THE MOST IMPORTANT THING ON THE PAGE, so it is measurably the
-   biggest control on it and the only type at 14px. */
+/* ⚠ REVERSED 2026-09-03, AND THE OLD ASSERTION IS WORTH LEAVING IN THE RECORD.
+   It read "the field is the biggest control on the page and the only one at
+   14px", and it was a faithful test of a claim that turned out to be the
+   problem: size is what made it read as a field, and a field is what people
+   typed into. The claim now is the opposite - it is the same height as the
+   controls beside it and it is told apart by COLOUR instead. */
 const weight = await p.evaluate(() => {
-  const f = document.querySelector('.m-sc__field');
+  const f = document.querySelector('.m-sc__filter');
   const others = [...document.querySelectorAll('.m-sc__bar .ant-select, .m-sc__bar button')]
-    .filter((e) => !e.classList.contains('m-sc__field'));
+    .filter((e) => !e.classList.contains('m-sc__filter'));
   return {
     h: Math.round(f.getBoundingClientRect().height),
-    tallestOther: Math.max(0, ...others.map((e) => Math.round(e.getBoundingClientRect().height))),
-    size: getComputedStyle(f.querySelector('.m-sc__field-text')).fontSize,
-    rowSize: getComputedStyle(document.querySelector('.m-vp__trigger, .m-srow__subject') ?? f).fontSize,
+    others: others.map((e) => Math.round(e.getBoundingClientRect().height)),
+    size: getComputedStyle(f.querySelector('.m-sc__filter-word')).fontSize,
   };
 });
-check('the field is the biggest control on the page and the only one at 14px',
-  weight.h > weight.tallestOther && weight.size === '14px',
-  `${weight.h}px vs ${weight.tallestOther}px, type ${weight.size}`);
+check('the button sits on the same baseline as the controls beside it, not above them',
+  weight.others.length > 0 && weight.others.every((h) => Math.abs(h - weight.h) <= 2),
+  `${weight.h}px against ${weight.others.join('/')}px`);
 
 /* ⚠ THE SENTENCE PATH IS OFF, AND STILL THERE. `translate()` and the picker's
    whole offer are untouched in the shared layer; the card simply stops passing
@@ -1073,10 +1064,8 @@ check('the field is the biggest control on the page and the only one at 14px',
    picker offers nothing to a typed sentence, and the function that would do it
    still works when called. If somebody deletes `translate()` to tidy up, this
    fails - which is the point. */
-await p.locator('.m-sc__field').click();
+await p.locator('.m-sc__filter').click();
 await p.waitForTimeout(400);
-await p.locator('.m-fork__card').first().click();
-await p.waitForTimeout(350);
 await p.fill('.m-pick__search input', 'paid users who hit an error');
 await p.waitForTimeout(350);
 const parked = await p.evaluate(() => ({
@@ -1085,10 +1074,7 @@ const parked = await p.evaluate(() => ({
 }));
 check('the sentence path is switched off at the callsite', !parked.offer && parked.steps === 0,
   `offer ${parked.offer}, ${parked.steps} steps`);
-/* ⚠ TWO ESCAPES. One shuts the catalogue back to the fork, the second shuts the
-   fork - you opened two doors, so one Escape closes one of them. */
-await p.keyboard.press('Escape');
-await p.waitForTimeout(200);
+/* One Escape again: the fork's second door is gone. */
 await p.keyboard.press('Escape');
 await p.waitForTimeout(200);
 
@@ -1157,7 +1143,7 @@ check('and the band is opaque, so the rows cannot show through it as they pass',
 await p.setViewportSize({ width: 1560, height: 940 });
 await p.mouse.move(900, 760);
 await p.waitForTimeout(400);
-await p.focus('.m-sc__field');
+await p.focus('.m-sc__filter');
 await p.keyboard.press('Tab');
 await p.keyboard.press('Shift+Tab');
 await p.waitForTimeout(300);
@@ -1171,7 +1157,7 @@ const ringFocus = await p.evaluate(() => {
        that border rather than sitting inside or outside it */
     onBorder: (() => {
       const a = r.getBoundingClientRect();
-      const f = document.querySelector('.m-sc__field').getBoundingClientRect();
+      const f = document.querySelector('.m-sc__filter').getBoundingClientRect();
       return Math.abs(a.left - f.left) <= 1 && Math.abs(a.width - f.width) <= 2;
     })(),
   };
@@ -1757,7 +1743,7 @@ const torchAt = async (x, y) => {
     };
   });
 };
-const fieldBox = await p.locator('.m-sc__field').boundingBox();
+const fieldBox = await p.locator('.m-sc__filter').boundingBox();
 const far = await torchAt(fieldBox.x + 200, fieldBox.y + 620);
 const near = await torchAt(fieldBox.x + 200, fieldBox.y + 120);
 const on = await torchAt(fieldBox.x + 200, fieldBox.y + fieldBox.height / 2);
@@ -1782,10 +1768,8 @@ check('the light follows the pointer along the rim rather than sitting at its ce
 /* ── THE OPERATOR READS (Mehdi: "the 'is not' colour doesn't have contrast
    enough"). The closed control drew the word one step quieter than the SAME
    word in the menu under it. */
-await p.locator('.m-sc__field').click();
+await p.locator('.m-sc__filter').click();
 await p.waitForTimeout(400);
-await p.locator('.m-fork__card', { hasText: 'Group filters' }).first().click();
-await p.waitForTimeout(350);
 await p.fill('.m-pick__search input', 'User ID');
 await p.waitForTimeout(300);
 await p.locator('.m-pick__row').first().click();

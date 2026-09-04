@@ -1,0 +1,66 @@
+/* ── THE FORK: ONE SURFACE, THREE SHAPES ─────────────────────────────────────
+   The bar, the two cards, and the catalogue are the same object at three sizes.
+   It is absolutely positioned over the bar's own box and starts at that box's
+   measured width and height, so the first painted frame is indistinguishable
+   from the bar it covers - then it grows.
+
+   ⚠ WIDTH AND HEIGHT ARE ANIMATED, WHICH IS NORMALLY THE WRONG CHOICE. A
+   transform is cheaper and does not reflow. It is wrong here: a scaled box
+   scales its own text and its own border, so the 13px label would arrive at
+   19px and shrink, and the hairline would thicken. This box is one element with
+   no siblings to push around, it animates for 260ms, and the content inside it
+   is absolutely positioned so it is not laid out again per frame. Correctness
+   beats the rule of thumb when the rule's reason does not apply. */
+.m-fpanel {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 20;
+  width: var(--m-fpanel-w0, 100%);
+  height: var(--m-fpanel-h0, 40px);
+  overflow: hidden;
+  background: var(--m-surface-default);
+  border: var(--m-border-width) solid var(--m-border-default);
+  border-radius: var(--m-radius-surface);
+  box-shadow: var(--m-shadow-popover);
+  transition:
+    width var(--m-duration-slow) var(--m-ease-out),
+    height var(--m-duration-slow) var(--m-ease-out),
+    border-radius var(--m-duration-slow) var(--m-ease-out);
+}
+
+/* ⚠ ONE GROWN SHAPE NOW, where there were two. The fork stage is gone (see
+   FilterPanel), so the panel opens straight into the catalogue at its full
+   size - which makes the morph a bigger claim than it was: a 108px button
+   becoming a 528px panel, rather than a bar widening slightly. */
+.m-fpanel.is-grown { width: 33rem; height: 23.75rem; }
+
+/* The body is absolutely positioned so the growing box does not re-lay-out its
+   contents sixty times a second. */
+.m-fpanel > .m-pick {
+  position: absolute;
+  inset: 0;
+  animation: m-fpanel-in var(--m-duration-slow) var(--m-ease-out) both;
+}
+
+@keyframes m-fpanel-in {
+  from { opacity: 0; }
+  /* Held at nothing for the first third: the list arrives once the box is
+     mostly the right size, so it is never seen squeezed into a button. */
+  35% { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ⚠ THE FORK'S TWO CARDS AND THEIR DRAWN GLYPHS LIVED HERE and came out with
+   the stage they belonged to. `git show` has them - a rising staircase for
+   events, a brace gathering three lines for group filters - if the two-step
+   ever comes back. The gradient outline went with them; it was the one
+   gradient in the app and it was spent on a choice that no longer exists. */
+
+@media (prefers-reduced-motion: reduce) {
+  .m-fpanel,
+  .m-fpanel > .m-pick {
+    transition: none;
+    animation: none;
+  }
+}

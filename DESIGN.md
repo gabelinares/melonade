@@ -5552,3 +5552,97 @@ among controls that are always available while it is only usable once there are
 rules, so it spent most of its life greyed out explaining that you had not built
 a filter yet. The strip exists only when the filter does. It also puts the two
 verbs that dispose of a filter side by side: keep this, or throw it away.
+
+---
+
+## §38 — Both reversals, from a recording read too late (2026-09-04)
+
+The 09-03 meeting was recorded and not read until after 09-04's work shipped.
+Two of the things built that day had already been decided against on the call.
+
+### The bar was a known failure
+
+> *"I like this thing of events and group filters, but probably we can make it
+> as a button. **I wouldn't put it as a bar. We tried the bar before.** People
+> sometimes they type into the bar, they're expecting to see results in there —
+> which we used to have at some point, but for technical reasons it adds much
+> more overhead."*
+
+OpenReplay shipped a type-into-it bar and removed it. That makes this a report
+rather than a preference, and it invalidates the reasoning the 09-02 bar was
+built on: *the field is the most important thing on the page, so it should be
+the biggest control*. Size is exactly what made it read as a field, and a field
+is what people typed into.
+
+**It is a button now** — 26px, the same height as the date range and the display
+menu beside it, told apart by the accent rather than by size. *"You can have a
+nice button like this funnel… and have it in blue or in something obvious."*
+This page's one accent was unspent, so nothing is displaced by spending it here.
+
+⚠ **Not `--m-action-primary-bg`** — that token is near-black in light and
+near-white in dark, which is the trap the Switch fell into on 09-04. The tint is
+`--m-surface-selected`, the colour the palette already generates from the accent
+hue, rather than a second name for a colour that exists.
+
+**The rotating examples are gone for the second time, and now for a better
+reason.** The 09-02 pair rotated prose you were invited to type, and came out
+because the control cannot read a sentence. The 09-04 pair sat after the word
+*like* as specimens of what a filter can express, which was honest — but his
+objection is that a field-shaped control invites typing *at all*, and an example
+after "like" is that invitation with a worked demonstration attached.
+
+**What survived:** the claim was never that the control should be large, only
+that there should be one of it. There still is. The torch ring stays too — it is
+size-independent, and it reads better on a small target, because a light that
+finds a small thing is doing something a hover state cannot.
+
+### The fork lost, and it lost on the click
+
+He reached it the long way, which is why the reasoning is worth keeping. He
+floated two buttons himself; Gabriel described exactly the fork that was then
+built; he walked production's two menus, noticed **Autocapture appears in both**,
+and concluded the split is redundant precisely where it is visible. Then:
+
+> *"What I don't like about it is you need to understand what a group filter is
+> and what an event is, **plus it adds another click**."*
+
+And Gabriel, in the room: *"I definitely think the best option is merging them
+all, and the logic behind the filtering, OpenReplay will do it."*
+
+So the kind is decided by **what you pick**, not before you pick — one merged
+catalogue, and the two kinds stay legible in two places, neither of them a step:
+the picker heads each group with its name when a result spans both, and the row
+lands in the matching section below.
+
+⚠ **The fork's one real defence was never put to him:** it was only reachable on
+an empty search, so it charged its click once per *search* rather than once per
+clause. That is true, and it is not enough — he named the cost twice and the
+designer agreed with him on the call. Keeping a design on an argument nobody in
+the room made is how a review stops meaning anything. `git show dc1780d` has the
+two cards and their drawn glyphs.
+
+**The morph survived the fork it was built for**, and is worth more now: a 64px
+button becoming a 528px panel is a larger claim than a bar widening slightly.
+One object changing shape, rather than a panel arriving beside its trigger.
+
+### What the checks record
+
+The suite is the honest register of the reversal, so the old assertions were
+rewritten rather than deleted quietly:
+
+- *"the field is the biggest control on the page and the only one at 14px"* — a
+  faithful test of a claim that turned out to be the defect. Now: **the button
+  sits on the same baseline as the controls beside it.**
+- *"the one picker holds both kinds"* → *"the bar forks into the two kinds"* →
+  **back to one merged list.** Three versions in two days; the churn is the
+  record of a real argument, and the block says so.
+
+### Still owed from the same call
+
+Not done here, and each is a decision rather than a build: **the tabs move below
+the filter** (you filter, then read the tabs); **mark the last few played
+sessions rather than dotting the unseen** — *"people look at 0.001% of sessions
+they capture"*, so a marker on the unseen is a marker on everything, and the play
+glyph cannot carry it because it only exists on hover; **merge the date-range and
+Display line into the line above**; **metadata badges bigger**. And above all
+them, the layout: **two components on this page, three at most.**

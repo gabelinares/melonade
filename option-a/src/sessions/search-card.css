@@ -77,89 +77,66 @@
   border-bottom: var(--m-border-width) solid var(--m-border-default);
 }
 
-/* ── THE FIELD ───────────────────────────────────────────────────────────────
-   THE MOST IMPORTANT THING ON THE PAGE (Gabriel, 2026-09-02: "make the field
-   the most important part"), so it is the biggest control on it - four pixels
-   taller than the tallest thing in the app's own scale, and the only type here
-   at 14px while everything else is 13.
+/* ── THE TRIGGER: A BUTTON, AND IT WAS A BAR FOR A DAY ───────────────────────
+   ⚠ Mehdi, 2026-09-03: *"I wouldn't put it as a bar. We tried the bar before.
+   People sometimes they type into the bar, they're expecting to see results in
+   there."* A shipped failure, not a preference - so what was a 44px-tall field
+   spanning the plane is now a control the size of the two beside it.
 
-   That is the whole of its prominence. No fill, no shadow, no accent at rest:
-   it is the largest object in a column of small ones, which in a monochrome
-   interface is more than enough and does not spend the one accent this view
-   gets.
+   THE ACCENT IS SPENT HERE, on his instruction: *"you can have a nice button
+   like this funnel... and have it in blue or in something obvious."* It is a
+   tinted fill rather than a solid one, which is enough to be the only coloured
+   object in the row without becoming the loudest thing on the page - and this
+   page's one accent was previously unspent, so nothing is displaced.
 
-   Still a `<button>` - it opens a menu and holds no text - so it keeps real
-   keyboard behaviour and a real focus indicator, and it is DRAWN as a field. */
-.m-sc__field {
+   ⚠ NOT `--m-action-primary-bg`. That token is near-black in light and
+   near-white in dark, which is the trap the Switch fell into on 09-04: a
+   "primary" colour that is not a hue at all. The accent tokens are.
+
+   ⚠ HEIGHT IS `sm`, NOT `md`, and it is measured rather than eyeballed: the
+   date range and the display menu are antd `size="small"` and land at 26px, so
+   `md` (30px) put the one coloured control 4px taller than everything beside
+   it - which is the old bar's mistake in miniature. Three controls on one row,
+   one baseline, and the accent is the only thing that distinguishes it. */
+.m-sc__filter {
   position: relative;
   isolation: isolate;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--m-space-4);
-  flex: 1;
-  min-width: 0;
-  /* the tallest control in the app, plus four: this one outranks them */
-  height: calc(var(--m-control-height-lg) + var(--m-space-2));
-  padding-inline: var(--m-space-5);
-  border: var(--m-border-width) solid var(--m-border-default);
+  gap: var(--m-space-2);
+  flex: none;
+  height: var(--m-control-height-sm);
+  padding-inline: var(--m-space-4);
+  font-size: var(--m-text-xs);
+  font-weight: var(--m-weight-medium);
+  color: var(--m-content-accent);
+  /* ⚠ `surface-selected`, which IS the accent tint - #e5f5f8 on white and
+     #022227 under dark. There is no `--m-surface-accent`; this token is the
+     one the palette generates from the accent hue, and it is what every other
+     tinted-accent surface in the app already uses. Inventing a second name for
+     the colour that already exists is how two tints drift apart. */
+  background: var(--m-surface-selected);
+  border: var(--m-border-width) solid var(--m-border-accent);
   border-radius: var(--m-radius-control);
-  /* ⚠ THE TINT MOVED HERE from the section behind it (see `.m-sc`). A white
-     field on a white ground is a rectangle held together by one hairline; the
-     tint is what makes it read as a place to put something. */
-  background: var(--m-surface-canvas);
-  text-align: left;
+  cursor: pointer;
   transition:
     background var(--m-duration-fast) var(--m-ease-out),
     border-color var(--m-duration-fast) var(--m-ease-out);
 }
 
-/* AND IT BRIGHTENS UNDER THE POINTER, which is the direction a control on a
-   light ground should move: towards the paper, not away from it. */
-.m-sc__field:hover { background: var(--m-surface-default); }
-/* The ring paints OVER the field's own border (a negative-z child paints after
-   its stacking context's background and borders), so the resting border is
-   simply what shows when the ring is not there. */
-.m-sc__field:hover { border-color: var(--m-border-strong); }
-
-.m-sc__field-glyph {
-  flex: none;
-  color: var(--m-content-decorative);
-  transition: color var(--m-duration-fast) var(--m-ease-out);
-}
-.m-sc__field:hover .m-sc__field-glyph { color: var(--m-content-secondary); }
-
-/* ── THE PLACEHOLDER ─────────────────────────────────────────────────────────
-   TWO PARTS, and the split is what lets one line do three jobs. The LEAD never
-   changes, so the field always says what it is for. The EXAMPLE rotates, so it
-   teaches the half nobody expects - which is what the badge and the row of
-   pills were for, and both are gone.
-
-   The example is a shade quieter than the lead: it is an illustration of the
-   instruction, not a second instruction. */
-.m-sc__field-text {
-  display: flex;
-  align-items: baseline;
-  /* The space between the lead and its example. A literal one in the JSX would
-     be collapsed by the flex box, and an `&nbsp;` in a sentence that already
-     ends on "like" is a space nobody can select. */
-  gap: 0.32em;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  /* 14px, and it is the only 14px on this page. See the note on the height. */
-  font-size: var(--m-text-md);
+.m-sc__filter:hover {
+  background: var(--m-surface-selected);
+  border-color: var(--m-content-accent);
 }
 
-/* The lead never shrinks; the example truncates instead, because the
-   instruction is the part that has to survive a narrow plane. */
-.m-sc__lead { flex: none; }
-.m-sc__lead {
-  color: var(--m-content-placeholder);
-  transition: color var(--m-duration-fast) var(--m-ease-out);
-}
-.m-sc__field:hover .m-sc__lead { color: var(--m-content-secondary); }
+.m-sc__filter-glyph { flex: none; }
+
+/* ⚠ THE WORD IS NOT `aria-hidden`. On the bar the text was decorative - the
+   button carried an `aria-label` and the visible sentence repeated it - and a
+   hidden label on a control whose whole content is that label leaves a button
+   with no accessible name at all if the label ever drifts. Here the word IS the
+   name, and the `aria-label` only lengthens it. */
+.m-sc__filter-word { white-space: nowrap; }
 
 /* ── THE RING ────────────────────────────────────────────────────────────────
    The one piece of expression on this page.
@@ -331,18 +308,18 @@
 
    No blur and no glow: a focus ring is an indicator, not an effect, and the one
    thing it has to be is exactly locatable. */
-.m-sc__field:focus-visible { outline: none; }
-.m-sc__field:focus-visible .m-sc__ring {
+.m-sc__filter:focus-visible { outline: none; }
+.m-sc__filter:focus-visible .m-sc__ring {
   -webkit-mask: none;
   mask: none;
 }
-.m-sc__field:focus-visible .m-sc__ring .m-sc__arc {
+.m-sc__filter:focus-visible .m-sc__ring .m-sc__arc {
   stroke: var(--m-focus-ring);
   stroke-width: 2;
   opacity: 1;
   filter: none;
 }
-.m-sc__field:focus-visible .m-sc__ring .m-sc__glow { display: none; }
+.m-sc__filter:focus-visible .m-sc__ring .m-sc__glow { display: none; }
 
 /* ⚠ REDUCED MOTION KEEPS THE TORCH, and that is not an oversight. The setting
    is about motion that happens TO you; this moves only because your own hand
@@ -565,43 +542,23 @@
 .m-sc { --m-srow-hover: var(--m-surface-canvas); }
 
 
-/* ── THE FIELD'S WRAPPER ─────────────────────────────────────────────────────
-   Exists so the fork has a box to grow out of: it is measured for the morph's
-   starting size and it is the containing block the fork positions against. It
-   is the field's own geometry and nothing else, so the bar's flex layout is
-   unchanged. */
-.m-sc__fieldwrap {
+/* ── THE TRIGGER'S WRAPPER ───────────────────────────────────────────────────
+   Exists so the panel has a box to grow out of: it is measured for the morph's
+   starting size and it is the containing block the panel positions against.
+
+   ⚠ `flex: none` NOW, where it was `flex: 1`. The bar wanted every pixel the
+   row could spare; a button wants its own width and no more, and the space it
+   used to take is what pushes the date range and the display menu to the far
+   end where they belong. */
+.m-sc__triggerwrap {
   position: relative;
-  flex: 1;
-  min-width: 0;
+  flex: none;
   display: flex;
 }
 
-/* ── THE EXAMPLE ─────────────────────────────────────────────────────────────
-   A little more muted than the lead it follows (Gabriel, 2026-09-04), because
-   the lead is the instruction and this is only an illustration of it. Same
-   size, same face - the difference is entirely in the ink, which is the
-   quietest way to say "and this part is an aside".
-
-   ⚠ ONE LINE, NO REFLOW. It is absolutely sized out of the flow's way by
-   `min-width: 0` on its parent and truncated rather than wrapped, so a long
-   example never makes the field taller mid-rotation. */
-.m-sc__eg {
-  color: var(--m-content-decorative);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  animation: m-sc-eg-in var(--m-duration-slow) var(--m-ease-out) both;
-}
-
-@keyframes m-sc-eg-in {
-  from { opacity: 0; transform: translateY(2px); }
-  to { opacity: 1; transform: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .m-sc__eg { animation: none; }
-}
+/* THE ROW PUSHES ITS OWN CONTROLS APART. With the bar gone there is nothing
+   elastic left on it, so the gap has to be explicit. */
+.m-sc__bar > :last-child { margin-inline-start: auto; }
 
 /* ── A SECTION'S ADD ─────────────────────────────────────────────────────────
    Production's own small "Add" beside each heading, and drawn as quietly as

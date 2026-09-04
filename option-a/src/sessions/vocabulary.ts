@@ -26,15 +26,9 @@ export const GROUP_SCOPE = 'Applied to every event above';
 /** The event row's funnel, and the exact opposite sentence. */
 export const EVENT_SCOPE = 'Applied to this event only';
 
-/* ── THE FORK CARDS' OWN SENTENCES ────────────────────────────────────────────
-   Longer than the section hints because they are read BEFORE you know what you
-   are choosing between, not after. Each one says the scope in the smallest
-   number of words that still distinguishes it from the other: an order versus
-   a reach.
-
-   ⚠ NEITHER SENTENCE USES THE WORD "FILTER", which is the point. Mehdi's
-   complaint was that "people don't know right away what an event is, what a
-   filter is" - so the card that teaches the distinction cannot lean on the word
-   that failed to teach it. */
-export const EVENTS_BLURB = 'Something that happened, in the order it happened';
-export const GROUP_BLURB = 'One condition, held across every event';
+/* ⚠ THE FORK'S TWO CARD SENTENCES LIVED HERE and went out with the fork on
+   2026-09-04 - Mehdi rejected the two-step ("it adds another click") and the
+   cards that carried them. `git show` has them if it reopens. The four words
+   above survived because they are not the fork's: they name the two kinds
+   wherever the two kinds are named, which is now the picker's group headings
+   and the two sections of the rule list. */

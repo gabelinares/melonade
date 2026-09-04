@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button, Select, Tooltip } from 'antd';
-import { ListFilter } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import {
   catalogueNow,
   describeRules,
@@ -12,42 +12,41 @@ import {
 import { noNativeTooltip } from '../components/selectOptions.ts';
 import { ChevronDown, Plus } from 'lucide-react';
 import { FilterPicker } from './FilterPicker.tsx';
-import { FilterFork } from './FilterFork.tsx';
+import { FilterPanel } from './FilterPanel.tsx';
 import { SearchRow } from './SearchRow.tsx';
 import { useFilterCollapse } from './useFilterCollapse.ts';
 import { useTorch } from './useTorch.ts';
 import { EVENTS_HEAD, GROUP_HEAD, GROUP_SCOPE } from './vocabulary.ts';
 import './search-card.css';
 
-/* ── THE PLACEHOLDER ─────────────────────────────────────────────────────────
-   ⚠ IT NO LONGER OFFERS PROSE, AND THE FEATURE IS PARKED RATHER THAN CUT
-   (Mehdi, 2026-09-02): *"'Describe the sessions you want' - we used to have it
-   as a feature. We removed it. So we won't have something like this. It's a new
-   feature. We can have it. Not saying we don't."*
+/* ── WHAT THE BUTTON SAYS ─────────────────────────────────────────────────────
+   ONE WORD ON THE BUTTON, and a full sentence only where a screen reader will
+   hear it. The button is 14px of chrome beside a date range; a sentence on it
+   would make it a bar again by another route.
 
-   So this is not a rejection. It is out because **it is a feature OpenReplay
-   once shipped and removed**, and the whole scope this week forbids adding
-   features. He is warm on it for later and said why it is cheap now: two years
-   ago it needed a trained model, *"today you would ask an LLM."*
+   ⚠ THE ROTATING EXAMPLES ARE GONE, for the second time and now for a better
+   reason. The first pair (09-02) rotated prose you were invited to TYPE, and
+   came out because the control cannot read a sentence. The second (09-04) sat
+   after the word "like" as specimens of what a filter can express, which was
+   honest - but Mehdi's objection to the bar is that a field-shaped control
+   invites typing AT ALL, and an example after "like" is an invitation with a
+   worked demonstration attached. A button with one word invites a click.
 
-   WHAT WENT: the rotating example, the `useRotatingExample` hook, and the
-   `onTranslate` prop at the callsite. WHAT STAYED: `translate()` and the
-   picker's whole sentence path, untouched, in `sessions-logic.ts` -
-   `onTranslate` is optional and gates all of it, so the feature is ONE PROP
-   from returning. Deleting it would have thrown away the part that is hard.
+   ⚠ AND THE NATURAL-LANGUAGE PATH IS STILL PARKED, NOT CUT (Mehdi, 09-02: it
+   is a feature OpenReplay shipped and removed, so putting it back is out of
+   scope, and he is warm on it later - "today you would ask an LLM"). WHAT
+   STAYED: `translate()` and the picker's whole sentence path, untouched, in
+   `sessions-logic.ts`. `onTranslate` is optional and gates all of it, so the
+   feature is ONE PROP from returning. */
+const LABEL = 'Filter';
 
-   The field says what it does and nothing else. A control that promises a
-   sentence and cannot read one is worse than a plain button, which is the
-   whole reason this line is now four words long. */
-const LEAD = 'Filter the recordings and save search segments, like';
+/** The full sentence, for the accessible name and the drawer's own heading. */
+const LEAD = 'Filter the recordings';
 
-/** ⚠ THE SAME COPY IN THE SEGMENT DRAWER, in that drawer's own words. It is
- *  the same control doing the same job, so it says the same thing - but "these
- *  sessions" points at a list, and in a drawer there is no list to point at:
- *  you are saying which sessions the segment will hold. One word changes and
- *  the sentence keeps its shape. */
-const LEAD_PANEL = 'Say which recordings this segment holds, like';
-
+/** ⚠ THE SAME CONTROL IN THE SEGMENT DRAWER, in that drawer's own words. "The
+ *  recordings" points at a list, and in a drawer there is no list to point at:
+ *  you are saying which recordings the segment will hold. */
+const LEAD_PANEL = 'Say which recordings this segment holds';
 
 const ORDER_OPTIONS: ReadonlyArray<{ value: EventsOrder; label: string; hint: string }> = [
   { value: 'then', label: 'then', hint: 'In this order, one after another' },
@@ -226,82 +225,75 @@ export function SearchCard({
 
   return (
     <section className={`m-sc${inPanel ? ' m-sc--panel' : ''}`} aria-label="Session filter" ref={anchor}>
-      {/* ── THE FIELD ─────────────────────────────────────────────────────────
-          THE MOST IMPORTANT THING ON THE PAGE, and now drawn like it: the
-          tallest control here, the only one at 14px, and the only one that gets
-          the ring. Everything that was competing with it is gone - the
-          magnifier, the "reads plain English" badge, the row of example pills -
-          so what is left is a field and a sentence.
+      {/* ── THE TRIGGER IS A BUTTON. IT WAS A BAR FOR A DAY. ────────────────
+          ⚠ AND THE BAR WAS A KNOWN FAILURE, not a matter of taste. Mehdi,
+          2026-09-03: *"I like this thing of events and group filters, but
+          probably we can make it as a button. I WOULDN'T PUT IT AS A BAR. We
+          tried the bar before. People sometimes they type into the bar,
+          they're expecting to see results in there - which we used to have at
+          some point, but for technical reasons it adds much more overhead."*
 
-          THE GLYPH IS A FILTER AND NOT A MAGNIFIER. That one swap is most of
-          what stopped this reading as a search bar: a magnifier IS the search
-          signal, and this control narrows a list rather than searching a
-          corpus.
+          OpenReplay shipped a bar, people typed into it, and it was removed.
+          Everything a field-shaped control communicates is an invitation to
+          type, and this one cannot take text: it opens a menu. The 09-04
+          version made that worse rather than better by adding a rotating
+          example after the word "like", which is the exact invitation he was
+          describing.
 
-          THE RING is the one piece of expression here, and since 09-04 it
-          answers to the pointer rather than to a clock: the whole rim is drawn
-          and a radial mask reveals only the stretch near your cursor, opening
-          as you APPROACH rather than when you land. A control that animates on
-          its own schedule is a control that is talking; one that lights where
-          your hand is going is one that is listening. Nothing at rest, nothing
-          moving unless you are.
+          So it is a button, drawn as one: a funnel, a word, and the accent.
+          *"You can have a nice button like this funnel... and have it in blue
+          or in something obvious."* This is the one place on the page the
+          accent is spent, which is the app's rule and also his instruction.
 
-          Still a `<button>`, because it opens a menu and holds no text of its
-          own. It is DRAWN as a field. */}
-      {/* ── THE BAR RETIRES ONCE THE SEARCH HAS SOMETHING IN IT ─────────────
-          (Gabriel, 2026-09-04: "after the filter and event was added there
-          should also exist the two adds in their sections, so the user doesn't
-          need to click at the bar again - actually the bar vanishes and only
-          appears after deleting or clearing.")
+          WHAT THE BAR WAS FOR is not lost. The claim was never that the
+          control should be large - it was that there should be ONE of them,
+          and there still is.
 
-          It is the right trade and it is what makes the FORK affordable. A
-          fork step charges a click every time you add anything, which is the
-          standing objection to one; here it is charged once, on the empty
-          search, when a reader is least oriented - and from the second clause
-          on you add from the section you are adding TO, which is nearer, more
-          specific and needs no choice made in advance.
+          ⚠ THE TORCH STAYS. Gabriel picked it hours before the bar was
+          rejected, and it is size-independent: the rim is masked to a radius
+          around the pointer, which opens as you approach. It reads better on a
+          small target than it did on a 1400px one, because a light that finds
+          a small thing is doing something a hover state cannot.
+
+          ── AND IT STILL RETIRES ONCE THERE IS A RULE ──────────────────────
+          (Gabriel, 2026-09-04, demoed on the call and unopposed: "the bar
+          disappears because the design is self-explanatory when I'm adding a
+          filter.") From the second clause on you add from the section you are
+          adding TO - nearer, more specific, and no kind chosen in advance.
 
           ⚠ THE DATE RANGE AND THE DISPLAY MENU DO NOT RETIRE WITH IT. They are
-          the LIST's controls riding the search's bar, and they move down to the
-          strip, which becomes the top row of the well the moment the bar goes.
-          So they hold the same corner of the same surface either way: nothing
-          about the window moves when you add your first filter. */}
+          the LIST's controls riding this row, and they move down to the strip,
+          which becomes the top row the moment the button goes - so they hold
+          the same corner of the same surface either way. */}
       {!any && (
       <div className="m-sc__bar">
-        <div className="m-sc__fieldwrap">
+        <div className="m-sc__triggerwrap">
           <button
             type="button"
-            className="m-sc__field"
+            className="m-sc__filter"
             onClick={() => setFork(true)}
             aria-expanded={fork}
             aria-haspopup="dialog"
             aria-label={lead}
           >
-            {/* ⚠ STILL AN SVG STROKE rather than a border, and now for one
-                reason rather than three: a stroke can be blurred without
-                blurring what it surrounds, and the glow is half the effect.
-                The dash, the arc length and the `pathLength` normalisation all
-                went with the travelling animation they served. */}
+            {/* ⚠ AN SVG STROKE rather than a border: a stroke can be blurred
+                without blurring what it surrounds, and the glow is half the
+                effect. */}
             <span className="m-sc__ring" ref={torch as React.RefObject<HTMLSpanElement>} aria-hidden="true">
               <svg>
                 {/* TWO PASSES OF THE WHOLE PERIMETER. The wide, heavily
                     blurred one is the glow; the narrow, barely blurred one is
-                    the rim. Neither is dashed any more - the MASK decides what
-                    is visible, so the geometry stopped needing to, and
-                    `pathLength` went with the dash arithmetic it existed for. */}
+                    the rim. Neither is dashed - the MASK decides what shows. */}
                 <rect className="m-sc__glow" x="0" y="0" width="100%" height="100%" rx="4" />
                 <rect className="m-sc__arc" x="0" y="0" width="100%" height="100%" rx="4" />
               </svg>
             </span>
-            <ListFilter size={16} className="m-sc__field-glyph" aria-hidden="true" />
-            <span className="m-sc__field-text" aria-hidden="true">
-              <span className="m-sc__lead">{lead}</span>
-              <RotatingExample />
-            </span>
+            <Filter size={14} className="m-sc__filter-glyph" aria-hidden="true" />
+            <span className="m-sc__filter-word">{LABEL}</span>
           </button>
           {/* ⚠ NO `onTranslate` ANYWHERE. That one prop is the sentence path's
               only switch, so the parked feature stays parked and intact. */}
-          <FilterFork
+          <FilterPanel
             open={fork}
             onClose={() => setFork(false)}
             onPick={(e) => {
@@ -568,44 +560,5 @@ function AddTo({
         <span>Add</span>
       </button>
     </FilterPicker>
-  );
-}
-
-/* ── THE EXAMPLES ─────────────────────────────────────────────────────────────
-   ⚠ THEY CAME BACK ON 09-04, AND THEY ARE NOT WHAT THEY WERE. The 09-02 version
-   rotated prose you were invited to TYPE - "paid users who hit an error" - and
-   it came out the same day because the field could not read a sentence. A
-   placeholder that promises a feature the control does not have is the one kind
-   of copy that is worse than none.
-
-   These are the other thing: not input hints but SPECIMENS of what a filter can
-   say, sitting after the word "like". You never type them; you read one, learn
-   that this control expresses that sort of thing, and click. So the promise is
-   true, and the field stays a button.
-
-   A little more muted than the lead (Gabriel, 09-04), because the lead is the
-   instruction and the example is only an illustration of it. */
-const EXAMPLES: readonly string[] = [
-  'rage clicks on /checkout',
-  'paid accounts in France',
-  'sessions over three minutes',
-  'an error after checkout_start',
-  'mobile users who saw the new pricing',
-];
-const EXAMPLE_EVERY = 4200;
-
-function RotatingExample() {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((n) => (n + 1) % EXAMPLES.length), EXAMPLE_EVERY);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    /* Keyed so the fade restarts on each change; `aria-hidden` because the
-       button's own label already says what it does and a rotating example read
-       aloud every four seconds is a control nobody can use. */
-    <span className="m-sc__eg" key={i}>
-      {EXAMPLES[i]}
-    </span>
   );
 }
