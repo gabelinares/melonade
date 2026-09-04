@@ -1,0 +1,33 @@
+/* Shared across Dashboards, Cards and Alerts: three tables wearing the same
+   name-cell and row rhythm, the way Tests/Runs/Environments share theirs. */
+
+.m-pa__row { cursor: pointer; }
+
+/* Cards: the type glyph beside the name, one row. */
+.m-pa__type-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--m-space-3);
+  min-width: 0;
+}
+
+.m-pa__type-avatar {
+  flex: none;
+  background: var(--m-surface-sunken);
+  color: var(--m-content-secondary);
+}
+
+/* Alerts: the rule sentence under the name, same shape as an audit's scope
+   line - what the name means, not a second column. */
+.m-pa__name-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding-block: var(--m-space-3);
+}
+
+.m-pa__rule {
+  font-size: var(--m-text-xs);
+  line-height: var(--m-leading-tight);
+  color: var(--m-content-muted);
+}

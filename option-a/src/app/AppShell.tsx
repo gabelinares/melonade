@@ -8,6 +8,9 @@ import { AuditsPage } from '../audits/AuditsPage.tsx';
 import { IssuesPage } from '../issues/IssuesPage.tsx';
 import { SessionsPage } from '../sessions/SessionsPage.tsx';
 import { TestsPage } from '../tests/TestsPage.tsx';
+import { DashboardsPage } from '../product-analytics/DashboardsPage.tsx';
+import { CardsPage } from '../product-analytics/CardsPage.tsx';
+import { AlertsPage } from '../product-analytics/AlertsPage.tsx';
 import { PrototypePanel } from './PrototypePanel.tsx';
 import { Placeholder } from '../components/Placeholder.tsx';
 import { useAudits } from '../state/useAudits.ts';
@@ -15,6 +18,9 @@ import { useRuns } from '../state/useRuns.ts';
 import { useIssues } from '../state/useIssues.ts';
 import { useSessions } from '../state/useSessions.ts';
 import { useTests } from '../state/useTests.ts';
+import { useDashboards } from '../state/useDashboards.ts';
+import { useCards } from '../state/useCards.ts';
+import { useAlerts } from '../state/useAlerts.ts';
 import './app-shell.css';
 
 /* One ground, one plane: the window is painted in the menu's colour, the menu
@@ -46,6 +52,12 @@ export function AppShell() {
     [message],
   );
   const audits = useAudits(onAuditFinished);
+  /* Product Analytics: three independent Subitem pages, no in-page tab strip
+     (§30) - each keeps its own state at the shell for the same reason the
+     agents do. */
+  const dashboards = useDashboards();
+  const cards = useCards();
+  const alerts = useAlerts();
   /* One string, and a section is `agent/section`. Both the menu's nested rows
      and a page's own tab strip write to THIS - a page never keeps a second copy
      of where it is, which is the only reason two controls can show the same
@@ -119,6 +131,12 @@ export function AppShell() {
           />
         ) : active === 'agents/audits' ? (
           <AuditsPage model={audits} dataState={model.dataState} />
+        ) : active === 'analytics/dashboards' ? (
+          <DashboardsPage model={dashboards} dataState={model.dataState} />
+        ) : active === 'analytics/cards' ? (
+          <CardsPage model={cards} dataState={model.dataState} />
+        ) : active === 'analytics/alerts' ? (
+          <AlertsPage model={alerts} dataState={model.dataState} />
         ) : (
           <Placeholder page={active} />
         )}
