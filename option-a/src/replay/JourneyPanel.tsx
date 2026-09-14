@@ -1,19 +1,9 @@
 import { useMemo } from 'react';
 import type { Issue, IssueSession } from '@shared/issues-data.ts';
 import { formatClock, journeySteps, type JourneyStep } from '@shared/replay.ts';
-import { CountSuffix } from '../components/CountSuffix.tsx';
 import { KIND_ICON, KIND_NAME } from './kinds.tsx';
 import type { ReplayClock } from './useReplayClock.ts';
-import type { SidePanel } from '../state/useIssues.ts';
 import './journey-panel.css';
-
-export interface JourneyPanelProps {
-  issue: Issue;
-  session: IssueSession;
-  clock: ReplayClock;
-  tab: SidePanel;
-  onTab: (t: SidePanel) => void;
-}
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
@@ -53,95 +43,59 @@ export interface JourneyPanelProps {
  *                  The steps that follow are ordinary steps.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function JourneyPanel({ issue, session, clock, tab, onTab }: JourneyPanelProps) {
+/**
+ * ⚠ NO LONGER A PANEL WITH ITS OWN CHROME (2026-09-14). The aside, its tab
+ * strip and its scroll moved into `ReplayScreen`, where every starting point
+ * shares them - Gabriel: "a side bar that includes tabs multipurpose (you can
+ * allocate activity there for example)". What stayed here is the two things
+ * the issue's panel SAYS: what the person did (the journey, with paths and a
+ * thread and the failure) and what the agent wrote (the three answers).
+ */
+export function JourneyList({ issue, session, clock }: { issue: Issue; session: IssueSession; clock: ReplayClock }) {
   const steps = useMemo(() => journeySteps(issue, session), [issue, session]);
-
-  /* The last step the head has passed. -1 during the lead-in, so nothing is lit
-     before the session has actually started. */
   const current = useMemo(() => {
     let i = -1;
     steps.forEach((s, n) => { if (clock.at >= s.at) i = n; });
     return i;
   }, [steps, clock]);
-
-  const shown: SidePanel = tab;
-
   return (
-    <aside className="m-jrn" aria-label="About this issue">
-      {/* ── TABS, NOT A LABEL ────────────────────────────────────────────────
-          The panel used to be the journey and say so. It now holds two things
-          and the strip is how you pick: what the agent WROTE, and what the
-          person DID. Those are the two questions at this depth and they belong
-          side by side rather than one of them being three tabs inside the
-          document below and the other being a whole panel.
-          This panel belongs to the recording: it does not exist on the issue
-          page, where the write-up is the document on the page itself. */}
-      <header className="m-jrn__head" role="tablist" aria-label="Panel">
-        {/* Journey first, and it is the default: it is what the panel is for and
-            what Mehdi singled out as the most important thing beside the player.
-            Details is the write-up, here so the case can be read without leaving
-            the recording. */}
-        <button
-          type="button"
-          role="tab"
-          className={`m-jrn__tab${shown === 'journey' ? ' is-on' : ''}`}
-          aria-selected={shown === 'journey'}
-          onClick={() => onTab('journey')}
-        >
-          Journey
-          <CountSuffix n={steps.length} />
-        </button>
-        <button
-          type="button"
-          role="tab"
-          className={`m-jrn__tab${shown === 'details' ? ' is-on' : ''}`}
-          aria-selected={shown === 'details'}
-          onClick={() => onTab('details')}
-        >
-          Details
-        </button>
-      </header>
-
-      <div className="m-jrn__scroll">
-        {shown === 'details' ? (
-          /* ── THE THREE ANSWERS, STACKED ────────────────────────────────────
-             What happened, why it happens, what to do about it. They were three
-             TABS inside the write-up, which made the reader click twice to read
-             an argument that is three sentences long and hid two thirds of it at
-             any moment. Stacked, the whole case is one scroll in the order the
-             agent makes it, beside the recording it is about. */
-          <div className="m-jrn__answers">
-            <section className="m-jrn__answer">
-              <h3>What happened</h3>
-              <p>{issue.journey}</p>
-            </section>
-            <section className="m-jrn__answer">
-              <h3>Why it happens</h3>
-              <p>{issue.real}</p>
-            </section>
-            <section className="m-jrn__answer">
-              <h3>Suggested fix</h3>
-              <p>{issue.fix}</p>
-            </section>
-          </div>
-        ) : (
-          <ol className="m-jrn__list">
-            {steps.map((step) => (
-              <Step
-                key={step.index}
-                step={step}
-                last={step.index === steps.length - 1}
-                past={step.index <= current}
-                active={step.index === current}
-                onSeek={() => clock.seek(step.at)}
-              />
-            ))}
-          </ol>
-        )}
-      </div>
-    </aside>
+    <ol className="m-jrn__list">
+      {steps.map((step) => (
+        <Step
+          key={step.index}
+          step={step}
+          last={step.index === steps.length - 1}
+          past={step.index <= current}
+          active={step.index === current}
+          onSeek={() => clock.seek(step.at)}
+        />
+      ))}
+    </ol>
   );
 }
+
+/** The write-up beside the recording: what happened, why, what to do. Three
+ *  sections in the order the agent makes the case, one scroll. */
+export function IssueAnswers({ issue }: { issue: Issue }) {
+  return (
+    <div className="m-jrn__answers">
+      <section className="m-jrn__answer">
+        <h3>What happened</h3>
+        <p>{issue.journey}</p>
+      </section>
+      <section className="m-jrn__answer">
+        <h3>Why it happens</h3>
+        <p>{issue.real}</p>
+      </section>
+      <section className="m-jrn__answer">
+        <h3>Suggested fix</h3>
+        <p>{issue.fix}</p>
+      </section>
+    </div>
+  );
+}
+
+export const journeyStepCount = (issue: Issue, session: IssueSession): number => journeySteps(issue, session).length;
 
 interface StepProps {
   step: JourneyStep;

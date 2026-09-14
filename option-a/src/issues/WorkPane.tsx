@@ -3,11 +3,12 @@ import type { Issue, IssueSession } from '@shared/issues-data.ts';
 import type { CriticalState, SessionFilterKey, SessionFilters } from '@shared/issues-logic.ts';
 import { issueMarkdown } from '@shared/issue-markdown.ts';
 import { durationSeconds } from '@shared/replay.ts';
-import { JourneyPanel } from '../replay/JourneyPanel.tsx';
+import { IssueAnswers, JourneyList, journeyStepCount } from '../replay/JourneyPanel.tsx';
 import { ReplayPlayer } from '../replay/ReplayPlayer.tsx';
 import { useReplayClock } from '../replay/useReplayClock.ts';
 import type { SidePanel } from '../state/useIssues.ts';
-import { IssueHeader } from './IssueHeader.tsx';
+import { IssueActions, IssueLead } from './IssueHeader.tsx';
+import { ReplayScreen } from '../replay/ReplayScreen.tsx';
 import { IssueWriteUp } from './IssueWriteUp.tsx';
 import { SessionStrip } from './SessionStrip.tsx';
 import './work-pane.css';
@@ -154,94 +155,69 @@ export function WorkPane(props: WorkPaneProps) {
     clock.play();
   }, [autoplay, session, clock]);
 
+  /* ⚠ THE FRAME IS ReplayScreen's NOW (2026-09-14) - the same header, body,
+     peek, strip and side panel every recording in the app renders. What this
+     pane still owns is what is the issue's: the write-up toggle as the lead,
+     the critical flag / Jira / copy / menu as the verbs, the sessions strip
+     as the band, the write-up as the peek, and the two tabs the panel holds -
+     the journey and the answers. */
+  const steps = session ? journeyStepCount(issue, session) : 0;
   return (
-    <div className={`m-work m-work--${depth}`}>
-      <IssueHeader
-        issue={issue}
-        title={title}
-        open={writeUpOpen}
-        /* Triage is the one place the row does not repeat the title: the
-           article right under it is a document and leads with its own. */
-        showTitle={watching}
-        criticalState={props.criticalState}
-        matchedBy={props.matchedBy}
-        hidden={props.hidden}
-        onToggle={props.onTogglePeek}
-        onBack={watching ? props.onCloseSession : undefined}
-        /* The window the reader is actually looking at, not the whole ranked
-           list. `shortlist` is every session that survived the filter, which
-           the strip slices before drawing; a paste that ignored the slice
-           arrived with a hundred and thirty near-identical bullets under a
-           heading that says "shortlist". */
-        markdown={() =>
-          issueMarkdown(issue, {
-            title,
-            shortlist: props.shortlist.slice(0, props.visibleSessions),
-            total: props.sessions.length,
-            session,
-          })
-        }
-        onClose={props.onClose}
-        sidePanel={watching ? sidePanel : undefined}
-        onToggleSidePanel={watching ? props.onToggleSidePanel : undefined}
-        taskKey={props.taskKey}
-        onCreateTask={props.onCreateTask}
-        onOpenCritical={props.onOpenCritical}
-        onOpenRename={props.onOpenRename}
-        onOpenHide={props.onOpenHide}
-        onUnhide={props.onUnhide}
-        onDropCritical={props.onDropCritical}
-        onRestoreCritical={props.onRestoreCritical}
-      />
-
-      <div className="m-work__body">
-        <div className="m-work__main">
-          {/* ── TRIAGE IS ONE DOCUMENT ──────────────────────────────────────
-              The write-up, the answer and the sessions are one scroll, not
-              three boxes with heights of their own. Each section is exactly as
-              tall as its contents, so the space between the prose and the fix
-              belongs to the prose and the space under the cards belongs to the
-              cards, rather than being whatever was left over after two fixed
-              heights had taken their share.
-
-              What this gives up is the old promise that the picker is never
-              below the fold. That promise was being kept by capping the cards
-              band at 25rem and the article at the pane, which is how a short
-              write-up ended up with 200px of nothing in the middle of it and
-              the reader ended up with two scrollbars and no way to tell which
-              one they were in. One scroll, one scrollbar, no dead bands. */}
-          {watching ? (
-            <>
-              {writeUpOpen && (
-                <div className="m-work__peek">
-                  <IssueWriteUp issue={issue} title={title} session={session} variant="peek" />
-                </div>
-              )}
-              {strip}
-              {session && <ReplayPlayer issue={issue} session={session} clock={clock} />}
-            </>
-          ) : (
-            <div className="m-work__scroll">
-              <IssueWriteUp issue={issue} title={title} session={session} />
-              {strip}
-            </div>
-          )}
+    <ReplayScreen
+      className={`m-work--${depth}`}
+      back={watching ? { label: 'Sessions', onClick: props.onCloseSession } : { label: 'Issues', onClick: props.onClose }}
+      lead={<IssueLead issue={issue} title={title} open={writeUpOpen} showTitle={watching} onToggle={props.onTogglePeek} />}
+      actions={
+        <IssueActions
+          criticalState={props.criticalState}
+          matchedBy={props.matchedBy}
+          hidden={props.hidden}
+          markdown={() =>
+            issueMarkdown(issue, {
+              title,
+              shortlist: props.shortlist.slice(0, props.visibleSessions),
+              total: props.sessions.length,
+              session,
+            })
+          }
+          taskKey={props.taskKey}
+          onCreateTask={props.onCreateTask}
+          onOpenCritical={props.onOpenCritical}
+          onOpenRename={props.onOpenRename}
+          onOpenHide={props.onOpenHide}
+          onUnhide={props.onUnhide}
+          onDropCritical={props.onDropCritical}
+          onRestoreCritical={props.onRestoreCritical}
+        />
+      }
+      panels={
+        watching && session
+          ? [
+              { key: 'journey', label: 'Journey', count: steps, hint: 'What the person did, step by step' },
+              { key: 'details', label: 'Details', hint: 'What the agent wrote about it' },
+            ]
+          : undefined
+      }
+      panel={watching ? sidePanel : null}
+      onPanel={(key) => {
+        if (key == null) {
+          if (sidePanel) props.onToggleSidePanel(sidePanel);
+        } else props.onSelectPanel(key as SidePanel);
+      }}
+      renderPanel={(key) =>
+        session ? (key === 'details' ? <IssueAnswers issue={issue} /> : <JourneyList issue={issue} session={session} clock={clock} />) : null
+      }
+      peek={watching && writeUpOpen ? <IssueWriteUp issue={issue} title={title} session={session} variant="peek" /> : undefined}
+      strip={watching ? strip : undefined}
+    >
+      {watching ? (
+        session && <ReplayPlayer issue={issue} session={session} clock={clock} />
+      ) : (
+        <div className="m-work__scroll">
+          <IssueWriteUp issue={issue} title={title} session={session} />
+          {strip}
         </div>
-
-        {/* SESSION REPLAY ONLY. This panel is about the recording that is
-            playing - its journey, and the write-up read beside it - so it does
-            not exist at the issue depth, where the document below is the
-            write-up. */}
-        {watching && session && sidePanel && (
-          <JourneyPanel
-            issue={issue}
-            session={session}
-            clock={clock}
-            tab={sidePanel}
-            onTab={props.onSelectPanel}
-          />
-        )}
-      </div>
-    </div>
+      )}
+    </ReplayScreen>
   );
 }

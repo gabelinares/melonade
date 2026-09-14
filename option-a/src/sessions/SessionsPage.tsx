@@ -42,7 +42,6 @@ import { IconButton } from '../components/IconButton.tsx';
 import { ListFooter } from '../components/ListFooter.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SessionAvatar } from '../components/SessionAvatar.tsx';
-import { useAvatarHues } from '../components/useAvatarHue.ts';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { sortable } from '../components/SortIcon.tsx';
 import { SearchCard } from './SearchCard.tsx';
@@ -178,7 +177,6 @@ export function SessionsPage({ model }: SessionsPageProps) {
   /* ⚠ THE ROW'S HUE COMES FROM THE ROBOT, not from a hash of the same seed -
      see useAvatarHue.ts for why that distinction is the whole feature. One call
      for the page; the rows read the map. */
-  const hues = useAvatarHues(model.rows.map((r) => seedFor(r)));
   const has = (f: SessionField) => display.fields.includes(f);
 
 
@@ -850,13 +848,19 @@ export function SessionsPage({ model }: SessionsPageProps) {
                  same row. Twelve hues, seeded on the identity, so a person's
                  rows are always the same colour - see shared/avatar.ts. */
               style: {
-                /* The fallback, used until the robot's own colour has been read
-                   and if it never is. Twelve hues off a hash of the identity. */
+                /* ⚠ THE HASHED HUE, AND ONLY THAT (Gabriel, 2026-09-14). For a
+                   week the row also read the robot's OWN colour off its pixels
+                   and overrode this with it, so the avatar's ground here was
+                   one colour and the same avatar in the replay header - where
+                   no row sets anything - was another: "when I open the session
+                   the colours are the original ones, while in the list it seems
+                   something is altering it." CoBrowse never had the override,
+                   and its list and its header agree; that is the rule now.
+                   Twelve hues off a hash of the identity, the same twelve every
+                   surface in the app mixes from, so one person is one colour
+                   everywhere. The play's hover ink reads the same angle (see
+                   `--m-row-hue` in sessions-page.css). */
                 '--m-avatar-i': hueIndexFor(seedFor(s)),
-                /* The real one. Both the avatar's ground and the play's ink are
-                   mixed from this single angle, which is what makes it ONE hue
-                   per row rather than two things that agree. */
-                ...(hues.has(seedFor(s)) ? { '--m-row-hue': `${hues.get(seedFor(s))}deg` } : {}),
               } as CSSProperties,
               onClick: (e) => {
                 const el = e.target as HTMLElement;

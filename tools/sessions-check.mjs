@@ -1015,7 +1015,7 @@ const player = await p.evaluate(() => {
   return {
     open: !!document.querySelector('.m-sreplay'),
     list: !!document.querySelector('.m-ss__table'),
-    who: document.querySelector('.m-sreplay__who')?.textContent?.trim(),
+    who: document.querySelector('.m-rs__name')?.textContent?.trim(),
     env: document.querySelector('.m-player__env')?.textContent?.trim(),
     total: document.querySelector('.m-tl__clock--total')?.textContent?.trim(),
     caption: document.querySelector('.m-player__caption')?.textContent?.trim(),
@@ -1065,7 +1065,7 @@ check('and seeking a marker moves the playhead and the caption with it',
   `${sought.clock} "${sought.caption}"`);
 
 /* Back, not close: the list you left, with the search and the page you had. */
-await p.locator('.m-sreplay__back').click();
+await p.locator('.m-rs__back').click();
 await p.waitForTimeout(600);
 const returned = await p.evaluate(() => ({
   list: !!document.querySelector('.m-ss__table'),

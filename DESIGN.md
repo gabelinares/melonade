@@ -6050,3 +6050,63 @@ Verification: `tools/dm-check.mjs`, `tools/pa-check.mjs`,
 `tools/media-check.mjs` walk every click-through above on the dev server;
 `tools/other-pages-check.mjs` re-aligned (a Dashboards row opens the
 dashboard page). All four green with no console errors.
+
+## §44 — One replay screen, and one hue per person (2026-09-14, afternoon)
+
+Two corrections from Gabriel on the morning's work, both about the same
+thing: one component, not lookalikes.
+
+**The avatar's colour.** *"On recordings there is some kind of mistake: the
+colours when I open the session are the original colours, while in the list
+it seems there's something altering it. The right way is the same as in
+cobrowsing."* The sessions list had been reading the robot's OWN colour off
+its pixels since 09-03 and overriding the row's hue with it (`--m-row-hue`),
+so the avatar's ground in the list was one colour and the same avatar in
+the replay header, where no row sets anything, was another. CoBrowse never
+had the override, and its list and header agreed. The override is gone: the
+twelve hashed hues are the only hues, so one person is one colour on every
+surface. `useAvatarHues` stays in the codebase but nothing calls it.
+
+**The replay screen.** *"Cobrowsing and spots are using a completely
+different replay screen. This is a problem we can't afford. There should be
+a single screen for replays and the components should vary in a way that
+contain all the possible variations of it. I think the most complete is in
+issues replay, where you have a side bar that includes tabs multipurpose
+(you can allocate activity there for example). The dev tools is also there,
+the tabs are there and the top element can be expanded if needed. Don't
+create one replay page per each starting point of the flow, it's all a
+single shared screen."*
+
+So the Issues pane's frame is lifted out as **`ReplayScreen`** and every
+recording renders it:
+
+| Starting point | lead | verbs | side panel tabs | stage |
+|---|---|---|---|---|
+| Issue (WorkPane) | write-up toggle | critical flag, Jira, copy, menu | Journey, Details | ReplayPlayer, with the write-up as the expandable peek and the sessions strip as the band |
+| Session (Recordings, a person, an activity row, a card) | avatar + name + meta | bookmark, share | Activity | ReplayPlayer |
+| Spot | avatar + title + meta | Copy, Manage access, menu | Comments, Activity | ReplayPlayer, clip variant: activity drives the frame, skip / settings / fullscreen ride the timeline |
+| CoBrowse live | avatar + identity + meta | open in tab, Annotate, Remote control, Call / End | Activity | ReplayPlayer, live variant: live frame, no timeline, LIVE + elapsed in its place; the call window floats over the stage |
+
+What is shared and cannot drift: the header (back link naming the list, the
+lead, the verbs, ONE toggle for the panel), the body split, the expandable
+peek slot, the band slot, the aside with its tab strip and close, and the
+player with its dev-tools strip. `ReplayPlayer` grew the variants instead
+of being copied: `live`, `footer`, `markers`, `startLabel`, `trailing`,
+`env`. The Issues header became two pieces the screen composes -
+`IssueLead` and `IssueActions` - and the journey panel became two bodies -
+`JourneyList` and `IssueAnswers` - so the tabs are the screen's. Two
+generic panel bodies were added for everyone else: `MarkersPanel` (what
+happened, seekable) and `CommentsPanel` (a thread and a composer, pinned).
+
+The frame keeps the Issues pane's class names (`m-work`, `m-ihdr`, `m-jrn`)
+so that pane did not move a pixel; the parts the other screens brought are
+under `m-rs__`. `spot-page.css` and `cobrowse-page.css` lost their player
+blocks; `session-replay.css` is gone.
+
+**Small consequences, accepted:** the live view shows the player's full
+dev-tools strip (production's live view had only Console and Network - one
+player, one strip); the spot's tabs moved from the header into the panel,
+behind the one toggle, like everyone else's; the issue page's crumb says
+"This issue" because the back link now says "Issues". Checks re-pointed at
+the shared selectors: `media-check`, `dm-check`, `pa-check`,
+`sessions-check`, `pages-check`.

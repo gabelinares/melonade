@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { Issue, IssueSession } from '@shared/issues-data.ts';
-import { REPLAY_HOST, failureMoment, replayMarkers, replayUrl } from '@shared/replay.ts';
+import { REPLAY_HOST, failureMoment, replayMarkers, replayUrl, type ReplayMarker } from '@shared/replay.ts';
 import { ReplayFrame } from './ReplayFrame.tsx';
 import { ReplayTimeline } from './ReplayTimeline.tsx';
 import { DevTools, type DevTab } from './devtools/DevTools.tsx';
@@ -20,6 +20,20 @@ export interface ReplayPlayerProps {
      journey panel beside it drives the same head and reads the same position.
      Two clocks would be two recordings. */
   clock: ReplayClock;
+  /** ── THE VARIANTS (2026-09-14) ─────────────────────────────────────────
+   *  One player, every starting point. `live` is a visitor's screen right
+   *  now: the frame draws live, there is no timeline to scrub (production
+   *  hides it for live-only sessions), and `footer` - LIVE and the elapsed
+   *  time - sits where the timeline would. `markers` lets a clip (a spot)
+   *  drive the frame from its own activity rather than from a journey;
+   *  `startLabel` is what the caption says before the first one. `trailing`
+   *  rides the timeline's own control slot - a spot's skip and fullscreen. */
+  live?: boolean;
+  footer?: ReactNode;
+  markers?: readonly ReplayMarker[];
+  startLabel?: string;
+  trailing?: ReactNode;
+  env?: ReactNode;
 }
 
 /**
@@ -42,9 +56,10 @@ export interface ReplayPlayerProps {
  * pretty fake page would have said less.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function ReplayPlayer({ issue, url, session, clock }: ReplayPlayerProps) {
-  const markers = useMemo(() => replayMarkers(session), [session]);
-  const failure = useMemo(() => failureMoment(session), [session]);
+export function ReplayPlayer({ issue, url, session, clock, live = false, footer, markers: given, startLabel, trailing, env }: ReplayPlayerProps) {
+  const own = useMemo(() => replayMarkers(session), [session]);
+  const markers = given ?? own;
+  const failure = useMemo(() => (given ? given.find((m) => m.kind === 'error') ?? null : failureMoment(session)), [given, session]);
 
   /* The last marker the head has passed: what is happening right now. */
   const activeIndex = useMemo(() => {
@@ -72,7 +87,11 @@ export function ReplayPlayer({ issue, url, session, clock }: ReplayPlayerProps) 
         </span>
         <span className="m-player__url m-mono m-truncate">{url ?? (issue ? replayUrl(issue) : REPLAY_HOST)}</span>
         <span className="m-player__env">
-          {session.browser} on {session.os} · {session.loc}
+          {env ?? (
+            <>
+              {session.browser} on {session.os} · {session.loc}
+            </>
+          )}
         </span>
       </div>
 
@@ -89,12 +108,13 @@ export function ReplayPlayer({ issue, url, session, clock }: ReplayPlayerProps) 
           className="m-player__viewport"
           markerIndex={activeIndex}
           clicking={justClicked}
+          variant={live ? 'live' : undefined}
         />
 
         {/* The caption is the point of the wireframe: it says what the person is
             doing at this instant, in the words of the write-up upstairs. */}
         <p className="m-player__caption" aria-live="polite">
-          {active ? active.label : 'Session start'}
+          {active ? active.label : startLabel ?? (live ? 'Live' : 'Session start')}
         </p>
       </div>
 
@@ -106,7 +126,7 @@ export function ReplayPlayer({ issue, url, session, clock }: ReplayPlayerProps) 
       {/* No width toggle down here. Widening the player means collapsing the
           panel beside it, and that control lives in the pane header with the
           other panel toggles - one action, one button, one place to look. */}
-      <ReplayTimeline clock={clock} markers={markers} failure={failure} />
+      {live ? footer : <ReplayTimeline clock={clock} markers={markers} failure={failure} trailing={trailing} />}
     </section>
   );
 }

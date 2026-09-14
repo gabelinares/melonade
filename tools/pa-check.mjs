@@ -68,7 +68,7 @@ await p.locator('.m-cardp__dash-list .m-checkrow').nth(1).click(); await p.locat
 // a session row → replay → back
 await p.locator('.m-cardp__sessions .m-psess__row').first().click(); await p.waitForTimeout(500);
 out.replayFromCard = await count('.m-sreplay');
-await p.locator('.m-sreplay__back').click(); await p.waitForTimeout(400);
+await p.locator('.m-rs__back').click(); await p.waitForTimeout(400);
 out.backToCard = await count('.m-cardp');
 // Alerts → alert page: the created one is first
 await nav('Alerts');

@@ -51,7 +51,7 @@ const replayDetails = await state();
 const ok = [], bad = [];
 const t = (n, c, d) => (c ? ok : bad).push(`${n}${d ? ` — ${d}` : ''}`);
 
-t('ISSUE PAGE: breadcrumb in the header', issue.crumb === 'Issues/This issue', issue.crumb);
+t('ISSUE PAGE: breadcrumb in the header (the back link says Issues since 09-14)', issue.crumb === 'This issue', issue.crumb);
 t('ISSUE PAGE: no expand/collapse title', !issue.headerTitle);
 t('ISSUE PAGE: no details band', !issue.detailsBand);
 t('ISSUE PAGE: no side panel', !issue.panel);

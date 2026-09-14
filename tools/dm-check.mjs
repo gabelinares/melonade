@@ -19,7 +19,7 @@ await p.locator('.m-evd__tools input[type="text"], .m-evd__tools input:not([type
 out.eventDrawerFiltered = await count('.m-evd__row');
 await p.getByRole('button', { name: 'Play session' }).click(); await p.waitForTimeout(500);
 out.replayFromActivity = await count('.m-sreplay');
-await p.locator('.m-sreplay__back').click(); await p.waitForTimeout(400);
+await p.locator('.m-rs__back').click(); await p.waitForTimeout(400);
 out.backToActivity = await count('.m-dmg__row');
 // distinct id link → person page
 await p.locator('.m-dmg__link').first().click(); await p.waitForTimeout(500);
@@ -35,7 +35,7 @@ out.propsDrawer = { rows: await count('.m-uprops__list .m-erow'), title: await p
 await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 await p.getByRole('button', { name: 'Play sessions' }).click(); await p.waitForTimeout(400);
 out.sessionsDrawer = await count('.m-psess__row');
-if (out.sessionsDrawer) { await p.locator('.m-psess__row').first().click(); await p.waitForTimeout(500); out.replayFromPerson = await count('.m-sreplay'); await p.locator('.m-sreplay__back').click(); await p.waitForTimeout(400); out.backToPerson = await count('.m-person__card'); }
+if (out.sessionsDrawer) { await p.locator('.m-psess__row').first().click(); await p.waitForTimeout(500); out.replayFromPerson = await count('.m-sreplay'); await p.locator('.m-rs__back').click(); await p.waitForTimeout(400); out.backToPerson = await count('.m-person__card'); }
 await p.locator('.m-page__back').click(); await p.waitForTimeout(400);
 out.backToPeople = await count('.m-dmg__row');
 // Events → event page → property row → property page → event row
