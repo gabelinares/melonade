@@ -40,6 +40,15 @@
 
 .m-page__lead { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
+/* THE BACK LINK sits on the title's baseline row, quiet, before the lead: it
+   names the list you came from and nothing else. Same control as the replay's. */
+.m-page__back {
+  flex: none;
+  margin-top: 1px;
+  margin-inline-start: calc(var(--m-space-2) * -1);
+  color: var(--m-content-muted);
+}
+
 /* The one place a type pairing is allowed to be loud. Size, weight and tracking
    all come from the pairing, because a serif at the grotesque's size reads
    smaller and a mono at it reads wider - the size of a title is a property of

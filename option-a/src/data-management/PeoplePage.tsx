@@ -14,12 +14,13 @@ import { SearchField } from '../components/SearchField.tsx';
 import { SessionAvatar } from '../components/SessionAvatar.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { SortIcon } from '../components/SortIcon.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { PersonPage } from './PersonPage.tsx';
 import './data-management.css';
 
 export interface PeoplePageProps {
   model: PeopleController;
   dataState: DataState;
+  onToggleBookmark: (sessionId: string) => void;
 }
 
 /**
@@ -32,7 +33,13 @@ export interface PeoplePageProps {
  * avatar system here.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function PeoplePage({ model, dataState }: PeoplePageProps) {
+export function PeoplePage({ model, dataState, onToggleBookmark }: PeoplePageProps) {
+  /* A row opens the person's own page in place of the list - production's
+     `/data-management/user/<id>` - the same list → page swap Issues and
+     Sessions make. See PersonPage. */
+  if (model.open) {
+    return <PersonPage key={model.open.userId} person={model.open} model={model} onToggleBookmark={onToggleBookmark} />;
+  }
   const columns: TableColumnsType<Person> = [
     {
       title: 'Name',
@@ -129,20 +136,6 @@ export function PeoplePage({ model, dataState }: PeoplePageProps) {
         </>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closePerson}
-        title={model.open ? personLabel(model.open) : ''}
-        meta={
-          model.open && (
-            <>
-              <span>{model.open.userId}</span>
-              <span>{model.open.city}, {model.open.country}</span>
-            </>
-          )
-        }
-        note="The person's own timeline — every session, every property, every event they've triggered — is the next piece. This round is the roster: who they are, where they were, when they were last here."
-      />
     </PageCard>
   );
 }

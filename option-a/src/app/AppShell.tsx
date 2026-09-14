@@ -21,6 +21,8 @@ import { SpotPage } from '../spot/SpotPage.tsx';
 import { PrototypePanel } from './PrototypePanel.tsx';
 import { Placeholder } from '../components/Placeholder.tsx';
 import { useAudits } from '../state/useAudits.ts';
+import { entryOf } from '@shared/sessions-logic.ts';
+import { CATALOGUE_ID_BY_EVENT } from '@shared/data-management-logic.ts';
 import { useRuns } from '../state/useRuns.ts';
 import { useIssues } from '../state/useIssues.ts';
 import { useSessions } from '../state/useSessions.ts';
@@ -127,6 +129,42 @@ export function AppShell() {
     },
     [sessions],
   );
+  /* ── THE JUMPS BETWEEN DATA MANAGEMENT PAGES (2026-09-14) ─────────────────
+     Production links them by URL: an activity row's id to `/user/<id>`, an
+     event's property to `/properties?property=`, a property's user back to
+     `/user/<id>`, an event's "Play sessions" to `/sessions` with a filter set.
+     The shell owns every model, so it is the one place that can open a thing
+     on one page and then show that page. */
+  const openPerson = useCallback(
+    (userId: string) => {
+      people.openPerson(userId);
+      setActive('data/people');
+    },
+    [people],
+  );
+  const openEvent = useCallback(
+    (name: string) => {
+      events.openEvent(name);
+      setActive('data/events');
+    },
+    [events],
+  );
+  const openProperty = useCallback(
+    (name: string) => {
+      if (properties.openByName('event', name)) setActive('data/properties');
+    },
+    [properties],
+  );
+  const playSessionsOf = useCallback(
+    (eventName: string) => {
+      const id = CATALOGUE_ID_BY_EVENT[eventName];
+      const entry = id ? entryOf(id) : undefined;
+      sessions.clearSearch();
+      if (entry) sessions.addFilter(entry);
+      navigate('recordings/sessions');
+    },
+    [sessions, navigate],
+  );
   const [agentCount, setAgentCount] = useState(SHIPPED_AGENT_COUNT);
   const { collapsed, toggle: toggleNav } = useNavCollapse();
 
@@ -173,15 +211,25 @@ export function AppShell() {
         ) : active === 'analytics/alerts' ? (
           <AlertsPage model={alerts} dataState={model.dataState} />
         ) : active === 'data/people' ? (
-          <PeoplePage model={people} dataState={model.dataState} />
+          <PeoplePage model={people} dataState={model.dataState} onToggleBookmark={sessions.toggleBookmark} />
         ) : active === 'data/events' ? (
-          <EventsPage model={events} dataState={model.dataState} />
+          <EventsPage
+            model={events}
+            dataState={model.dataState}
+            onOpenProperty={openProperty}
+            onPlaySessions={playSessionsOf}
+          />
         ) : active === 'data/properties' ? (
-          <PropertiesPage model={properties} dataState={model.dataState} />
+          <PropertiesPage model={properties} dataState={model.dataState} onOpenPerson={openPerson} onOpenEvent={openEvent} />
         ) : active === 'data/features' ? (
           <FeaturesPage model={features} dataState={model.dataState} />
         ) : active === 'data/activity' ? (
-          <ActivityPage model={activity} dataState={model.dataState} />
+          <ActivityPage
+            model={activity}
+            dataState={model.dataState}
+            onOpenPerson={openPerson}
+            onToggleBookmark={sessions.toggleBookmark}
+          />
         ) : active === 'cobrowse' ? (
           <CobrowsePage model={cobrowse} dataState={model.dataState} />
         ) : active === 'spot' ? (

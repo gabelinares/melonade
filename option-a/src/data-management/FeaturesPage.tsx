@@ -10,7 +10,7 @@ import { PageCard } from '../components/PageCard.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { SortIcon } from '../components/SortIcon.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { FeatureDrawer } from './FeatureDrawer.tsx';
 import './data-management.css';
 
 export interface FeaturesPageProps {
@@ -113,13 +113,9 @@ export function FeaturesPage({ model, dataState }: FeaturesPageProps) {
         </>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closeFeature}
-        title={model.open?.name ?? ''}
-        meta={model.open && <span className="m-dmg__mono">{model.open.selector}</span>}
-        note="Editing the tag's name and selector, and tagging a new element from a recording, is the next piece. This round is the shelf: which elements are watched, and how much they're used."
-      />
+      {/* Production's TagForm, "Edit Feature": name and scope editable, the
+          selector fixed, the last day's figures, and Remove. */}
+      <FeatureDrawer feature={model.open} onClose={model.closeFeature} onSave={model.updateFeature} onRemove={model.removeFeature} />
     </PageCard>
   );
 }

@@ -14,12 +14,17 @@ import { PageCard } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { EventDetailsDrawer } from './EventDetailsDrawer.tsx';
+import { SessionReplay } from '../sessions/SessionReplay.tsx';
 import './data-management.css';
 
 export interface ActivityPageProps {
   model: ActivityController;
   dataState: DataState;
+  /** Production's Distinct ID cell is a link to `/data-management/user/<id>`
+   *  when the row is identified. The shell owns both pages, so it does the jump. */
+  onOpenPerson: (userId: string) => void;
+  onToggleBookmark: (sessionId: string) => void;
 }
 
 const FILTER_ICONS: Partial<Record<ActivityFilterKey, typeof TagIcon>> = {
@@ -37,7 +42,19 @@ const FILTER_ICONS: Partial<Record<ActivityFilterKey, typeof TagIcon>> = {
  * stays is the two real questions a log answers: WHICH events, and WHEN.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function ActivityPage({ model, dataState }: ActivityPageProps) {
+export function ActivityPage({ model, dataState, onOpenPerson, onToggleBookmark }: ActivityPageProps) {
+  /* "Play session" from the event drawer: the page becomes the replay, the way
+     SessionsPage does for its rows, and comes back to the log on close. */
+  if (model.watching) {
+    return (
+      <SessionReplay
+        key={model.watching.sessionId}
+        session={model.watching}
+        onClose={model.closeSession}
+        onToggleBookmark={onToggleBookmark}
+      />
+    );
+  }
   const columns: TableColumnsType<ActivityEvent> = [
     {
       title: 'Event name',
@@ -68,7 +85,21 @@ export function ActivityPage({ model, dataState }: ActivityPageProps) {
       width: '26%',
       render: (_: unknown, e) =>
         e.identified ? (
-          <span className="m-truncate m-dmg__mono">{e.distinctId}</span>
+          /* ⚠ A LINK INSIDE A CLICKABLE ROW, on purpose - production does the
+             same with stopPropagation. The row opens the event; the id opens
+             the person, which is a different question. */
+          <Tooltip title="Open this person" mouseEnterDelay={0.4}>
+            <button
+              type="button"
+              className="m-truncate m-dmg__mono m-dmg__link"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                onOpenPerson(e.distinctId);
+              }}
+            >
+              {e.distinctId}
+            </button>
+          </Tooltip>
         ) : (
           <Tooltip title="This user was not identified yet" mouseEnterDelay={0.3}>
             <span className="m-truncate m-dmg__mono" style={{ color: 'var(--m-content-disabled)' }}>
@@ -158,21 +189,9 @@ export function ActivityPage({ model, dataState }: ActivityPageProps) {
         </>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closeEvent}
-        title={model.open?.eventName ?? ''}
-        meta={
-          model.open && (
-            <>
-              <span className="m-dmg__mono">{model.open.distinctId}</span>
-              <span>{model.open.city}</span>
-              <span>{model.open.environment}</span>
-            </>
-          )
-        }
-        note="This event's full payload — every property it carried, and a link into the session it happened in — is the next piece. This round is the log: which events fired, when, and by whom."
-      />
+      {/* Production's EventDetailsModal: every property the event carried,
+          and the session it happened in. Shared with the person page. */}
+      <EventDetailsDrawer event={model.open} onClose={model.closeEvent} onPlaySession={model.playSession} />
     </PageCard>
   );
 }

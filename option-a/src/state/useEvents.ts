@@ -13,7 +13,7 @@ import {
 } from '@shared/events-data.ts';
 
 export function useEvents() {
-  const [events] = useState<DistinctEvent[]>(() => [...EVENTS]);
+  const [events, setEvents] = useState<DistinctEvent[]>(() => [...EVENTS]);
   const [state, setState] = useState<EventsState>(INITIAL_EVENTS_STATE);
   const [openName, setOpenName] = useState<string | null>(null);
 
@@ -37,6 +37,11 @@ export function useEvents() {
 
     openEvent: (name: string) => setOpenName(name),
     closeEvent: () => setOpenName(null),
+    /* The three things production's DataItemPage lets you change on an
+       event: its display name, its description, and whether it is visible in
+       search and analytics. */
+    updateEvent: (name: string, patch: Partial<Pick<DistinctEvent, 'displayName' | 'description' | 'hidden'>>) =>
+      setEvents((all) => all.map((e) => (e.name === name ? { ...e, ...patch } : e))),
   };
 }
 

@@ -14,12 +14,16 @@ import {
   filterActivity,
   toggleActivityFilter,
 } from '@shared/activity-data.ts';
+import type { SessionRow } from '@shared/sessions-data.ts';
 import type { DateRangeValue } from '@shared/date-range.ts';
 
 export function useActivity() {
   const [events] = useState<ActivityEvent[]>(() => [...ACTIVITY]);
   const [state, setState] = useState<ActivityState>(INITIAL_ACTIVITY_STATE);
   const [openId, setOpenId] = useState<number | null>(null);
+  /* The session an event's "Play session" opened. The page swaps itself for
+     the replay while this is set, the way SessionsPage does for its rows. */
+  const [watching, setWatching] = useState<SessionRow | null>(null);
 
   const now = Date.now();
   const patch = useCallback((fn: (s: ActivityState) => ActivityState) => setState(fn), []);
@@ -49,6 +53,12 @@ export function useActivity() {
 
     openEvent: (id: number) => setOpenId(id),
     closeEvent: () => setOpenId(null),
+    watching,
+    playSession: (s: SessionRow) => {
+      setOpenId(null);
+      setWatching(s);
+    },
+    closeSession: () => setWatching(null),
   };
 }
 

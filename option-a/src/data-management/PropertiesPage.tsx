@@ -11,12 +11,24 @@ import { PageCard } from '../components/PageCard.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { SortIcon } from '../components/SortIcon.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { MapPin } from 'lucide-react';
+import { personLabel, type Person } from '@shared/people-data.ts';
+import type { DistinctEvent } from '@shared/events-data.ts';
+import { minutesSince } from '@shared/tests-data.ts';
+import { eventsWithProperty, propertyTypeOf, usersWithProperty } from '@shared/data-management-logic.ts';
+import { RelativeTime } from '../components/RelativeTime.tsx';
+import { SessionAvatar } from '../components/SessionAvatar.tsx';
+import { DataItemPage } from './DataItemPage.tsx';
 import './data-management.css';
 
 export interface PropertiesPageProps {
   model: PropertiesController;
   dataState: DataState;
+  /** The card under a user property lists the people who carry it; a row
+   *  opens the person. The card under an event property lists the events
+   *  that send it; a row opens the event. Both live on other pages. */
+  onOpenPerson: (userId: string) => void;
+  onOpenEvent: (name: string) => void;
 }
 
 const SCOPE_TABS: { key: PropertyScope; label: string }[] = [
@@ -34,7 +46,10 @@ const SCOPE_TABS: { key: PropertyScope; label: string }[] = [
  * tabs: one title, the subtitle and the body change under it.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function PropertiesPage({ model, dataState }: PropertiesPageProps) {
+export function PropertiesPage({ model, dataState, onOpenPerson, onOpenEvent }: PropertiesPageProps) {
+  if (model.open) {
+    return <PropertyPage property={model.open} model={model} onOpenPerson={onOpenPerson} onOpenEvent={onOpenEvent} />;
+  }
   const volumeLabel = model.scope === 'user' ? '# Users' : '30-day volume';
 
   const columns: TableColumnsType<Property> = [
@@ -157,20 +172,113 @@ export function PropertiesPage({ model, dataState }: PropertiesPageProps) {
         </>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closeProperty}
-        title={model.open?.displayName ?? ''}
-        meta={
-          model.open && (
-            <>
-              <span className="m-dmg__mono">{model.open.name}</span>
-              <span>{model.open.count.toLocaleString()} {model.open.scope === 'user' ? 'users' : 'in the last 30 days'}</span>
-            </>
-          )
-        }
-        note="Editing the display name and description, and hiding a property from search, is the next piece. This round is the catalogue: which properties exist and how much they're used."
-      />
     </PageCard>
+  );
+}
+
+/**
+ * ONE PROPERTY'S PAGE - production's `UserProperty` / `EventPropsPage`, both
+ * the shared `DataItemPage`. Same rows as an event's page plus the type, and
+ * a card underneath that answers the property's own question: for a user
+ * property, WHO has it; for an event property, WHICH events send it.
+ */
+function PropertyPage({
+  property: p,
+  model,
+  onOpenPerson,
+  onOpenEvent,
+}: {
+  property: Property;
+  model: PropertiesController;
+  onOpenPerson: (userId: string) => void;
+  onOpenEvent: (name: string) => void;
+}) {
+  const isUser = p.scope === 'user';
+  const people = isUser ? usersWithProperty(p) : [];
+  const events = isUser ? [] : eventsWithProperty(p.name);
+
+  const peopleColumns: TableColumnsType<Person> = [
+    {
+      title: 'Name', key: 'name', width: '32%',
+      render: (_: unknown, u) => (
+        <div className="m-dmg__identity-cell">
+          <SessionAvatar seed={u.userId} size={24} />
+          <span className="m-truncate">{personLabel(u)}</span>
+        </div>
+      ),
+    },
+    { title: 'User ID', key: 'userId', width: '30%', render: (_: unknown, u) => <span className="m-truncate m-dmg__mono">{u.userId}</span> },
+    {
+      title: 'Location', key: 'location', width: '22%',
+      render: (_: unknown, u) => (
+        <span className="m-dmg__location-cell">
+          <MapPin size={13} aria-hidden="true" />
+          <span className="m-truncate">{u.city}, {u.country}</span>
+        </span>
+      ),
+    },
+    { title: 'Last seen', key: 'lastSeenAt', width: '16%', render: (_: unknown, u) => <RelativeTime minutesAgo={minutesSince(u.lastSeenAt)} /> },
+  ];
+  const eventColumns: TableColumnsType<DistinctEvent> = [
+    { title: 'Event name', key: 'name', width: '26%', render: (_: unknown, e) => <span className="m-truncate m-dmg__mono">{e.name}</span> },
+    { title: 'Display name', key: 'displayName', width: '24%', render: (_: unknown, e) => <span className="m-truncate">{e.displayName}</span> },
+    { title: 'Description', key: 'description', width: '50%', render: (_: unknown, e) => <span className="m-truncate">{e.description}</span> },
+  ];
+
+  return (
+    <DataItemPage
+      back={{ label: isUser ? 'User properties' : 'Event properties', onClick: model.closeProperty }}
+      title={p.displayName}
+      name={p.name}
+      rows={[
+        { label: 'Display name', value: p.displayName, onSave: (v) => model.updateProperty(p.id, { displayName: v || p.name }) },
+        { label: 'Description', value: p.description, multiline: true, placeholder: 'What this property holds', onSave: (v) => model.updateProperty(p.id, { description: v }) },
+        {
+          label: isUser ? 'Users with this property' : 'Events with this property',
+          value: String(p.count),
+          display: <span className="m-dmg__mono">{p.count.toLocaleString()}</span>,
+          hint: isUser ? undefined : 'in the last 30 days',
+        },
+        { label: 'Type', value: propertyTypeOf(p), display: <span className="m-dmg__mono">{propertyTypeOf(p)}</span> },
+      ]}
+      status={{ hidden: p.hidden, onChange: (hidden) => model.updateProperty(p.id, { hidden }) }}
+      footer={{
+        head: (
+          <span className="m-ditem__head-title">
+            {isUser ? `Users with this property` : `Events with this property`}
+            <span className="m-dmg__count"> · {isUser ? people.length : events.length}</span>
+          </span>
+        ),
+        children: isUser ? (
+          people.length === 0 ? (
+            <EmptyState title="Nobody carries this property yet" />
+          ) : (
+            <Table<Person>
+              className="m-dmg__table"
+              tableLayout="fixed"
+              rowKey="userId"
+              columns={peopleColumns}
+              dataSource={people}
+              pagination={false}
+              rowClassName="m-dmg__row"
+              onRow={(u) => ({ onClick: () => onOpenPerson(u.userId) })}
+            />
+          )
+        ) : events.length === 0 ? (
+          <EmptyState title="No event sends this property" hint="Attach it to an event from your code and the event will be listed here." />
+        ) : (
+          <Table<DistinctEvent>
+            className="m-dmg__table"
+            tableLayout="fixed"
+            rowKey="name"
+            columns={eventColumns}
+            dataSource={events}
+            pagination={false}
+            rowClassName="m-dmg__row"
+            onRow={(e) => ({ onClick: () => onOpenEvent(e.name) })}
+          />
+        ),
+      }}
+    />
   );
 }

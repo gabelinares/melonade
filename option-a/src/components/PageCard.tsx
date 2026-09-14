@@ -1,7 +1,14 @@
+import { Button } from 'antd';
+import { ArrowLeft } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
 import './page-card.css';
 
 export interface PageCardProps {
+  /** ⚠ A DETAIL PAGE SAYS WHERE IT CAME FROM (2026-09-14). The same text
+   *  button SessionReplay draws - an arrow and the LIST'S name - so every
+   *  list → detail step in the app reads the same way. It is a back link, not a
+   *  breadcrumb trail: one level, because the menu already draws the rest. */
+  back?: { label: string; onClick: () => void };
   title: string;
   /** One line under the title saying what this page is. It replaced the info
    *  icon that held the same sentence behind a hover: a page's own description
@@ -87,10 +94,15 @@ export interface PageCardProps {
  * from having left Tests, however you got there - the menu cannot say "you are
  * still inside this" once you are looking at the page instead of at the menu.
  */
-export function PageCard({ title, subtitle, meta, lede, actions, tabs, toolbar, split, children }: PageCardProps) {
+export function PageCard({ back, title, subtitle, meta, lede, actions, tabs, toolbar, split, children }: PageCardProps) {
   return (
     <section className={`m-page${tabs ? ' m-page--tabbed' : ''}`}>
       <header className="m-page__head">
+        {back && (
+          <Button type="text" size="small" icon={<ArrowLeft size={15} />} onClick={back.onClick} className="m-page__back">
+            {back.label}
+          </Button>
+        )}
         <div className="m-page__lead">
           <h1 className="m-page__title">{title}</h1>
           {subtitle && <p className="m-page__sub">{subtitle}</p>}

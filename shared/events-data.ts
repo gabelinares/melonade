@@ -11,6 +11,9 @@ export interface DistinctEvent {
   description: string;
   autoCaptured: boolean;
   volume30d: number;
+  /** Hidden from search and analytics. Absent means visible; production's
+   *  Status switch flips it. */
+  hidden?: boolean;
 }
 
 export const EVENTS: readonly DistinctEvent[] = [

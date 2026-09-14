@@ -12,7 +12,7 @@ import {
 } from '@shared/properties-data.ts';
 
 export function useProperties() {
-  const [properties] = useState<Property[]>(() => [...PROPERTIES]);
+  const [properties, setProperties] = useState<Property[]>(() => [...PROPERTIES]);
   const [state, setState] = useState<PropertiesState>(INITIAL_PROPERTIES_STATE);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -34,7 +34,18 @@ export function useProperties() {
     setShowHidden: (showHidden: boolean) => patch((s) => ({ ...s, showHidden })),
 
     openProperty: (id: string) => setOpenId(id),
+    /* Reached from another page - an event's property list - by name and
+       scope, which is how production's `?view=events&property=` link works. */
+    openByName: (scope: PropertyScope, name: string) => {
+      const hit = properties.find((p) => p.scope === scope && p.name === name);
+      if (!hit) return false;
+      patch((s) => ({ ...s, scope }));
+      setOpenId(hit.id);
+      return true;
+    },
     closeProperty: () => setOpenId(null),
+    updateProperty: (id: string, patchP: Partial<Pick<Property, 'displayName' | 'description' | 'hidden'>>) =>
+      setProperties((all) => all.map((p) => (p.id === id ? { ...p, ...patchP } : p))),
   };
 }
 

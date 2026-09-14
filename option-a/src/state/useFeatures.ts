@@ -11,7 +11,7 @@ import {
 } from '@shared/features-data.ts';
 
 export function useFeatures() {
-  const [features] = useState<Feature[]>(() => [...FEATURES]);
+  const [features, setFeatures] = useState<Feature[]>(() => [...FEATURES]);
   const [state, setState] = useState<FeaturesState>(INITIAL_FEATURES_STATE);
   const [openId, setOpenId] = useState<number | null>(null);
 
@@ -31,6 +31,12 @@ export function useFeatures() {
 
     openFeature: (id: number) => setOpenId(id),
     closeFeature: () => setOpenId(null),
+    updateFeature: (id: number, patchF: Pick<Feature, 'name' | 'location'>) =>
+      setFeatures((all) => all.map((f) => (f.id === id ? { ...f, ...patchF } : f))),
+    removeFeature: (id: number) => {
+      setFeatures((all) => all.filter((f) => f.id !== id));
+      setOpenId((cur) => (cur === id ? null : cur));
+    },
   };
 }
 
