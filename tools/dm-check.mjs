@@ -23,10 +23,10 @@ await p.locator('.m-sreplay__back').click(); await p.waitForTimeout(400);
 out.backToActivity = await count('.m-dmg__row');
 // distinct id link → person page
 await p.locator('.m-dmg__link').first().click(); await p.waitForTimeout(500);
-out.personFromActivity = { card: await count('.m-person__card'), timelineRows: await count('.m-tl__row'), days: await count('.m-tl__day'), title: await p.locator('.m-page__title').textContent() };
+out.personFromActivity = { card: await count('.m-person__card'), timelineRows: await count('.m-ptl__row'), days: await count('.m-tl__day'), title: await p.locator('.m-page__title').textContent() };
 // person: timeline row → event drawer; properties drawer; sessions drawer → replay
 await p.screenshot({ path: '/private/tmp/claude-501/-Users-gabriellinares-awesomic-OpenReplay/c1ad3923-4301-44de-a8aa-9d487e991527/scratchpad/person.png' });
-await p.locator('.m-tl__row').first().evaluate((el) => el.click()); await p.waitForTimeout(400);
+await p.locator('.m-ptl__row').first().evaluate((el) => el.click()); await p.waitForTimeout(400);
 await p.screenshot({ path: '/private/tmp/claude-501/-Users-gabriellinares-awesomic-OpenReplay/c1ad3923-4301-44de-a8aa-9d487e991527/scratchpad/person-event.png' });
 out.personEventDrawer = await count('.m-evd');
 await p.keyboard.press('Escape'); await p.waitForTimeout(300);

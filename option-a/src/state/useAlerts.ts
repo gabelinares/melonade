@@ -32,6 +32,17 @@ export function useAlerts() {
     openAlert: (id: number) => setOpenId(id),
     closeAlert: () => setOpenId(null),
     remove,
+    /* Production's NewAlert saves the whole form as one alert and toasts
+       "Alert updated"; the same form, opened from a card, creates one. */
+    updateAlert: (id: number, patch: Partial<Alert>) =>
+      setAlerts((all) => all.map((a) => (a.id === id ? { ...a, ...patch, updatedAt: Date.now() } : a))),
+    createAlert: (alert: Omit<Alert, 'id' | 'updatedAt'>): Alert => {
+      const created: Alert = { ...alert, id: Date.now(), updatedAt: Date.now() };
+      setAlerts((all) => [created, ...all]);
+      return created;
+    },
+    rename: (id: number, name: string) =>
+      setAlerts((all) => all.map((a) => (a.id === id ? { ...a, name, updatedAt: Date.now() } : a))),
   };
 }
 

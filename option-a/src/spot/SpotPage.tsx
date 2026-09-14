@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { App, Button, Checkbox, Dropdown } from 'antd';
 import { Copy, Download, MoreHorizontal, Pencil, Play, Trash2 } from 'lucide-react';
 import { clipDuration, type Spot, type SpotScope } from '@shared/spot-data.ts';
@@ -12,7 +12,8 @@ import { FilterStrip } from '../components/FilterStrip.tsx';
 import { PageCard } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { RenameDialog } from '../components/RenameDialog.tsx';
+import { SpotPlayerPage } from './SpotPlayerPage.tsx';
 import './spot-page.css';
 
 export interface SpotPageProps {
@@ -34,6 +35,12 @@ export interface SpotPageProps {
  */
 export function SpotPage({ model, dataState }: SpotPageProps) {
   const { message } = App.useApp();
+  const [renaming, setRenaming] = useState<Spot | null>(null);
+  /* A card opens the clip's own page in place of the grid - production's
+     `/view-spot/<id>`, the same list → page swap Sessions and People make. */
+  if (model.open) {
+    return <SpotPlayerPage key={model.open.id} spot={model.open} model={model} />;
+  }
 
   const firstRun = (
     <EmptyState
@@ -109,26 +116,23 @@ export function SpotPage({ model, dataState }: SpotPageProps) {
               selected={model.selected.includes(s.id)}
               onToggleSelect={() => model.toggleSelected(s.id)}
               onOpen={() => model.openSpot(s.id)}
-              onRename={() => message.info('Renaming is the next piece.')}
+              onRename={() => setRenaming(s)}
               onDelete={() => model.remove(s.id)}
             />
           ))}
         </CardGrid>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closeSpot}
-        title={model.open?.title ?? ''}
-        meta={
-          model.open && (
-            <>
-              <span>{model.open.ownerName}</span>
-              <span>{clipDuration(model.open.durationSec)}</span>
-            </>
-          )
-        }
-        note="Playing the clip back — the recorder, the player, the share link — is the next piece. This round is the library: which Spots exist, who made them, how long each one runs."
+      <RenameDialog
+        open={renaming != null}
+        title="Rename spot"
+        value={renaming?.title ?? ''}
+        onCancel={() => setRenaming(null)}
+        onOk={(title) => {
+          if (renaming) model.rename(renaming.id, title);
+          setRenaming(null);
+          message.success('Spot renamed');
+        }}
       />
     </PageCard>
   );

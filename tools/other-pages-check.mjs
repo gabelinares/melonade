@@ -4,7 +4,7 @@
  *
  * What this guards: every destination renders a real page (not a
  * Placeholder), search/filter/tab controls actually narrow the visible set,
- * a row opens and closes its StubDrawer, and dark mode doesn't silently
+ * a row opens what production opens (09-14: real pages and drawers, no stubs), and dark mode doesn't silently
  * break a class this port introduced (the m-dm__/m-dmg__ collision class of
  * bug). Navigates by clicking, never `page.goto`, since all state here is
  * in-memory and a reload resets it.
@@ -68,9 +68,11 @@ t('DASHBOARDS: the owner strip actually narrows the list', s.rows > 0 && s.rows 
 await p.locator('.ant-table-tbody tr.ant-table-row').first().click();
 await p.waitForTimeout(300);
 s = await page();
-t('DASHBOARDS: a row opens the StubDrawer', s.drawerOpen === true);
-await p.keyboard.press('Escape');
-await p.waitForTimeout(250);
+/* Since 09-14 a row opens the dashboard's own page in place of the list -
+   production's DashboardView - and Back returns to it. */
+t('DASHBOARDS: a row opens the dashboard page', s.rows === 0 && (await p.locator('.m-dash__grid, .m-page__back').count()) > 0);
+await p.locator('.m-page__back').click();
+await p.waitForTimeout(300);
 
 await section('Product Analytics', 'Cards');
 await p.locator('.m-pa__table').waitFor();

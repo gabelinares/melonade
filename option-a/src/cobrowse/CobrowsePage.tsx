@@ -1,6 +1,8 @@
-import { App, Table, Tabs } from 'antd';
+import { useState } from 'react';
+import { App, Button, Dropdown, Table, Tabs } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { ArrowDownWideNarrow, ArrowUpWideNarrow, RefreshCw } from 'lucide-react';
+import { ArrowDownWideNarrow, ArrowUpWideNarrow, MoreHorizontal, Pencil, Play, RefreshCw, Trash2 } from 'lucide-react';
+import { recordingMetaOf } from '@shared/media-logic.ts';
 import type { CobrowseSection, LiveSession, LiveSort, Recording } from '@shared/cobrowse-data.ts';
 import { minutesSince } from '@shared/tests-data.ts';
 import { formatDuration } from '@shared/sessions-logic.ts';
@@ -15,7 +17,9 @@ import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SessionAvatar } from '../components/SessionAvatar.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
+import { RenameDialog } from '../components/RenameDialog.tsx';
+import { LiveSessionPage } from './LiveSessionPage.tsx';
 import './cobrowse-page.css';
 
 export interface CobrowsePageProps {
@@ -47,6 +51,13 @@ const identityLabel = (s: LiveSession) => s.userId ?? s.userAnonymousId;
  */
 export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
   const { message } = App.useApp();
+  const [renaming, setRenaming] = useState<Recording | null>(null);
+  const [deleting, setDeleting] = useState<Recording | null>(null);
+  /* A live row opens the assist view in place of the list - production's
+     `/assist/<sessionId>`. See LiveSessionPage. */
+  if (model.openLive) {
+    return <LiveSessionPage key={model.openLive.id} session={model.openLive} model={model} />;
+  }
 
   const liveColumns: TableColumnsType<LiveSession> = [
     {
@@ -80,30 +91,85 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
     },
   ];
 
+  /* ⚠ A RECORDING PLAYS IN A NEW TAB, because that is what production does:
+     the row fetches a signed URL and hands it to `window.open`. There is no
+     in-app player to build, and building one would be inventing a screen the
+     product does not have. The row, and the "Play video" link on it, both go
+     the same way; the menu carries the two things you can do to the file. */
   const recordingColumns: TableColumnsType<Recording> = [
     {
       title: 'Name',
       key: 'name',
-      width: '50%',
+      width: '44%',
       sorter: (a, b) => a.name.localeCompare(b.name),
-      render: (_: unknown, r) => <span className="m-truncate">{r.name}</span>,
+      render: (_: unknown, r) => (
+        <span className="m-cb__identity-cell">
+          <span style={{ minWidth: 0 }}>
+            <span className="m-truncate" style={{ display: 'block' }}>{r.name}</span>
+            <span className="m-cb__sub m-cb__mono">{formatDuration(recordingMetaOf(r).durationSec)}</span>
+          </span>
+        </span>
+      ),
     },
     {
       title: 'Recorded by',
       key: 'recordedBy',
-      width: '30%',
+      width: '22%',
       render: (_: unknown, r) => <span className="m-truncate">{r.recordedBy}</span>,
     },
     {
       title: 'Recorded',
       key: 'recordedAt',
-      width: '20%',
+      width: '16%',
       sorter: (a, b) => b.recordedAt - a.recordedAt,
       defaultSortOrder: 'ascend',
       render: (_: unknown, r) => <RelativeTime minutesAgo={minutesSince(r.recordedAt)} />,
     },
+    {
+      title: '',
+      key: 'actions',
+      width: '18%',
+      align: 'right',
+      render: (_: unknown, r) => (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--m-space-3)' }}>
+          <button
+            type="button"
+            className="m-cb__play"
+            onClick={(e) => {
+              e.stopPropagation();
+              model.openRecordingRow(r.id);
+            }}
+          >
+            <Play size={12} aria-hidden="true" />
+            Play video
+          </button>
+          <Dropdown
+            trigger={['click']}
+            placement="bottomRight"
+            menu={{
+              items: [
+                { key: 'rename', icon: <Pencil size={13} />, label: 'Rename' },
+                { key: 'delete', icon: <Trash2 size={13} />, label: 'Delete', danger: true },
+              ],
+              onClick: ({ key, domEvent }) => {
+                domEvent.stopPropagation();
+                if (key === 'rename') setRenaming(r);
+                else setDeleting(r);
+              },
+            }}
+          >
+            <Button
+              type="text"
+              size="small"
+              aria-label={`Actions for ${r.name}`}
+              icon={<MoreHorizontal size={15} />}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </Dropdown>
+        </span>
+      ),
+    },
   ];
-
   const liveEmpty = (
     <EmptyState
       title="No live sessions found"
@@ -187,7 +253,7 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
           </>
         )
       ) : dataState === 'loading' ? (
-        <SkeletonRows rows={4} columns={[50, 30, 20]} />
+        <SkeletonRows rows={4} columns={[44, 22, 16, 18]} />
       ) : model.visibleRecordings.length === 0 ? (
         recordingsEmpty
       ) : (
@@ -200,7 +266,7 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
             dataSource={model.visibleRecordings}
             pagination={false}
             showSorterTooltip={false}
-            rowClassName="m-cb__row"
+            rowClassName={(r) => `m-cb__row${model.openRecording?.id === r.id ? ' is-opening' : ''}`}
             onRow={(r) => ({ onClick: () => model.openRecordingRow(r.id) })}
           />
           <ListFooter
@@ -212,20 +278,31 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
         </>
       )}
 
-      <StubDrawer
-        open={model.openLive != null}
-        onClose={model.closeLiveSession}
-        title={model.openLive ? identityLabel(model.openLive) : ''}
-        meta={model.openLive && <span>{model.openLive.city}, {model.openLive.country}</span>}
-        note="Joining the call — watching the visitor's screen live and drawing on it together — is the next piece. This round is the roster: who's live right now."
+      <RenameDialog
+        open={renaming != null}
+        title="Rename recording"
+        value={renaming?.name ?? ''}
+        onCancel={() => setRenaming(null)}
+        onOk={(name) => {
+          if (renaming) model.renameRecording(renaming.id, name);
+          setRenaming(null);
+          message.success('Recording name updated');
+        }}
       />
-      <StubDrawer
-        open={model.openRecording != null}
-        onClose={model.closeRecordingRow}
-        title={model.openRecording?.name ?? ''}
-        meta={model.openRecording && <span>{model.openRecording.recordedBy}</span>}
-        note="Playing the recorded call back is the next piece. This round is the library: which calls were captured, and by whom."
-      />
+      <ConfirmDialog
+        open={deleting != null}
+        title="Delete this recording?"
+        okText="Delete"
+        onCancel={() => setDeleting(null)}
+        onOk={() => {
+          if (deleting) model.removeRecording(deleting.id);
+          setDeleting(null);
+          message.success('Recording deleted');
+        }}
+      >
+        <span className="m-dlg__subject">{deleting?.name}</span> is deleted for everyone on the team. The co-browsing
+        session it came from is not affected.
+      </ConfirmDialog>
     </PageCard>
   );
 }

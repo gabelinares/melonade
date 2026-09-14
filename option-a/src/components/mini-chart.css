@@ -1,0 +1,76 @@
+/* ── FOUR SMALL CHARTS ──────────────────────────────────────────────────────
+   One accent for the one series; ink for every figure; the grid recessive. */
+.m-chart { position: relative; min-width: 0; color: var(--m-content-accent); }
+
+/* the line */
+.m-chart--line { display: flex; flex-direction: column; }
+.m-chart--line svg { flex: 1; width: 100%; min-height: 0; overflow: visible; cursor: crosshair; }
+.m-chart__line { fill: none; stroke: currentColor; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.m-chart__base { stroke: var(--m-border-subtle); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.m-chart__cross { stroke: var(--m-border-strong); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-dasharray: 2 2; }
+.m-chart__dot { fill: var(--m-surface-default); stroke: currentColor; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.m-chart__axis {
+  display: flex;
+  justify-content: space-between;
+  padding-top: var(--m-space-2);
+  font-size: var(--m-text-2xs);
+  color: var(--m-content-placeholder);
+  font-variant-numeric: tabular-nums;
+}
+.m-chart__tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: var(--m-space-1) var(--m-space-3);
+  border-radius: var(--m-radius-control);
+  background: var(--m-surface-inverse);
+  color: var(--m-content-inverse);
+  font-size: var(--m-text-2xs);
+  line-height: var(--m-leading-tight);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.m-chart__tip-value { font-variant-numeric: tabular-nums; font-weight: var(--m-weight-medium); }
+.m-chart__tip-when { opacity: 0.7; }
+
+/* bars */
+.m-chart--bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--m-space-3); }
+.m-chart__bar-row { display: grid; grid-template-columns: minmax(6rem, 30%) 1fr auto; align-items: center; gap: var(--m-space-3); font-size: var(--m-text-xs); }
+.m-chart__bar-label { color: var(--m-content-secondary); }
+.m-chart__bar-track { position: relative; height: 0.75rem; border-radius: 4px; background: var(--m-surface-sunken); overflow: hidden; }
+.m-chart__bar { display: block; height: 100%; border-radius: 0 4px 4px 0; background: currentColor; min-width: 2px; }
+.m-chart__bar-value { color: var(--m-content-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m-chart__bar-share { color: var(--m-content-muted); }
+.is-funnel .m-chart__bar-row { gap: var(--m-space-4); }
+.is-funnel .m-chart__bar-track { height: 1.25rem; }
+
+/* heat */
+.m-chart--heat {
+  display: grid;
+  grid-template-columns: minmax(6rem, 28%) repeat(var(--m-heat-cols), 1fr);
+  gap: 2px;
+  align-items: center;
+  font-size: var(--m-text-2xs);
+}
+.m-chart__heat-col { text-align: center; color: var(--m-content-placeholder); padding-bottom: 2px; }
+.m-chart__heat-row { color: var(--m-content-secondary); padding-inline-end: var(--m-space-2); font-size: var(--m-text-xs); }
+.m-chart__heat-cell {
+  display: block;
+  height: 1.375rem;
+  border-radius: 3px;
+  background: color-mix(in oklch, var(--m-content-accent) calc(var(--m-heat) * 88% + 6%), var(--m-surface-sunken));
+}
+.m-chart__heat-cell:hover { outline: 2px solid var(--m-surface-default); outline-offset: -2px; }
+
+/* paths */
+.m-chart--paths { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--m-space-3); }
+.m-chart__path { display: grid; grid-template-columns: 1.25rem 1fr minmax(4rem, 18%) auto; align-items: center; gap: var(--m-space-3); font-size: var(--m-text-xs); }
+.m-chart__path-rank { color: var(--m-content-placeholder); font-variant-numeric: tabular-nums; }
+.m-chart__path-steps { display: flex; flex-wrap: wrap; gap: 2px var(--m-space-1); min-width: 0; color: var(--m-content-secondary); }
+.m-chart__path-step { display: inline-flex; align-items: center; gap: var(--m-space-1); }
+.m-chart__path-arrow { color: var(--m-content-placeholder); }
+.m-chart__path-track { height: 0.5rem; }

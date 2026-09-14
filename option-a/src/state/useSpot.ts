@@ -11,6 +11,7 @@ import {
   filterSpots,
   spotScopeCounts,
 } from '@shared/spot-data.ts';
+import { spotCommentsOf, spotMetaOf, type SpotComment } from '@shared/media-logic.ts';
 
 export function useSpot() {
   const [spots, setSpots] = useState<Spot[]>(() => [...SPOTS]);
@@ -22,6 +23,18 @@ export function useSpot() {
   const visible = useMemo(() => filterSpots(spots, state), [spots, state]);
   const scopeCounts = useMemo(() => spotScopeCounts(spots, state.query), [spots, state.query]);
   const open = spots.find((s) => s.id === openId) ?? null;
+
+  /* ── THE PLAYER PAGE'S OWN STATE (2026-09-14) ───────────────────────────
+     Production's SpotPlayer holds the comment thread and the access flag per
+     spot; both start from the fixture and keep what you change while the app
+     is open. Comments you post are yours ("You"), appended in order. */
+  const [posted, setPosted] = useState<Record<number, SpotComment[]>>({});
+  const [access, setAccess] = useState<Record<number, boolean>>({});
+  const comments: SpotComment[] = useMemo(
+    () => (open ? [...spotCommentsOf(open), ...(posted[open.id] ?? [])] : []),
+    [open, posted],
+  );
+  const isPublic = open ? (access[open.id] ?? spotMetaOf(open).isPublic) : false;
 
   const toggleSelected = useCallback(
     (id: number) =>
@@ -60,6 +73,18 @@ export function useSpot() {
 
     openSpot: (id: number) => setOpenId(id),
     closeSpot: () => setOpenId(null),
+    rename: (id: number, title: string) => setSpots((prev) => prev.map((x) => (x.id === id ? { ...x, title } : x))),
+
+    comments,
+    /** Production caps a signed-in viewer at 25 messages per spot. */
+    canComment: comments.length < 25,
+    addComment: (body: string) => {
+      if (!open) return;
+      const c: SpotComment = { id: `${open.id}-u${Date.now()}`, author: 'You', minutesAgo: 0, body };
+      setPosted((all) => ({ ...all, [open.id]: [...(all[open.id] ?? []), c] }));
+    },
+    isPublic,
+    setPublic: (on: boolean) => open && setAccess((all) => ({ ...all, [open.id]: on })),
   };
 }
 

@@ -16,12 +16,19 @@ import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { SortIcon } from '../components/SortIcon.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { RenameDialog } from '../components/RenameDialog.tsx';
+import { DashboardPage } from './DashboardPage.tsx';
+import { useState } from 'react';
+import type { Card } from '@shared/cards-data.ts';
 import './product-analytics.css';
 
 export interface DashboardsPageProps {
   model: DashboardsController;
   dataState: DataState;
+  /** The live card library, for the widgets' names and the Add-card picker. */
+  cards: readonly Card[];
+  /** A widget's Edit, or its chart, goes to the card's own page. */
+  onOpenCard: (cardId: number) => void;
 }
 
 /**
@@ -37,8 +44,14 @@ export interface DashboardsPageProps {
  * "toggle as a strip item" idiom Audits already uses for status.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function DashboardsPage({ model, dataState }: DashboardsPageProps) {
+export function DashboardsPage({ model, dataState, cards, onOpenCard }: DashboardsPageProps) {
   const { message } = App.useApp();
+  const [renaming, setRenaming] = useState<Dashboard | null>(null);
+  /* A row opens the dashboard in place of the list - production's
+     `/dashboard/:id` - the same list → page swap Issues and Sessions make. */
+  if (model.open) {
+    return <DashboardPage key={model.open.id} dashboard={model.open} model={model} cards={cards} onOpenCard={onOpenCard} />;
+  }
 
   const columns: TableColumnsType<Dashboard> = [
     {
@@ -95,7 +108,8 @@ export function DashboardsPage({ model, dataState }: DashboardsPageProps) {
             onClick: ({ key, domEvent }) => {
               domEvent.stopPropagation();
               if (key === 'delete') model.remove(d.id);
-              else message.info(`${key === 'rename' ? 'Renaming' : 'Visibility & access'} is the next piece.`);
+              else if (key === 'rename') setRenaming(d);
+              else message.info('Open the dashboard to change who sees it.');
             },
           }}
         >
@@ -210,19 +224,15 @@ export function DashboardsPage({ model, dataState }: DashboardsPageProps) {
         </>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closeDashboard}
-        title={model.open?.name ?? ''}
-        meta={
-          model.open && (
-            <>
-              <span>{model.open.owner}</span>
-              <span>{model.open.visibility === 'team' ? 'Team' : 'Private'}</span>
-            </>
-          )
-        }
-        note="The dashboard canvas itself — the charts, the layout, adding and resizing cards — is the next piece. This round is the shelf: which dashboards exist, who owns them, when each was touched."
+      <RenameDialog
+        open={renaming != null}
+        title="Rename dashboard"
+        value={renaming?.name ?? ''}
+        onCancel={() => setRenaming(null)}
+        onOk={(name) => {
+          if (renaming) model.rename(renaming.id, name);
+          setRenaming(null);
+        }}
       />
     </PageCard>
   );

@@ -125,6 +125,7 @@ export function AppShell() {
         setActive(key);
         return;
       }
+      setCardFrom(undefined);
       setActive(PARENT_LANDING[key] ?? key);
     },
     [sessions],
@@ -164,6 +165,29 @@ export function AppShell() {
       navigate('recordings/sessions');
     },
     [sessions, navigate],
+  );
+  /* ── A CARD OPENED FROM A DASHBOARD SAYS SO (2026-09-14) ─────────────────
+     Production's WidgetView breadcrumb reads "<dashboard> → <card>" when you
+     drilled in from a widget and "Cards → <card>" from the library. Here that
+     is the card page's `back` link, and the shell is the one that knows which
+     door you came through. Cleared on any other navigation, so a card opened
+     later from the list says "Cards" again. */
+  const [cardFrom, setCardFrom] = useState<{ label: string; onClick: () => void } | undefined>(undefined);
+  const openCardFromDashboard = useCallback(
+    (cardId: number) => {
+      const name = dashboards.open?.name ?? 'Dashboards';
+      cards.openCard(cardId);
+      setCardFrom({
+        label: name,
+        onClick: () => {
+          cards.closeCard();
+          setCardFrom(undefined);
+          setActive('analytics/dashboards');
+        },
+      });
+      setActive('analytics/cards');
+    },
+    [cards, dashboards],
   );
   const [agentCount, setAgentCount] = useState(SHIPPED_AGENT_COUNT);
   const { collapsed, toggle: toggleNav } = useNavCollapse();
@@ -205,9 +229,17 @@ export function AppShell() {
         ) : active === 'agents/audits' ? (
           <AuditsPage model={audits} dataState={model.dataState} />
         ) : active === 'analytics/dashboards' ? (
-          <DashboardsPage model={dashboards} dataState={model.dataState} />
+          <DashboardsPage model={dashboards} dataState={model.dataState} cards={cards.cards} onOpenCard={openCardFromDashboard} />
         ) : active === 'analytics/cards' ? (
-          <CardsPage model={cards} dataState={model.dataState} />
+          <CardsPage
+            model={cards}
+            dataState={model.dataState}
+            dashboards={dashboards.dashboards}
+            from={cardFrom}
+            onAddToDashboard={(cardId, dashboardId) => dashboards.addCard(dashboardId, cardId)}
+            onCreateAlert={(a) => alerts.createAlert(a)}
+            onToggleBookmark={sessions.toggleBookmark}
+          />
         ) : active === 'analytics/alerts' ? (
           <AlertsPage model={alerts} dataState={model.dataState} />
         ) : active === 'data/people' ? (

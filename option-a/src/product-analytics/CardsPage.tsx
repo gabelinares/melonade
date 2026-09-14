@@ -27,12 +27,24 @@ import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { SortIcon } from '../components/SortIcon.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { RenameDialog } from '../components/RenameDialog.tsx';
+import { CardPage } from './CardPage.tsx';
+import { useState } from 'react';
+import type { Dashboard } from '@shared/dashboards-data.ts';
+import type { Alert } from '@shared/alerts-data.ts';
 import './product-analytics.css';
 
 export interface CardsPageProps {
   model: CardsController;
   dataState: DataState;
+  dashboards: readonly Dashboard[];
+  /** "Add to dashboard" on a card's page puts THIS card on that dashboard. */
+  onAddToDashboard: (cardId: number, dashboardId: number) => void;
+  /** "Set alerts" on a timeseries card creates an alert in the Alerts list. */
+  onCreateAlert: (alert: Omit<Alert, 'id' | 'updatedAt'>) => void;
+  onToggleBookmark: (sessionId: string) => void;
+  /** Set when the card was opened from a dashboard, so Back returns there. */
+  from?: { label: string; onClick: () => void };
 }
 
 /** One glyph per card type, so the name cell reads as a KIND of thing rather
@@ -56,8 +68,25 @@ const TYPE_ICONS: Record<CardType, typeof Activity> = {
  * the only real dimension the entity has.
  * ════════════════════════════════════════════════════════════════════════════
  */
-export function CardsPage({ model, dataState }: CardsPageProps) {
+export function CardsPage({ model, dataState, dashboards, onAddToDashboard, onCreateAlert, onToggleBookmark, from }: CardsPageProps) {
   const { message } = App.useApp();
+  const [renaming, setRenaming] = useState<Card | null>(null);
+  /* A row opens the builder in place of the list - production's `/metrics/:id`. */
+  if (model.open) {
+    const card = model.open;
+    return (
+      <CardPage
+        key={card.id}
+        card={card}
+        model={model}
+        dashboards={dashboards}
+        from={from}
+        onAddToDashboard={(dashboardId) => onAddToDashboard(card.id, dashboardId)}
+        onCreateAlert={onCreateAlert}
+        onToggleBookmark={onToggleBookmark}
+      />
+    );
+  }
 
   const columns: TableColumnsType<Card> = [
     {
@@ -112,7 +141,7 @@ export function CardsPage({ model, dataState }: CardsPageProps) {
             onClick: ({ key, domEvent }) => {
               domEvent.stopPropagation();
               if (key === 'delete') model.remove(c.id);
-              else message.info('Renaming is the next piece.');
+              else setRenaming(c);
             },
           }}
         >
@@ -227,12 +256,15 @@ export function CardsPage({ model, dataState }: CardsPageProps) {
         </>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closeCard}
-        title={model.open?.name ?? ''}
-        meta={model.open && <span>{CARD_TYPE_LABELS[model.open.type]}</span>}
-        note="The card builder itself — picking the metric, shaping the query, choosing the visualisation — is the next piece. This round is the shelf: which cards exist, what kind each one is, when it last changed."
+      <RenameDialog
+        open={renaming != null}
+        title="Rename card"
+        value={renaming?.name ?? ''}
+        onCancel={() => setRenaming(null)}
+        onOk={(name) => {
+          if (renaming) model.rename(renaming.id, name);
+          setRenaming(null);
+        }}
       />
     </PageCard>
   );

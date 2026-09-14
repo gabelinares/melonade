@@ -5950,3 +5950,103 @@ wordmark is a name, not a heading.
 replay's network tab order and a floating right-side detail panel, tabs for
 multiple open sessions, Preferences, Onboarding, and click-through on the
 shell pages. Next review Monday 14 September.
+
+## §43 — Every row opens what production opens (2026-09-14)
+
+Gabriel, back from the break: *"for each of the inner pages, the next step
+of the flow is missing, like what happens when you click activity items or
+data management items of the table. The answer is in the OpenReplay real
+app. Implement them all."* §40 had shipped the ten shell pages with a
+`StubDrawer` on every row. This round replaces all ten stubs with the
+destination production actually has, read out of its code by two
+read-only agents and adapted into this library. No stub is left on any of
+the ten pages.
+
+| Row on | Production destination | Here |
+|---|---|---|
+| Activity | `EventDetailsModal` (620px drawer) | `EventDetailsDrawer`: properties list/JSON, origin filter, search, **Play session** → replay in place; Distinct ID cell links to the person |
+| People | `UserPage` (full page) | `PersonPage`: identity card (copyable ids, tracking-ids popover, "+N properties" drawer with inline edits, Delete user), Activity card (window, hide event types, timeline by day → the same event drawer, **Play sessions** drawer → replay) |
+| Events | `DistinctEvent` → shared `DataItemPage` | `DataItemPage`: editable display name / description, volume, Visible/Hidden switch, "Event properties" card (OpenReplay / Yours), **Play sessions** → Recordings filtered to the event |
+| Properties | `UserProperty` / `EventPropsPage` → `DataItemPage` | same component; the card underneath is "Users with this property" (→ person) or "Events with this property" (→ event) |
+| Features | `TagForm` "Edit Feature" (428px drawer) | `FeatureDrawer`: name, fixed selector, scope, last-24h tiles, Update disabled until dirty, Remove behind a confirm |
+| Dashboards | `DashboardView` | `DashboardPage`: Add card popover, window, Rename / Visibility & access / Delete / Download report (Enterprise), 4-column widget grid, per-widget Edit / Remove, chart click drills into the card |
+| Cards | `WidgetView` | `CardPage`: Update-until-dirty, copy link, filters left/top/right, Add to dashboard, Set alerts (timeseries only, as a drawer), series & steps, preview with window and options, drill-down sessions → replay |
+| Alerts | `NewAlert` | `AlertForm` + `AlertPage`: three numbered steps with production's helper sentences, Change variant, four channels, footer Update / Delete, the list row as a live preview |
+| Spot | `SpotPlayer` | `SpotPlayerPage`: header with Copy / Manage access / menu, clip in the replay's chrome, timeline, Console & Network, 320px Comments / Activity panel |
+| CoBrowse live | `LivePlayer` | `LiveSessionPage`: UserCard, Annotate / Remote control / Call → End with a floating call window, LIVE + elapsed, Console & Network |
+| CoBrowse recordings | `window.open(signedUrl)` — no in-app player | the same: the row and its "Play video" open a new tab; Rename / Delete in the row menu |
+
+### The grammar every destination follows
+
+**Edit-shaped destinations are drawers; view-shaped destinations replace
+the page.** Production makes the same split (TagForm and EventDetailsModal
+are drawers; UserPage, DataItemPage, DashboardView, WidgetView, NewAlert,
+SpotPlayer and LivePlayer are pages). A page swap is the one Issues and
+Sessions already make: `if (model.open) return <DetailPage/>`, with
+`PageCard.back` — the replay's own arrow-and-list-name control, now a prop
+on every page header — as the only way back. One level, because the menu
+draws the rest.
+
+**One component per shape that production shares.** Events and Properties
+both render `DataItemPage`, as they do upstream. The Activity log and the
+person's timeline open one `EventDetailsDrawer`. The card page's "Set
+alerts" drawer and the alert page render one `AlertForm`. Dashboard
+widgets and the card preview draw from one `CardChart`. New shared
+primitives, each used in at least two places: `EditableRow` (the
+pencil-to-field row), `StatTile`, `ConfirmDialog` (never `Modal.confirm`),
+`RenameDialog` (five row menus said "Renaming is the next piece"; none
+does now), `MiniChart` (single-series line with crosshair, bar list, heat
+grid, path list - the app's accent, text in text tokens, no legend for one
+series).
+
+**Cross-page jumps are the shell's.** Production links pages by URL - an
+activity row's id to `/user/<id>`, an event's property to
+`/properties?property=`, an event's Play sessions to `/sessions` with a
+filter. Here `AppShell` owns every model, so it opens the thing on one
+page and shows that page: `openPerson`, `openEvent`, `openProperty`,
+`playSessionsOf` (which bridges the events catalogue's names to the
+sessions catalogue's - `checkout_started` is `checkout_start` there), and
+`openCardFromDashboard`, which also makes the card page's back link say
+the dashboard's name rather than "Cards".
+
+**The data is derived, not invented beside the fixtures.**
+`shared/data-management-logic.ts`, `analytics-logic.ts` and
+`media-logic.ts` are deterministic on a string hash: a person's sessions
+are the SESSIONS that carry their id (the two fixtures share fourteen
+identities), a person's timeline is the ACTIVITY rows that are theirs plus
+a generated fortnight of ordinary traffic, an event's properties come from
+the PROPERTIES catalogue through one `EVENT_PROPERTY_MAP`, a dashboard's
+widgets are a stable subset of CARDS. The same row opens onto the same
+detail every time, which is what lets the check scripts assert on it.
+
+### Three things caught by looking, not by the checks
+
+A **prefix collision** - `m-tl` is the replay timeline's - drew the
+person's timeline as a horizontal strip; renamed `m-ptl`. Then a second
+one inside the live page (`m-live__tool` was already its bottom block),
+which turned two buttons into tiles; renamed `m-live__assist`. *Grep the
+prefix before naming one* is now a two-time lesson in this file.
+
+**Three red buttons in one header.** Production paints Annotate and Remote
+control red while active, next to a red End. Here an active tool is a
+pressed default and the one red thing on the row is the one that ends the
+call. **Two Updates on the alert page** (header and footer) became
+production's one, in the footer.
+
+### Deliberately left out
+
+Dashboard widget drag-and-drop and resize; per-step operator/value filters
+in the card builder (steps are catalogue events); the route-leave
+"unsaved changes" prompt; a predefined-metric "cannot drill down" state
+(this library has no predefined cards); Spot's logged-out branding, phone
+rotation warning and separate 36px control row (its skip / console /
+fullscreen controls ride the timeline's own trailing slot, because a
+second play/pause would be a lookalike); the multiview "Close" variant of
+the live back link; any in-app player for CoBrowse recordings, because
+production has none. Audits' row still opens a StubDrawer - it is an agent
+page, not one of the ten, and its report is its own piece of work.
+
+Verification: `tools/dm-check.mjs`, `tools/pa-check.mjs`,
+`tools/media-check.mjs` walk every click-through above on the dev server;
+`tools/other-pages-check.mjs` re-aligned (a Dashboards row opens the
+dashboard page). All four green with no console errors.

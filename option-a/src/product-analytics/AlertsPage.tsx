@@ -1,7 +1,7 @@
 import { App, Button, Dropdown, Table } from 'antd';
 import type { TableColumnsType } from 'antd';
 import type { SortOrder } from 'antd/es/table/interface';
-import { Bell, BookOpen, MoreHorizontal, Pencil, Plus, Settings2, Trash2 } from 'lucide-react';
+import { BookOpen, MoreHorizontal, Pencil, Plus, Settings2, Trash2 } from 'lucide-react';
 import { ruleSentence, type Alert } from '@shared/alerts-data.ts';
 import { minutesSince } from '@shared/tests-data.ts';
 import type { DataState } from '@shared/issues-logic.ts';
@@ -15,7 +15,9 @@ import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
 import { SortIcon } from '../components/SortIcon.tsx';
-import { StubDrawer } from '../components/StubDrawer.tsx';
+import { RenameDialog } from '../components/RenameDialog.tsx';
+import { AlertPage } from './AlertPage.tsx';
+import { useState } from 'react';
 import './product-analytics.css';
 
 export interface AlertsPageProps {
@@ -39,6 +41,12 @@ export interface AlertsPageProps {
  */
 export function AlertsPage({ model, dataState }: AlertsPageProps) {
   const { message } = App.useApp();
+  const [renaming, setRenaming] = useState<Alert | null>(null);
+  /* A row opens the alert's form in place of the list - production's
+     `/alert/:id`. */
+  if (model.open) {
+    return <AlertPage key={model.open.id} alert={model.open} model={model} />;
+  }
 
   const columns: TableColumnsType<Alert> = [
     {
@@ -90,7 +98,7 @@ export function AlertsPage({ model, dataState }: AlertsPageProps) {
             onClick: ({ key, domEvent }) => {
               domEvent.stopPropagation();
               if (key === 'delete') model.remove(a.id);
-              else message.info('Renaming is the next piece.');
+              else setRenaming(a);
             },
           }}
         >
@@ -187,19 +195,15 @@ export function AlertsPage({ model, dataState }: AlertsPageProps) {
         </>
       )}
 
-      <StubDrawer
-        open={model.open != null}
-        onClose={model.closeAlert}
-        title={model.open?.name ?? ''}
-        meta={
-          model.open && (
-            <>
-              <Bell size={13} aria-hidden="true" />
-              <span>{ruleSentence(model.open)}</span>
-            </>
-          )
-        }
-        note="The alert builder itself — picking the metric, the threshold, who gets notified — is the next piece. This round is the shelf: which alerts exist and what each one watches."
+      <RenameDialog
+        open={renaming != null}
+        title="Rename alert"
+        value={renaming?.name ?? ''}
+        onCancel={() => setRenaming(null)}
+        onOk={(name) => {
+          if (renaming) model.rename(renaming.id, name);
+          setRenaming(null);
+        }}
       />
     </PageCard>
   );
