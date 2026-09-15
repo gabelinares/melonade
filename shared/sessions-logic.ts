@@ -199,9 +199,14 @@ export const SORT_CHOICES: ReadonlyArray<{ value: SessionSortKey; label: string 
    The table's headers speak in columns and directions; the sessions list
    speaks in the four keys the backend accepts. These two translate, and the
    direction is read off the FIGURE the column prints, not the field behind
-   it: "2m ago" ascending is newest first, so `recent` is Started ascending. A
-   chevron pointing up over a column whose numbers went down would be the
-   worse kind of consistent. */
+   it: "2m ago" descending is oldest first. A chevron pointing up over a column
+   whose numbers went down would be the worse kind of consistent.
+
+   ⚠ THE DEFAULT IS NOT A SORT (Gabriel, 2026-09-15: "the header sorting
+   shouldn't be enabled by default, and one of the states clicking the header
+   should go back to default"). Newest first is how the list arrives, not a
+   choice somebody made on a header - so it is `null`, no header is marked at
+   rest, and the last step of every header's cycle is back to it. */
 export type SortColumn = 'started' | 'events' | 'duration';
 
 export interface ColumnSort {
@@ -209,7 +214,8 @@ export interface ColumnSort {
   order: 'ascend' | 'descend';
 }
 
-export const columnSortOf = (key: SessionSortKey): ColumnSort => {
+/** `null` is the default order, which no header claims. */
+export const columnSortOf = (key: SessionSortKey): ColumnSort | null => {
   switch (key) {
     case 'oldest':
       return { column: 'started', order: 'descend' };
@@ -218,11 +224,13 @@ export const columnSortOf = (key: SessionSortKey): ColumnSort => {
     case 'fewest':
       return { column: 'events', order: 'ascend' };
     default:
-      return { column: 'started', order: 'ascend' };
+      return null;
   }
 };
 
-/** `null` is a header clicked a third time - no order - and means the default. */
+/** `null` - the end of a header's cycle - is the default. Started ascending
+ *  is the same order as the default and never reached (see SessionTable's
+ *  `sortDirections`), so it maps to the default too. */
 export const sortKeyOf = (sort: ColumnSort | null): SessionSortKey => {
   if (!sort) return 'recent';
   if (sort.column === 'events') return sort.order === 'descend' ? 'events' : 'fewest';

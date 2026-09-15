@@ -43,10 +43,12 @@ export interface SessionTableProps {
   sortable: readonly SortColumn[];
   /** The order the rows are in, expressed as a column and a direction, so the
    *  header shows the state the list is actually in. Controlled: the caller
-   *  owns it, the way it owns the rows. */
-  sort: ColumnSort;
-  /** A header was clicked. `null` is antd's third click - no order - and the
-   *  caller answers it with its default. */
+   *  owns it, the way it owns the rows. ⚠ `null` IS THE DEFAULT (Gabriel,
+   *  2026-09-15): newest first is how the list arrives, not a sort somebody
+   *  chose, so no header is marked at rest. */
+  sort: ColumnSort | null;
+  /** A header was clicked. `null` is the last step of its cycle - back to the
+   *  default order - and the caller stores it as such. */
   onSort: (next: ColumnSort | null) => void;
   onOpen: (s: SessionRow) => void;
   /** The name narrows the list to that person. Absent, the name is still a
@@ -103,12 +105,21 @@ export function SessionTable({
      `sorter: true`, so no table can end up with antd's triangles by forgetting
      the icon (the same reason `sortable` in SortIcon.tsx exists). The order is
      CONTROLLED - `sortOrder` is read off `sort`, never left to antd's own
-     state - so the chevron always shows the order the rows are actually in. */
+     state - so the chevron always shows the order the rows are actually in.
+
+     ⚠ EVERY CYCLE ENDS AT THE DEFAULT, and Started's is one step shorter.
+     antd walks `sortDirections` and then `null`; `null` is the default order
+     here, so the last click on any header puts the list back the way it
+     arrived. Started's default IS "newest first", which is what its ascending
+     state would be - so that state is not offered: oldest first, then back.
+     Two states that draw the same rows with a different chevron would be a
+     header lying once per cycle. Figures cycle most → fewest → default. */
   const sortProps = (column: SortColumn) =>
     sortable.includes(column)
       ? {
           sorter: true as const,
-          sortOrder: (sort.column === column ? sort.order : null) as SortOrder,
+          sortOrder: (sort?.column === column ? sort.order : null) as SortOrder,
+          sortDirections: (column === 'started' ? ['descend'] : ['descend', 'ascend']) as SortOrder[],
           sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
         }
       : {};
@@ -448,8 +459,8 @@ export function SessionTable({
          left the rows where they were, because antd treats `true` as
          "the server sorts" and waits for `onChange`. Now the click hands
          the column and direction to the caller, which owns the order the
-         way it owns everything else about which rows exist. A third click
-         clears antd's order; the caller reads `null` as its default. */
+         way it owns everything else about which rows exist. The last click
+         of a cycle hands `null`: the default order. */
       onChange={(_p, _f, sorter) => {
         const s = Array.isArray(sorter) ? sorter[0] : sorter;
         onSort(s?.order ? { column: s.columnKey as SortColumn, order: s.order } : null);

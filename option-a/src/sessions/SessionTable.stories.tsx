@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { SESSIONS, columnSortOf, sortKeyOf, sortSessions, type ColumnSort, type SessionSortKey } from '@shared/sessions-logic.ts';
 import { LIVE_SESSIONS } from '@shared/cobrowse-data.ts';
-import { DEFAULT_LIVE_SORT, LIVE_SORTABLE, liveSessionRowOf, sortLiveRows } from '@shared/cobrowse-logic.ts';
+import { LIVE_SORTABLE, liveSessionRowOf, sortLiveRows } from '@shared/cobrowse-logic.ts';
 import { PagePanel } from '../components/PageCard.tsx';
 import { SessionTable } from './SessionTable.tsx';
 
@@ -53,7 +53,7 @@ function SessionsHarness() {
 }
 
 function LiveHarness() {
-  const [sort, setSort] = useState<ColumnSort>(DEFAULT_LIVE_SORT);
+  const [sort, setSort] = useState<ColumnSort | null>(null);
   const rows = sortLiveRows(LIVE_SESSIONS.map((s) => liveSessionRowOf(s)), sort);
   return (
     <SessionTable
@@ -61,7 +61,7 @@ function LiveHarness() {
       fields={['started', 'duration', 'location', 'device', 'metadata']}
       sortable={LIVE_SORTABLE}
       sort={sort}
-      onSort={(next) => setSort(next ?? DEFAULT_LIVE_SORT)}
+      onSort={setSort}
       onOpen={() => {}}
       onFilterToUser={() => {}}
       liveBadge={false}
@@ -75,7 +75,7 @@ export const Sessions: Story = {
     docs: {
       description: {
         story:
-          'The Recordings page: every field on, Started and Events sortable because those are the two orders the backend accepts. Click a header - the rows move, and the chevron shows the order the list is actually in.',
+          'The Recordings page: every field on, Started and Events sortable because those are the two orders the backend accepts. No header is marked at rest: newest first is the default, not a sort. Click Started once for oldest first and once more for the default; Events cycles most, fewest, default.',
       },
     },
   },

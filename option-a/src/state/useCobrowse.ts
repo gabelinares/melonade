@@ -19,7 +19,7 @@ import {
   type Recording,
   filterRecordings,
 } from '@shared/cobrowse-data.ts';
-import { DEFAULT_LIVE_SORT, filterLiveRows, liveSessionRowOf, sortLiveRows } from '@shared/cobrowse-logic.ts';
+import { filterLiveRows, liveSessionRowOf, sortLiveRows } from '@shared/cobrowse-logic.ts';
 import { recordingMetaOf } from '@shared/media-logic.ts';
 import {
   addManyToRules,
@@ -67,7 +67,8 @@ export function useCobrowse() {
      though the live catalogue offers no events: the card asks for them, and a
      verb that exists and is never called is cheaper than a second card. */
   const [filters, setFilters] = useState<SearchFilter[]>([]);
-  const [sort, setSort] = useState<ColumnSort>(DEFAULT_LIVE_SORT);
+  /* `null` is the default order; no header is marked at rest. */
+  const [sort, setSort] = useState<ColumnSort | null>(null);
   const onRules = useCallback((fn: (rules: readonly SearchFilter[]) => SearchFilter[]) => setFilters((r) => fn(r)), []);
   const addFilter = useCallback((entry: CatalogueEntry) => onRules((r) => addToRules(r, entry)), [onRules]);
   const addFilters = useCallback((rows: SearchFilter[]) => onRules((r) => addManyToRules(r, rows)), [onRules]);
@@ -150,9 +151,8 @@ export function useCobrowse() {
     removeProperty: (eventKey: string, propKey: string) => onRules((r) => removePropertyInRules(r, eventKey, propKey)),
     togglePropertyOrder: (eventKey: string) => onRules((r) => togglePropertyOrderInRules(r, eventKey)),
     sort,
-    /* A third click on a header clears antd's order; the list answers with its
-       default, newest first. */
-    setSort: (next: ColumnSort | null) => setSort(next ?? DEFAULT_LIVE_SORT),
+    /* The last click of a header's cycle hands back `null`: the default. */
+    setSort,
 
     openLiveSession: (id: string) => setOpenLiveId(id),
     closeLiveSession: leaveLive,

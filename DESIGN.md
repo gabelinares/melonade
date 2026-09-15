@@ -6143,9 +6143,19 @@ chevron flipped and the rows stayed put. `SessionTable` takes a **controlled**
 `onSort`; Sessions maps that onto its four backend keys with `columnSortOf` /
 `sortKeyOf`, so the Display menu's Order and the header say the same thing.
 
-The direction is read off the **figure the column prints**: "2m ago" ascending
-is newest first, so `recent` is Started ↑. A chevron pointing up over a column
-whose numbers went down would be the worse kind of consistent.
+The direction is read off the **figure the column prints**: "2m ago"
+descending is oldest first. A chevron pointing up over a column whose numbers
+went down would be the worse kind of consistent.
+
+**⚠ The default is not a sort** (Gabriel, same day: *"the header sorting
+shouldn't be enabled by default, and one of the states clicking the header
+should go back to default"*). Newest first is how the list arrives, so it is
+`null`: no header is marked at rest, and antd's `sortDirections` then `null`
+makes the last click of every cycle the way back. Started's default is what
+its ascending state would draw, so that state is not offered - oldest first,
+then default - because two states drawing the same rows under different
+chevrons is a header lying once per cycle. Events and Duration cycle most →
+fewest → default.
 
 ### CoBrowse Live is Sessions' two components
 

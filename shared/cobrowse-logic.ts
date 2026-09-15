@@ -114,15 +114,17 @@ export const liveCatalogue = (): readonly CatalogueEntry[] =>
 /* ── THE SORT, FROM A COLUMN HEADER ─────────────────────────────────────────
    Production's live list sorts by Start time or Duration, either way. Here
    those are the two sortable headers, and the order is read off the FIGURE
-   the column prints: "3m ago" ascending is newest first, "13m 30s" ascending
+   the column prints: "3m ago" descending is oldest first, "13m 30s" ascending
    is shortest first. A header that sorted the timestamp instead would show a
-   ↑ over a column whose numbers went down. */
+   ↑ over a column whose numbers went down.
+
+   `null` is the default - newest first, as the list arrives - and no header
+   claims it; every header's cycle ends there. */
 export const LIVE_SORTABLE: readonly SortColumn[] = ['started', 'duration'];
 
-export const DEFAULT_LIVE_SORT: ColumnSort = { column: 'started', order: 'ascend' };
-
-export function sortLiveRows(rows: readonly SessionRow[], sort: ColumnSort): SessionRow[] {
+export function sortLiveRows(rows: readonly SessionRow[], sort: ColumnSort | null): SessionRow[] {
   const out = [...rows];
+  if (!sort) return out.sort((a, b) => a.startedAgoMin - b.startedAgoMin);
   const sign = sort.order === 'ascend' ? 1 : -1;
   out.sort((a, b) =>
     sort.column === 'started' ? sign * (a.startedAgoMin - b.startedAgoMin) : sign * (a.durationSec - b.durationSec),
