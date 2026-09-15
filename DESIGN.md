@@ -6151,11 +6151,12 @@ went down would be the worse kind of consistent.
 shouldn't be enabled by default, and one of the states clicking the header
 should go back to default"*). Newest first is how the list arrives, so it is
 `null`: no header is marked at rest, and antd's `sortDirections` then `null`
-makes the last click of every cycle the way back. Started's default is what
-its ascending state would draw, so that state is not offered - oldest first,
-then default - because two states drawing the same rows under different
-chevrons is a header lying once per cycle. Events and Duration cycle most →
-fewest → default.
+makes the last click of every cycle the way back. **Three states on every
+header** (Gabriel: *"there should always be three states"*): descending,
+ascending, default. Started's ascending state draws the same rows as the
+default and is kept anyway - a header that skips a step is one you have to
+learn, and "this column, this way, on purpose" is a different statement from
+"nothing chosen" even when the rows agree.
 
 ### CoBrowse Live is Sessions' two components
 

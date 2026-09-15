@@ -60,7 +60,11 @@ t('COBROWSE: click Started → oldest first', s.on === 1 && s.rows[0][1].startsW
 await p.locator('.m-ss__table th', { hasText: 'Started' }).click();
 await p.waitForTimeout(300);
 s = await table();
-t('COBROWSE: Started has two steps: second click is the default', s.on === 0 && s.rows[0][1].startsWith('2m'), `${s.on} on, first ${s.rows[0]?.[1]}`);
+t('COBROWSE: click Started again → newest first, header marked', s.on === 1 && s.rows[0][1].startsWith('2m'), `${s.on} on, first ${s.rows[0]?.[1]}`);
+await p.locator('.m-ss__table th', { hasText: 'Started' }).click();
+await p.waitForTimeout(300);
+s = await table();
+t('COBROWSE: third click on Started → the default, nothing marked', s.on === 0 && s.rows[0][1].startsWith('2m'), `${s.on} on, first ${s.rows[0]?.[1]}`);
 /* the bar narrows */
 await p.locator('.m-sc__input').click();
 await p.waitForTimeout(300);
@@ -115,7 +119,11 @@ t('SESSIONS: click Started → oldest first, rows actually move', s.rows[0]?.[1]
 await p.locator('.m-ss__table th', { hasText: 'Started' }).click();
 await p.waitForTimeout(300);
 s = await table();
-t('SESSIONS: click Started again → default, nothing marked', s.rows[0]?.[1] === first && s.on === 0, `${s.rows[0]?.[1]}, ${s.on} on`);
+t('SESSIONS: click Started again → newest first, header marked', s.rows[0]?.[1] === first && s.on === 1, `${s.rows[0]?.[1]}, ${s.on} on`);
+await p.locator('.m-ss__table th', { hasText: 'Started' }).click();
+await p.waitForTimeout(300);
+s = await table();
+t('SESSIONS: third click on Started → default, nothing marked', s.rows[0]?.[1] === first && s.on === 0, `${s.rows[0]?.[1]}, ${s.on} on`);
 await p.locator('.m-ss__table th', { hasText: 'Events' }).click();
 await p.waitForTimeout(300);
 s = await table();

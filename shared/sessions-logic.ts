@@ -229,8 +229,8 @@ export const columnSortOf = (key: SessionSortKey): ColumnSort | null => {
 };
 
 /** `null` - the end of a header's cycle - is the default. Started ascending
- *  is the same order as the default and never reached (see SessionTable's
- *  `sortDirections`), so it maps to the default too. */
+ *  draws the same rows as the default and maps to the same key; the header
+ *  still shows it as chosen, which is the difference between the two. */
 export const sortKeyOf = (sort: ColumnSort | null): SessionSortKey => {
   if (!sort) return 'recent';
   if (sort.column === 'events') return sort.order === 'descend' ? 'events' : 'fewest';

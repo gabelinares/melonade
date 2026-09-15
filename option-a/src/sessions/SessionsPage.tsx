@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button, Dropdown, Tabs, Tooltip } from 'antd';
 import {
   Angry,
@@ -18,6 +19,7 @@ import {
   entryOf,
   issueTypeCount,
   sortKeyOf,
+  type ColumnSort,
   type SessionDisplay,
   type SessionField,
   type SessionTab,
@@ -143,6 +145,16 @@ const SECTION: Record<SessionTab, { title: string; sub: string }> = {
 
 export function SessionsPage({ model }: SessionsPageProps) {
   const { display } = model;
+  /* ⚠ THE HEADER'S OWN STATE, RECONCILED WITH THE MENU'S (2026-09-15). The
+     backend has four orders and the headers have five states: Started
+     ascending draws the same rows as the default, and Gabriel wants it kept
+     ("there should always be three states"). `display.sort` cannot say which
+     of the two you are in, so the page remembers the header you clicked and
+     shows it for as long as the menu's Order still agrees with it. Change the
+     Order in the menu and the header follows the menu; click a header and the
+     menu follows the header. One fact, two controls, and neither can lie. */
+  const [headerSort, setHeaderSort] = useState<ColumnSort | null>(null);
+  const sort = sortKeyOf(headerSort) === display.sort ? headerSort : columnSortOf(display.sort);
   /* ⚠ THE ROW'S HUE COMES FROM THE ROBOT, not from a hash of the same seed -
      see useAvatarHue.ts for why that distinction is the whole feature. One call
      for the page; the rows read the map. */
@@ -476,8 +488,11 @@ export function SessionsPage({ model }: SessionsPageProps) {
             rows={model.rows}
             fields={display.fields}
             sortable={['started', 'events']}
-            sort={columnSortOf(display.sort)}
-            onSort={(next) => model.setDisplay('sort', sortKeyOf(next))}
+            sort={sort}
+            onSort={(next) => {
+              setHeaderSort(next);
+              model.setDisplay('sort', sortKeyOf(next));
+            }}
             onOpen={(s) => model.openSession(s.sessionId)}
             onFilterToUser={model.filterToUser}
             /* CLICKABLE, which is the best affordance on production's card and

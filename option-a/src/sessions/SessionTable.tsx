@@ -107,19 +107,20 @@ export function SessionTable({
      CONTROLLED - `sortOrder` is read off `sort`, never left to antd's own
      state - so the chevron always shows the order the rows are actually in.
 
-     ⚠ EVERY CYCLE ENDS AT THE DEFAULT, and Started's is one step shorter.
-     antd walks `sortDirections` and then `null`; `null` is the default order
-     here, so the last click on any header puts the list back the way it
-     arrived. Started's default IS "newest first", which is what its ascending
-     state would be - so that state is not offered: oldest first, then back.
-     Two states that draw the same rows with a different chevron would be a
-     header lying once per cycle. Figures cycle most → fewest → default. */
+     ⚠ THREE STATES ON EVERY HEADER, AND THE THIRD IS THE DEFAULT (Gabriel,
+     2026-09-15: "there should always be three states"). antd walks
+     `sortDirections` - descending, then ascending - and then `null`, which is
+     the default order here, so the last click on any header puts the list back
+     the way it arrived. Started's ascending state draws the same rows as the
+     default; it is kept anyway, because a header that skips a step is a header
+     you have to learn, and "this column, this way, on purpose" is a different
+     statement from "nothing chosen" even when the rows agree. */
   const sortProps = (column: SortColumn) =>
     sortable.includes(column)
       ? {
           sorter: true as const,
           sortOrder: (sort?.column === column ? sort.order : null) as SortOrder,
-          sortDirections: (column === 'started' ? ['descend'] : ['descend', 'ascend']) as SortOrder[],
+          sortDirections: ['descend', 'ascend'] as SortOrder[],
           sortIcon: ({ sortOrder }: { sortOrder: SortOrder }) => <SortIcon sortOrder={sortOrder} />,
         }
       : {};

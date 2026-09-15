@@ -75,7 +75,7 @@ export const Sessions: Story = {
     docs: {
       description: {
         story:
-          'The Recordings page: every field on, Started and Events sortable because those are the two orders the backend accepts. No header is marked at rest: newest first is the default, not a sort. Click Started once for oldest first and once more for the default; Events cycles most, fewest, default.',
+          'The Recordings page: every field on, Started and Events sortable because those are the two orders the backend accepts. No header is marked at rest: newest first is the default, not a sort. Every header has three states - descending, ascending, default - so the third click on any of them puts the list back the way it arrived.',
       },
     },
   },
