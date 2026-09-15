@@ -50,10 +50,9 @@ const HOTKEY =
 /** The full sentence, for the accessible name and the drawer's own heading. */
 const LEAD = 'Filter the recordings';
 
-/** ⚠ THE BAR'S PLACEHOLDER. It is the same sentence as the accessible name
- *  because the bar is a field now and a field's placeholder is its label. It
- *  no longer ends on "like": there is no specimen to finish it. */
-const LEAD_BAR = LEAD;
+/* ⚠ THE BAR'S PLACEHOLDER IS THE ACCESSIBLE NAME - `lead`, defaulting to LEAD -
+   because the bar is a field now and a field's placeholder is its label. It no
+   longer ends on "like": there is no specimen to finish it. */
 
 /** ⚠ THE SAME CONTROL IN THE SEGMENT DRAWER, in that drawer's own words. "The
  *  recordings" points at a list, and in a drawer there is no list to point at:
@@ -98,6 +97,14 @@ export interface SearchCardProps {
    *  you add a second country - France filters the list to France, and France
    *  is then the only country the picker can see. */
   rows: readonly SessionRow[];
+  /** ⚠ THE SAME BAR ON ANOTHER LIST (2026-09-15). CoBrowse draws this card
+   *  over its live sessions - Mehdi: "here we missed the search, there is a
+   *  button for applying search" - and a live session cannot be filtered by
+   *  an event it has not finished having. So the card can be handed the
+   *  catalogue it offers, and the sentence it prints, without growing a
+   *  second card. Both default to the sessions list's own. */
+  entries?: readonly CatalogueEntry[];
+  lead?: string;
   /** ⚠ NO LONGER READ, and kept because the callers still pass it and the
    *  segment drawer may want it back. The filter's row carried a session count
    *  until 2026-09-04; the result is stated by the component that holds it. */
@@ -195,6 +202,8 @@ export function SearchCard({
   rows,
   saveAction,
   variant = 'page',
+  entries,
+  lead = LEAD,
 }: SearchCardProps) {
   const [fork, setFork] = useState(false);
   /* ⚠ THE QUERY IS THE CARD'S, NOT THE PICKER'S (2026-09-04). In the bar shape
@@ -472,7 +481,7 @@ export function SearchCard({
               type="text"
               className="m-sc__input"
               value={query}
-              placeholder={any ? ADD : inPanel ? LEAD_PANEL : LEAD_BAR}
+              placeholder={any ? ADD : inPanel ? LEAD_PANEL : lead}
               /* Focus opens the list and typing narrows it - a combobox, in the
                  shape people already know. Click is here as well as focus so
                  that Escape (which closes the list but leaves the caret in the
@@ -500,7 +509,7 @@ export function SearchCard({
               aria-expanded={fork}
               aria-haspopup="dialog"
               aria-autocomplete="list"
-              aria-label={any ? ADD : inPanel ? LEAD_PANEL : LEAD}
+              aria-label={any ? ADD : inPanel ? LEAD_PANEL : lead}
               autoComplete="off"
               spellCheck={false}
             />
@@ -521,7 +530,7 @@ export function SearchCard({
             }}
             aria-expanded={fork}
             aria-haspopup="dialog"
-            aria-label={any ? ADD : inPanel ? LEAD_PANEL : LEAD}
+            aria-label={any ? ADD : inPanel ? LEAD_PANEL : lead}
           >
             {/* ⚠ AN SVG STROKE rather than a border: a stroke can be blurred
                 without blurring what it surrounds, and the glow is half the
@@ -554,6 +563,7 @@ export function SearchCard({
             closePanel();
           }}
           taken={takenProperties}
+          entries={entries}
         />
       </div>
 

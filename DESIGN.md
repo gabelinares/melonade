@@ -6110,3 +6110,76 @@ behind the one toggle, like everyone else's; the issue page's crumb says
 "This issue" because the back link now says "Issues". Checks re-pointed at
 the shared selectors: `media-check`, `dm-check`, `pa-check`,
 `sessions-check`, `pages-check`.
+
+## 45. One table for every list of sessions, and CoBrowse gets the search (2026-09-15)
+
+Mehdi's 09-15 review of the inner-pages build, on the CoBrowse live list:
+*"here we missed the search - there is a button for applying search"*, and
+*"you have start time and end time there, but that's not consistent with what
+we've done in sessions... in sessions we have it as headers, you can sort
+them."* Gabriel: production's own live list differs. *"No, no, no. Don't.
+That's the whole point - consistency."* Same call, on Spot: *"some padding and
+spacing, on the right and on the left... the search bar doesn't seem aligned."*
+
+### The sessions table became a component
+
+The table lived inline in `SessionsPage` - 300 lines of columns with the
+design record in their comments. It is `SessionTable` now, with every note
+moved intact, and a page says three things about it: which **fields** are on,
+which headers are **sortable**, and what a click does (`onOpen`,
+`onFilterToUser`, `onMetaClick`). The hue per person, the name as a control,
+the metadata chips, the width rhythm and the play at the edge are defined once.
+
+Production, read out of the code, already draws its live rows with the
+sessions list's own `SessionItem`. One table here is the product's own
+arrangement, not a redesign.
+
+### ⚠ The header sort was cosmetic, and now it is not
+
+Sessions' Started and Events headers were `sorter: true` with no table
+`onChange`. antd reads `true` as "the server sorts" and waits to be told; the
+chevron flipped and the rows stayed put. `SessionTable` takes a **controlled**
+`sort` (`ColumnSort`: a column and a direction) and reports clicks through
+`onSort`; Sessions maps that onto its four backend keys with `columnSortOf` /
+`sortKeyOf`, so the Display menu's Order and the header say the same thing.
+
+The direction is read off the **figure the column prints**: "2m ago" ascending
+is newest first, so `recent` is Started ↑. A chevron pointing up over a column
+whose numbers went down would be the worse kind of consistent.
+
+### CoBrowse Live is Sessions' two components
+
+`shared/cobrowse-logic.ts` expresses a `LiveSession` as a `SessionRow`
+(`liveSessionRowOf`, off the same `liveMetaOf` the live view's header prints,
+so the row and the screen agree), narrows the catalogue to what production's
+`LiveSessionSearch` accepts (`liveCatalogue`: user, geography, technology,
+platform, metadata - **no events**), and sorts by column (`sortLiveRows`,
+Started and Duration, the two orders production's live list has).
+
+`useCobrowse` binds the same rule verbs `useSessions` binds, over its own
+`filters`, and ticks a one-second clock so the Duration column moves. The page
+is `split`: the QUESTION panel is `SearchCard` with `entries={liveCatalogue()}`
+and `lead="Filter the live sessions"` (two new props, both defaulting to the
+sessions list's own); the ANSWER panel is `SessionTable` with
+`fields={['started','duration','location','device','metadata']}`,
+`sortable={LIVE_SORTABLE}` and `liveBadge={false}` - every row on the Live tab
+is live and the tab said so once, the argument that took the dot off session
+rows. The header's sort dropdown and order toggle are gone; only Refresh stays.
+
+The Recordings tab keeps its own two-column sort but takes the app's chevron
+(`...sortable`) - it was the one table drawing antd's triangles.
+
+### Spot: the grid is inset to the title's edge
+
+`.m-cgrid` had no inline padding, so cards sat flush against their panel's
+border while the title, the header's search field and every table's first
+cell are inset by `--m-space-7`. Cards touching the card they sit in read as
+overflowing it, and the field above read as misaligned because it was the only
+edge that was right. Same inset as a table's first cell, inside the same 1px
+border, so a Spot's left edge lands where a session's name does.
+
+Checks: `tools/cobrowse-check.mjs` (headers, real reordering both ways, the
+bar's words, no triangles, the picker offers no events, a name narrows, the
+Spot inset, and Sessions' Started/Events actually reorder);
+`other-pages-check` re-pointed at `.m-ss__table`. Story:
+`Sessions/SessionTable` with a Sessions and a Live harness.

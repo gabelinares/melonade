@@ -136,9 +136,17 @@ t('FEATURES: all eight tagged elements (production’s Tags, not a flag list)', 
 // ── COBROWSE ─────────────────────────────────────────────────────────────
 
 await navTo('CoBrowse');
-await p.locator('.m-cb__table').waitFor();
+/* ⚠ THE SESSIONS TABLE, since 2026-09-15: the live tab draws SessionTable
+   under the same filter card Sessions has. `.m-cb__table` is the Recordings
+   tab's only now. */
+await p.locator('.m-ss__table').waitFor();
 s = await page();
 t('COBROWSE: five live sessions on the Live tab', s.title === 'CoBrowse' && s.rows === 5, `${s.title}, ${s.rows} rows`);
+const cb = await p.evaluate(() => ({
+  bar: document.querySelector('.m-sc__input')?.placeholder ?? null,
+  sortable: [...document.querySelectorAll('.m-ss__table th.ant-table-column-has-sorters')].map((e) => e.textContent.trim()).join('|'),
+}));
+t('COBROWSE: the live list has the sessions filter bar and sortable Started/Duration', cb.bar === 'Filter the live sessions' && cb.sortable === 'Started|Duration', `${cb.bar}; ${cb.sortable}`);
 await p.locator('.ant-tabs-tab', { hasText: 'Recordings' }).click();
 await p.waitForTimeout(300);
 s = await page();

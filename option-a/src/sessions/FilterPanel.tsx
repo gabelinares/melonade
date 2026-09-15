@@ -19,6 +19,9 @@ export interface FilterPanelProps {
   onQueryChange?: (q: string) => void;
   hideSearch?: boolean;
   commitRef?: MutableRefObject<(() => void) | null>;
+  /** What can be picked. The whole catalogue by default; a list that cannot
+   *  take events - the live list - hands in the properties it accepts. */
+  entries?: readonly CatalogueEntry[];
 }
 
 /**
@@ -76,6 +79,7 @@ export function FilterPanel({
   onQueryChange,
   hideSearch,
   commitRef,
+  entries,
 }: FilterPanelProps) {
   const [grown, setGrown] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -142,7 +146,7 @@ export function FilterPanel({
            The kinds are still visible: the list heads each group with its name
            when a result spans both, and the row lands in the matching section
            below. Two places, neither of them a step. */
-        entries={catalogueNow()}
+        entries={entries ?? catalogueNow()}
         taken={taken}
         onPick={onPick}
         onDone={onClose}

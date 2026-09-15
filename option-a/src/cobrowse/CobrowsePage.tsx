@@ -1,24 +1,26 @@
 import { useState } from 'react';
 import { App, Button, Dropdown, Table, Tabs } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { ArrowDownWideNarrow, ArrowUpWideNarrow, MoreHorizontal, Pencil, Play, RefreshCw, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Play, RefreshCw, Trash2 } from 'lucide-react';
 import { recordingMetaOf } from '@shared/media-logic.ts';
-import type { CobrowseSection, LiveSession, LiveSort, Recording } from '@shared/cobrowse-data.ts';
+import { LIVE_SORTABLE, liveCatalogue } from '@shared/cobrowse-logic.ts';
+import type { CobrowseSection, Recording } from '@shared/cobrowse-data.ts';
 import { minutesSince } from '@shared/tests-data.ts';
-import { formatDuration } from '@shared/sessions-logic.ts';
+import { entryOf, formatDuration } from '@shared/sessions-logic.ts';
 import type { DataState } from '@shared/issues-logic.ts';
 import type { CobrowseController } from '../state/useCobrowse.ts';
 import { EmptyState } from '../components/EmptyState.tsx';
 import { IconButton } from '../components/IconButton.tsx';
 import { ListFooter } from '../components/ListFooter.tsx';
-import { MenuSelect } from '../components/DisplayMenu.tsx';
-import { PageCard } from '../components/PageCard.tsx';
+import { PageCard, PagePanel } from '../components/PageCard.tsx';
 import { RelativeTime } from '../components/RelativeTime.tsx';
 import { SearchField } from '../components/SearchField.tsx';
-import { SessionAvatar } from '../components/SessionAvatar.tsx';
 import { SkeletonRows } from '../components/SkeletonRows.tsx';
+import { sortable } from '../components/SortIcon.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { RenameDialog } from '../components/RenameDialog.tsx';
+import { SearchCard } from '../sessions/SearchCard.tsx';
+import { SessionTable } from '../sessions/SessionTable.tsx';
 import { LiveSessionPage } from './LiveSessionPage.tsx';
 import './cobrowse-page.css';
 
@@ -32,12 +34,9 @@ const SECTION_TABS = [
   { key: 'recordings', label: 'Recordings' },
 ] as const;
 
-const SORT_CHOICES: ReadonlyArray<{ value: LiveSort; label: string }> = [
-  { value: 'startedAt', label: 'Start time' },
-  { value: 'duration', label: 'Duration' },
-];
-
-const identityLabel = (s: LiveSession) => s.userId ?? s.userAnonymousId;
+/** The live list's columns. No Events or Pages: a live session has not
+ *  finished having them, and a column of zeros says nothing. */
+const LIVE_FIELDS = ['started', 'duration', 'location', 'device', 'metadata'] as const;
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
@@ -47,6 +46,25 @@ const identityLabel = (s: LiveSession) => s.userId ?? s.userAnonymousId;
  * A single nav row, no Subitems, so the Live/Recordings split becomes an
  * in-page Tabs strip - the same shape Properties' User/Event split is, one
  * level below Data Management's own Subitem.
+ *
+ * ── ⚠ THE LIVE LIST IS THE SESSIONS PAGE'S OWN TWO COMPONENTS (2026-09-15) ─
+ * Mehdi, on the 09-14 build: "here we missed the search - there is a button
+ * for applying search", and "you have start time and end time there, but
+ * that's not consistent with what we've done in sessions... in sessions we
+ * have it as headers, you can sort them." Gabriel said production's own live
+ * list differs. "No, no, no. Don't. That's the whole point - consistency."
+ *
+ * So the live tab is the QUESTION and the ANSWER, exactly as Sessions draws
+ * them: the same `SearchCard` over a catalogue narrowed to what production's
+ * live search accepts (user, geography, technology, platform, metadata - no
+ * events), and the same `SessionTable`, with Started and Duration as the two
+ * sortable headers because those are the two orders production's live list
+ * has. The sort dropdown and the order toggle that sat in the header are
+ * gone; the headers do that job now, where they do it on Sessions.
+ *
+ * Production, for the record, draws its live rows with the sessions list's
+ * own `SessionItem`. One table here is not a redesign; it is the arrangement
+ * the product already has, made visible.
  * ════════════════════════════════════════════════════════════════════════════
  */
 export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
@@ -59,38 +77,6 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
     return <LiveSessionPage key={model.openLive.id} session={model.openLive} model={model} />;
   }
 
-  const liveColumns: TableColumnsType<LiveSession> = [
-    {
-      title: 'User',
-      key: 'user',
-      width: '34%',
-      render: (_: unknown, s) => (
-        <div className="m-cb__identity-cell">
-          <SessionAvatar seed={identityLabel(s)} size={24} />
-          <span className="m-truncate">{identityLabel(s)}</span>
-        </div>
-      ),
-    },
-    {
-      title: 'Started',
-      key: 'startedAt',
-      width: '22%',
-      render: (_: unknown, s) => <RelativeTime minutesAgo={minutesSince(s.startedAt)} />,
-    },
-    {
-      title: 'Duration',
-      key: 'duration',
-      width: '20%',
-      render: (_: unknown, s) => <span className="m-cb__mono">{formatDuration(s.durationSec)}</span>,
-    },
-    {
-      title: 'Location',
-      key: 'location',
-      width: '24%',
-      render: (_: unknown, s) => <span className="m-truncate">{s.city}, {s.country}</span>,
-    },
-  ];
-
   /* ⚠ A RECORDING PLAYS IN A NEW TAB, because that is what production does:
      the row fetches a signed URL and hands it to `window.open`. There is no
      in-app player to build, and building one would be inventing a screen the
@@ -101,6 +87,13 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
       title: 'Name',
       key: 'name',
       width: '44%',
+      /* ⚠ THE APP'S CHEVRON, not antd's triangles (2026-09-15). These two
+         headers were `sorter` alone, so this was the one table in the app
+         drawing antd's stacked triangles beside its titles - the exact drift
+         `sortable` in SortIcon.tsx exists to prevent. Same spread as every
+         other sortable header; the comparator stays local because the
+         recordings list is the one list antd sorts by itself. */
+      ...sortable,
       sorter: (a, b) => a.name.localeCompare(b.name),
       render: (_: unknown, r) => (
         <span className="m-cb__identity-cell">
@@ -121,6 +114,7 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
       title: 'Recorded',
       key: 'recordedAt',
       width: '16%',
+      ...sortable,
       sorter: (a, b) => b.recordedAt - a.recordedAt,
       defaultSortOrder: 'ascend',
       render: (_: unknown, r) => <RelativeTime minutesAgo={minutesSince(r.recordedAt)} />,
@@ -170,13 +164,6 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
       ),
     },
   ];
-  const liveEmpty = (
-    <EmptyState
-      title="No live sessions found"
-      hint="Support users with live sessions, cobrowsing, and video calls."
-    />
-  );
-
   const recordingsEmpty = (
     <EmptyState
       title="No videos have been recorded in your co-browsing sessions."
@@ -197,27 +184,17 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
       }
       actions={
         model.section === 'live' ? (
-          <>
-            <IconButton
-              icon={<RefreshCw size={14} />}
-              label="Refresh live sessions"
-              variant="ghost"
-              onClick={() => message.info('Refreshed.')}
-            />
-            <MenuSelect
-              id="cb-sort"
-              value={model.sort}
-              choices={SORT_CHOICES}
-              onChange={(v) => model.setSort(v as LiveSort)}
-            />
-            <IconButton
-              icon={model.order === 'desc' ? <ArrowDownWideNarrow size={14} /> : <ArrowUpWideNarrow size={14} />}
-              label={model.order === 'desc' ? 'Newest first' : 'Oldest first'}
-              variant="ghost"
-              pressed
-              onClick={() => model.setOrder(model.order === 'desc' ? 'asc' : 'desc')}
-            />
-          </>
+          /* ⚠ ONLY THE REFRESH IS LEFT UP HERE. The sort menu and the order
+             toggle moved into the table's own headers (2026-09-15); a control
+             that changes how the rows are ordered belongs on the rows, where
+             Sessions keeps it. Production refreshes the live list on a timer
+             and offers this button too. */
+          <IconButton
+            icon={<RefreshCw size={14} />}
+            label="Refresh live sessions"
+            variant="ghost"
+            onClick={() => message.info('Refreshed.')}
+          />
         ) : (
           <SearchField
             placeholder="Search recordings"
@@ -226,56 +203,114 @@ export function CobrowsePage({ model, dataState }: CobrowsePageProps) {
           />
         )
       }
+      /* ⚠ SPLIT, like Sessions: the page lays out its own two components. */
+      split
     >
       {model.section === 'live' ? (
-        dataState === 'loading' ? (
-          <SkeletonRows rows={4} columns={[34, 22, 20, 24]} />
-        ) : model.visibleLive.length === 0 ? (
-          liveEmpty
-        ) : (
-          <>
-            <Table<LiveSession>
-              className="m-cb__table"
-              tableLayout="fixed"
-              rowKey="id"
-              columns={liveColumns}
-              dataSource={model.visibleLive}
-              pagination={false}
-              rowClassName="m-cb__row"
-              onRow={(s) => ({ onClick: () => model.openLiveSession(s.id) })}
-            />
-            <ListFooter
-              page={1}
-              pageSize={model.visibleLive.length}
-              total={model.visibleLive.length}
-              noun={['live session', 'live sessions']}
-            />
-          </>
-        )
-      ) : dataState === 'loading' ? (
-        <SkeletonRows rows={4} columns={[44, 22, 16, 18]} />
-      ) : model.visibleRecordings.length === 0 ? (
-        recordingsEmpty
-      ) : (
         <>
-          <Table<Recording>
-            className="m-cb__table"
-            tableLayout="fixed"
-            rowKey="id"
-            columns={recordingColumns}
-            dataSource={model.visibleRecordings}
-            pagination={false}
-            showSorterTooltip={false}
-            rowClassName={(r) => `m-cb__row${model.openRecording?.id === r.id ? ' is-opening' : ''}`}
-            onRow={(r) => ({ onClick: () => model.openRecordingRow(r.id) })}
-          />
-          <ListFooter
-            page={1}
-            pageSize={model.visibleRecordings.length}
-            total={model.visibleRecordings.length}
-            noun={['recording', 'recordings']}
-          />
+          {/* ── 1 · THE QUESTION ──────────────────────────────────────────
+              The same card Sessions draws, over the filters a live session
+              can be asked about. No Save as segment: a segment is a saved
+              search over recordings, and production offers none here. */}
+          <PagePanel spills>
+            <SearchCard
+              events={model.events}
+              properties={model.properties}
+              eventsOrder="then"
+              onAdd={model.addFilter}
+              onAddMany={model.addFilters}
+              onReplace={model.replaceFilter}
+              onUpdate={model.updateFilter}
+              onRemove={model.removeFilter}
+              onMoveEvent={model.moveEvent}
+              onAddProperty={model.addProperty}
+              onUpdateProperty={model.updateProperty}
+              onRemoveProperty={model.removeProperty}
+              onTogglePropertyOrder={model.togglePropertyOrder}
+              onEventsOrder={() => {}}
+              onClear={model.clearSearch}
+              rows={model.matchedLive}
+              entries={liveCatalogue()}
+              lead="Filter the live sessions"
+            />
+          </PagePanel>
+
+          {/* ── 2 · THE ANSWER ────────────────────────────────────────────
+              The sessions table, with the two headers production's live
+              search can order by. */}
+          <PagePanel>
+            {dataState === 'loading' ? (
+              <SkeletonRows rows={4} />
+            ) : model.liveRows.length === 0 ? (
+              <EmptyState
+                title="No live sessions found"
+                hint="Support users with live sessions, cobrowsing, and video calls."
+              />
+            ) : model.visibleLive.length === 0 ? (
+              <EmptyState
+                title="No live sessions match this search"
+                hint="Loosen one of the filters above."
+                action={
+                  <Button size="small" onClick={model.clearSearch}>
+                    Clear the search
+                  </Button>
+                }
+              />
+            ) : (
+              <>
+                <SessionTable
+                  rows={model.visibleLive}
+                  fields={LIVE_FIELDS}
+                  sortable={LIVE_SORTABLE}
+                  sort={model.sort}
+                  onSort={model.setSort}
+                  onOpen={(s) => model.openLiveSession(s.sessionId)}
+                  onFilterToUser={model.filterToUser}
+                  /* Every row here is live; the tab says so once. */
+                  liveBadge={false}
+                  onMetaClick={(k, v) => {
+                    const entry = entryOf(`meta.${k}`);
+                    if (entry) model.addFilters([{ key: `m${entry.id}`, entryId: entry.id, isEvent: false, operator: 'is', value: [v] }]);
+                  }}
+                />
+                <ListFooter
+                  page={1}
+                  pageSize={model.visibleLive.length}
+                  total={model.visibleLive.length}
+                  noun={['live session', 'live sessions']}
+                />
+              </>
+            )}
+          </PagePanel>
         </>
+      ) : (
+        <PagePanel>
+          {dataState === 'loading' ? (
+            <SkeletonRows rows={4} columns={[44, 22, 16, 18]} />
+          ) : model.visibleRecordings.length === 0 ? (
+            recordingsEmpty
+          ) : (
+            <>
+              <Table<Recording>
+                className="m-cb__table"
+                tableLayout="fixed"
+                rowKey="id"
+                columns={recordingColumns}
+                dataSource={model.visibleRecordings}
+                pagination={false}
+                showSorterTooltip={false}
+                rowClassName={(r) => `m-cb__row${model.openRecording?.id === r.id ? ' is-opening' : ''}`}
+                onRow={(r) => ({ onClick: () => model.openRecordingRow(r.id) })}
+              />
+              <ListFooter
+                page={1}
+                pageSize={model.visibleRecordings.length}
+                total={model.visibleRecordings.length}
+                noun={['recording', 'recordings']}
+              />
+            </>
+          )}
+        </PagePanel>
       )}
 
       <RenameDialog

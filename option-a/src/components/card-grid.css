@@ -1,6 +1,16 @@
+/* ⚠ INSET TO THE TITLE'S EDGE (Mehdi, 2026-09-15: "some padding and spacing,
+   on the right and on the left... the search bar there doesn't seem aligned").
+   The grid sat flush against its panel's border while everything else on the
+   page - the title above, the search field on the header's right, the first
+   cell of every table - is inset by the same `--m-space-7`. Cards touching the
+   card they sit in read as overflowing it, and the field above them read as
+   misaligned because it was the only edge that was right.
+
+   The inline padding is the TABLE's first-cell inset (see antd-overrides.css),
+   not the toolbar's, so a Spot's left edge lands where a session's name does. */
 .m-cgrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: var(--m-space-5);
-  padding-block: var(--m-space-5);
+  padding: var(--m-space-5) var(--m-space-7);
 }

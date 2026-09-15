@@ -54,30 +54,18 @@ export const RECORDINGS: readonly Recording[] = [
 
 export type CobrowseSection = 'live' | 'recordings';
 
-export type LiveSort = 'startedAt' | 'duration';
-
+/* ⚠ THE LIVE SORT LEFT THIS FILE (2026-09-15). It was a dropdown of two
+   fields and an order toggle in the page header; it is a column header now,
+   the way it is on Sessions - see `sortLiveRows` in cobrowse-logic.ts. */
 export interface CobrowseState {
   section: CobrowseSection;
-  sort: LiveSort;
-  order: 'asc' | 'desc';
   recordingsQuery: string;
 }
 
 export const INITIAL_COBROWSE_STATE: CobrowseState = {
   section: 'live',
-  sort: 'startedAt',
-  order: 'desc',
   recordingsQuery: '',
 };
-
-export function sortLiveSessions(sessions: readonly LiveSession[], sort: LiveSort, order: 'asc' | 'desc'): LiveSession[] {
-  const out = [...sessions];
-  out.sort((a, b) => {
-    const diff = sort === 'startedAt' ? a.startedAt - b.startedAt : a.durationSec - b.durationSec;
-    return order === 'asc' ? diff : -diff;
-  });
-  return out;
-}
 
 export const matchesRecordingQuery = (r: Recording, query: string): boolean => {
   const q = query.trim().toLowerCase();

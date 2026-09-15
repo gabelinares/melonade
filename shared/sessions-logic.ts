@@ -195,6 +195,40 @@ export const SORT_CHOICES: ReadonlyArray<{ value: SessionSortKey; label: string 
 
 /** `all` is the empty selection rather than a seventh type - the same call the
  *  Issues page made about Category, and production's own `types.ALL`. */
+/* ── A SORT, AS A COLUMN HEADER SAYS IT ─────────────────────────────────────
+   The table's headers speak in columns and directions; the sessions list
+   speaks in the four keys the backend accepts. These two translate, and the
+   direction is read off the FIGURE the column prints, not the field behind
+   it: "2m ago" ascending is newest first, so `recent` is Started ascending. A
+   chevron pointing up over a column whose numbers went down would be the
+   worse kind of consistent. */
+export type SortColumn = 'started' | 'events' | 'duration';
+
+export interface ColumnSort {
+  column: SortColumn;
+  order: 'ascend' | 'descend';
+}
+
+export const columnSortOf = (key: SessionSortKey): ColumnSort => {
+  switch (key) {
+    case 'oldest':
+      return { column: 'started', order: 'descend' };
+    case 'events':
+      return { column: 'events', order: 'descend' };
+    case 'fewest':
+      return { column: 'events', order: 'ascend' };
+    default:
+      return { column: 'started', order: 'ascend' };
+  }
+};
+
+/** `null` is a header clicked a third time - no order - and means the default. */
+export const sortKeyOf = (sort: ColumnSort | null): SessionSortKey => {
+  if (!sort) return 'recent';
+  if (sort.column === 'events') return sort.order === 'descend' ? 'events' : 'fewest';
+  return sort.order === 'descend' ? 'oldest' : 'recent';
+};
+
 export type SessionTag = 'all' | IssueType;
 
 export const ISSUE_TABS: ReadonlyArray<{ value: SessionTag; label: string }> = [
